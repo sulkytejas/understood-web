@@ -36,3 +36,124 @@
     transform: rotate(360deg);
   }
 }
+
+/* VideoChat.css */
+
+.app-container {
+  text-align: center;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(to right, #ff7e5f, #feb47b);
+}
+
+/* VideoChat.css */
+.video-chat {
+  position: relative;
+  /* width: 375px; */
+  width: 100%;
+  max-width: 375px;
+  /* height: 812px; */
+  height: 100%;
+  max-height: 812px;
+  background-color: #000;
+  color: #fff;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.local-video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 1;
+}
+
+.remote-video {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 100px;
+  height: 150px;
+  background: #222;
+  border: 2px solid #fff;
+  border-radius: 10px;
+  z-index: 2;
+}
+
+.remote-video video {
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.user-info {
+  position: absolute;
+  bottom: 120px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  z-index: 2;
+}
+
+.user-info h2 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.user-info p {
+  margin: 0;
+  font-size: 14px;
+  color: #aaa;
+}
+
+.video-chat-controls {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0 20px;
+  box-sizing: border-box;
+  z-index: 2;
+}
+
+.control-icons {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  width: 80%;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 30px;
+}
+
+.end-call {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 60px;
+  height: 60px;
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 50%;
+}
+
+.end-call .MuiIconButton-root {
+  color: #fff;
+}
+
+.control-icons .MuiIconButton-root {
+  color: #fff;
+}
+
+.call-connected {
+  border: 2px solid green;
+}
