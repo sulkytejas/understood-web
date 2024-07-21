@@ -326,7 +326,7 @@ const VideoCall = () => {
                     </MenuItem>   
                 </Menu>        
                 {/* <IconButton><Mic /></IconButton> */}
-                {/* <IconButton><VolumeUp /></IconButton> */}
+              
                 {/* <IconButton><Chat /></IconButton> */}
                 <IconButton 
                     onClick={handleClick} 
