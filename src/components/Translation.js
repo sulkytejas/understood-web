@@ -4,7 +4,7 @@ import { translateText } from "../services/translateService";
 
 
 const Translation = ({role, targetLanguage, socket}) => {
-    const [translation,setTranslation] = useState('');
+    const [userSpeechToText,setUserSpeechToText] = useState('');
     const [recognizing, setRecognizing] = useState(false);
    
 
@@ -12,27 +12,30 @@ const Translation = ({role, targetLanguage, socket}) => {
     const isRecongnitionActive = useRef(false);
 
     // Handle transcript results
-    const handleResult = async (event) => {
+    const handleResult = (event) => {
         console.log(event);
         const transcript = Array.from(event.results)
         .map(result => result[0].transcript)
         .join('');
 
 
-        try {
-            const translation = await translateText(transcript,targetLanguage);
-            console.log(`[${role}] Translated text:`, translation);
-            setTranslation(translation);
-        }catch (e){
-            console.error(`[${role}] Translation error:`, e);
-        }
+        console.log("transcripts", transcript);
+
+        setUserSpeechToText(transcript);
+        // try {
+        //     const translation = await translateText(transcript,targetLanguage);
+        //     console.log(`[${role}] Translated text:`, translation);
+        //     setTranslation(translation);
+        // }catch (e){
+        //     console.error(`[${role}] Translation error:`, e);
+        // }
     }
 
     // Initial speech instance
     const initializeRecognition = () => {
         const recognition =  new ( window.webkitSpeechRecognition ||  window.SpeechRecognition )();
         recognition.lang = 'en-US';
-        recognition.interimResults = false;
+        recognition.interimResults = true;
         recognition.continous = true;
 
        
@@ -102,10 +105,10 @@ const Translation = ({role, targetLanguage, socket}) => {
     },[role, targetLanguage])
 
     useEffect(() => {
-        if (translation){
-            socket.emit('translations',translation);
+        if (userSpeechToText){
+            socket.emit('userSpeechToText',userSpeechToText);
         }
-    },[translation,socket]);
+    },[userSpeechToText,socket]);
 
     return (
         <div className="subtitles">
