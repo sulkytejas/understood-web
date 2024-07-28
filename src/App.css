@@ -99,6 +99,12 @@
   transform: translateX(-50%);
   text-align: center;
   z-index: 2;
+  opacity: 0.8;
+  background: black;
+}
+
+.user-info div {
+  font-size: 25px;
 }
 
 .user-info h2 {
@@ -156,4 +162,95 @@
 
 .call-connected {
   border: 2px solid green;
+}
+
+/* for broadcast */
+/* Add to your CSS file */
+
+.video-chat-broadcast {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+}
+
+.local-video-broadcast {
+  width: 100%;
+  height: auto;
+  max-width: 600px;
+  border: 2px solid #fff;
+  border-radius: 10px;
+}
+
+.remote-videos-broadcast {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.remote-video-broadcast {
+  width: 100px;
+  height: 75px;
+  margin: 5px;
+  border: 2px solid #fff;
+  border-radius: 10px;
+}
+
+.user-info-broadcast {
+  margin-top: 20px;
+  text-align: center;
+  color: #fff;
+}
+
+.video-chat-controls-broadcast {
+  position: absolute;
+  bottom: 20px;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.control-icons-broadcast {
+  display: flex;
+  align-items: center;
+}
+
+.control-icons-broadcast .MuiIconButton-root {
+  margin: 0 5px;
+  color: #fff;
+}
+
+.live-text {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background-color: red;
+  color: white;
+  padding: 5px;
+  font-size: 14px;
+  font-weight: bold;
+  border-radius: 5px;
+  animation: blinker 3s linear infinite;
+  z-index: 1;
+}
+
+@keyframes blinker {
+  50% {
+      opacity: 0;
+  }
+}
+.local-video-broadcast {
+  width: 100%;
+  height: auto;
+}
+
+.video-container {
+  display: inline-block;
+}
+
+.hide-video {
+  display: none;
 }

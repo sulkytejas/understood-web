@@ -1,17 +1,21 @@
 import logo from './logo.svg';
 import './App.css';
 import { useState } from 'react';
+import { Button } from '@mui/material';
 
 import VideoCall from './components/VideoCall';
+import BroadcastVid from './components/BroadcastVid';
 
 function App() {
-  console.log("running app")
+  const [mode,setMode] = useState(null);
+
   return (
     <div className="App app-container">
-   
-      <VideoCall/>
-    
-      
+      {!mode && <Button onClick={() => setMode('single')}>Single User</Button>}
+      {!mode && <Button onClick={() => setMode('broadcast')}> Broadcast</Button>}
+      { mode === 'single' && <VideoCall />}
+      { mode === 'broadcast' && <BroadcastVid />}
+
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { IconButton, Select, MenuItem, Menu, FormControl } from '@mui/material';
 import { Videocam, Mic, VolumeUp, Chat, Phone, Cancel, Translate } from '@mui/icons-material';
 
 import Translation from './Translation';
+import { translateText } from "../services/translateService";
 
 
 const VideoCall = () => {
@@ -19,8 +20,10 @@ const VideoCall = () => {
     const [userRole,setUserRole] = useState(null);
     const [localTargetLanguage, setLocalTargetLanguage] = useState('');
     const [remoteTargetLanguage, setRemoteTargetLanguage] = useState('');
-    const [receivedTranslation, setReceivedTranslation] = useState('');
+    // const [receivedTranslation, setReceivedTranslation] = useState('');
     const [anchorEl, setAnchorEl] = useState(null);
+    const [translatedText,setTranslatedText] = useState('');
+    const [recognizedText, setRecognizedText] = useState('')
 
     // Setup peerConnection
     const initializePeerConnection = () => {
@@ -29,7 +32,7 @@ const VideoCall = () => {
         // Handle incoming media stream from remote peer
          peerConnection.current.ontrack = event => {
             console.log('Received remote track');
-            remoteVideoRef.current.srcObject = event.streams[0]
+            remoteVideoRef.current.srcObject = event.streams[0] 
         };
 
         // When a new ICE candidate is found, this event is triggered
@@ -41,7 +44,7 @@ const VideoCall = () => {
                 if (!candidates.current.has(candidateString)) {
                     candidates.current.add(candidateString);
                     console.log('Sending candidate:', event.candidate);
-                    socket.current.emit('candidate', event.candidate);
+                    socket.current.emit('candidate', event.candidate, null,false);
                 }  
             }
         };
@@ -60,6 +63,7 @@ const VideoCall = () => {
 
     // Offer Handler
     const handleOffer = async (offer,targetLanguage) => {
+        console.log("handle offer triggerd")
         if (!peerConnection.current){
             initializePeerConnection(); // Ensure peer connection is initialized
         }
@@ -121,10 +125,8 @@ const VideoCall = () => {
     }
 
     const initializeSocket = () => {
-        socket.current = io('https://translations-1153aabe3d6b.herokuapp.com');
-
-        console.log('localTargetLanguage', localTargetLanguage)
-        
+        // socket.current = io('https://translations-1153aabe3d6b.herokuapp.com');
+        socket.current = io('http://localhost:5001');
 
         socket.current.on('connect', () => {
             setConnected(true);
@@ -133,7 +135,7 @@ const VideoCall = () => {
 
          // socket event
 
-         socket.current.on('roleAssignment', setUserRole);
+         socket.current.on('roleAssignment', (role) => setUserRole(role));
          socket.current.on('offer', handleOffer);
          socket.current.on('answer', handleAnswer);
  
@@ -142,10 +144,9 @@ const VideoCall = () => {
              await peerConnection.current.addIceCandidate(new RTCIceCandidate(candidate));
          });
  
- 
-         socket.current.on('receivedTranslations', (rt) => {
-             setReceivedTranslation(rt)
-         });
+        socket.current.on('recognizedText', (text) => {
+            setRecognizedText(text);
+        });
  
            // Listen for disconnection message
          socket.current.on('userCallDisconnected', () => {
@@ -155,12 +156,16 @@ const VideoCall = () => {
 
     useEffect(() => {
         initializeSocket();
-
+        
         // Capture local media stream (video and audio)
-        navigator.mediaDevices.getUserMedia({ video:true, audio:true})
+       
+            navigator.mediaDevices.getUserMedia({ video:true, audio:true})
             .then(stream => {
                 localVideoRef.current.srcObject = stream;
             });
+        
+           
+        
         
         return () => {
             if ( peerConnection.current){
@@ -171,7 +176,7 @@ const VideoCall = () => {
                 socket.current.disconnect();
             }
         }
-    }, [localTargetLanguage]);
+    }, [ localTargetLanguage]);
 
     const createOffer = async () => {
 
@@ -206,11 +211,22 @@ const VideoCall = () => {
 
 
     useEffect(() => {
-        if (userRole === 'caller'){
+        if ( userRole === 'broadcaster'){
             createOffer();
         }
     },[userRole,remoteTargetLanguage]);
 
+    //Translating on the client side
+    useEffect(() => {
+        if (recognizedText) {
+            const translate = async () => {
+                const translated = await translateText(recognizedText, localTargetLanguage);
+                setTranslatedText(translated);
+            };
+
+            translate();
+        }
+    },[recognizedText,localTargetLanguage])
 
     const handleDisconnectCall = () => {
         // Notify remote user
@@ -247,7 +263,8 @@ const VideoCall = () => {
         setUserRole(null);
         setLocalTargetLanguage('');
         setRemoteTargetLanguage('');
-        setReceivedTranslation('');
+        setRecognizedText('');
+        setTranslatedText('');
         };   
 
     const handleClick = () => {
@@ -269,26 +286,25 @@ const VideoCall = () => {
     setAnchorEl(null);
   };
 
-  console.log(remoteTargetLanguage,"remoteTargetLanguage")
-
     return (
         <div className="video-chat">
         {/* <div className="video-chat-content"> */}
           {/* <div className="video-container"> */}
-            <video className="local-video" ref={localVideoRef } autoPlay muted />
+            <video className="local-video" ref={callStarted ? remoteVideoRef: localVideoRef } autoPlay  playsInline muted />
             <div className="remote-video">
-                <video ref={remoteVideoRef} autoPlay muted />
+                {<video ref={callStarted ? localVideoRef :remoteVideoRef} autoPlay  playsInline muted />}
             </div>
           {/* </div> */}
           <div className="user-info">
-          {remoteTargetLanguage && 
-            <Translation 
-                socket = {socket.current} 
-                role={userRole} 
-                targetLanguage={remoteTargetLanguage} 
-            />}
-            {receivedTranslation && 
-                <div>{receivedTranslation}
+            {callStarted &&  
+                <Translation 
+                    socket = {socket.current} 
+                    role={userRole} 
+                    targetLanguage="en" 
+                />}
+           
+            {translatedText && 
+                <div>{translatedText}
             </div>}
           </div>
         {/* </div> */}
@@ -342,3 +358,4 @@ const VideoCall = () => {
 }
 
 export default VideoCall;
+
