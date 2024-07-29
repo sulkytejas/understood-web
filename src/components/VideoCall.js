@@ -126,7 +126,7 @@ const VideoCall = () => {
 
     const initializeSocket = () => {
         // socket.current = io('https://translations-1153aabe3d6b.herokuapp.com');
-        socket.current = io('http://localhost:5001');
+        socket.current = io('https://3.25.64.73/socket');
 
         socket.current.on('connect', () => {
             setConnected(true);
