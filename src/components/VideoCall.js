@@ -290,9 +290,9 @@ const VideoCall = () => {
         <div className="video-chat">
         {/* <div className="video-chat-content"> */}
           {/* <div className="video-container"> */}
-            <video className="local-video" ref={callStarted ? remoteVideoRef: localVideoRef } autoPlay  playsInline muted />
+            <video className="local-video" ref={callStarted ? remoteVideoRef: localVideoRef } autoPlay  playsInline  />
             <div className="remote-video">
-                {<video ref={callStarted ? localVideoRef :remoteVideoRef} autoPlay  playsInline muted />}
+                {<video ref={callStarted ? localVideoRef :remoteVideoRef} autoPlay  playsInline  />}
             </div>
           {/* </div> */}
           <div className="user-info">
