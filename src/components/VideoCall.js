@@ -23,7 +23,17 @@ const VideoCall = () => {
     // const [receivedTranslation, setReceivedTranslation] = useState('');
     const [anchorEl, setAnchorEl] = useState(null);
     const [translatedText,setTranslatedText] = useState('');
-    const [recognizedText, setRecognizedText] = useState('')
+    const [recognizedText, setRecognizedText] = useState('');
+
+
+    const generateDeviceId = () => {
+        let deviceId = localStorage.getItem('deviceId');
+        if (!deviceId) {
+            deviceId = 'device-' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('deviceId', deviceId);
+        }
+        return deviceId;
+    };
 
     // Setup peerConnection
     const initializePeerConnection = () => {
@@ -126,10 +136,14 @@ const VideoCall = () => {
 
     const initializeSocket = () => {
         // socket.current = io('https://translations-1153aabe3d6b.herokuapp.com');
-        socket.current = io('https://socket.platocity.com');
+        // socket.current = io('https://socket.platocity.com');
+        socket.current = io('http://localhost:5001');
 
         socket.current.on('connect', () => {
             setConnected(true);
+            const deviceId = generateDeviceId();
+            socket.current.emit('registerDevice', deviceId);
+
             console.log('Connected to signaling server');
         });
 
@@ -156,6 +170,15 @@ const VideoCall = () => {
 
     useEffect(() => {
         initializeSocket();
+
+        const handleBeforeUnload = () => {
+            if (socket.current) {
+                socket.current.emit('userCallDisconnected');
+                socket.current.disconnect();
+            }
+        };
+
+
         
         // Capture local media stream (video and audio)
        
@@ -165,9 +188,10 @@ const VideoCall = () => {
             });
         
            
-        
+            window.addEventListener('beforeunload', handleBeforeUnload);
         
         return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
             if ( peerConnection.current){
                 peerConnection.current.close();
             }
@@ -290,7 +314,7 @@ const VideoCall = () => {
         <div className="video-chat">
         {/* <div className="video-chat-content"> */}
           {/* <div className="video-container"> */}
-            <video className="local-video" ref={callStarted ? remoteVideoRef: localVideoRef } autoPlay  playsInline  />
+            <video className="local-video" ref={callStarted ? remoteVideoRef: localVideoRef } autoPlay  playsInline muted />
             <div className="remote-video">
                 {<video ref={callStarted ? localVideoRef :remoteVideoRef} autoPlay  playsInline  />}
             </div>
