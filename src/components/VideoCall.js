@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useMemo } from 'react';
 import io from 'socket.io-client';
 import { IconButton, Select, MenuItem, Menu, FormControl } from '@mui/material';
 import { Videocam, Mic, VolumeUp, Chat, Phone, Cancel, Translate } from '@mui/icons-material';
@@ -24,6 +24,8 @@ const VideoCall = () => {
     const [anchorEl, setAnchorEl] = useState(null);
     const [translatedText,setTranslatedText] = useState('');
     const [recognizedText, setRecognizedText] = useState('');
+    const [remoteTrack, setRemoteTrack] = useState(null);
+    const [localTrack, setLocalTrack] = useState(null);
 
 
     const generateDeviceId = () => {
@@ -37,12 +39,21 @@ const VideoCall = () => {
 
     // Setup peerConnection
     const initializePeerConnection = () => {
-        peerConnection.current = new RTCPeerConnection();
+        const configuration = {
+            iceServers: [
+              {
+                urls: 'stun:stun.l.google.com:19302'
+              }
+            ]
+          };
+
+        peerConnection.current = new RTCPeerConnection(configuration);
 
         // Handle incoming media stream from remote peer
          peerConnection.current.ontrack = event => {
             console.log('Received remote track');
-            remoteVideoRef.current.srcObject = event.streams[0] 
+            setRemoteTrack(event.streams[0]);
+            remoteVideoRef.current.srcObject = event.streams[0]; 
         };
 
         // When a new ICE candidate is found, this event is triggered
@@ -60,6 +71,8 @@ const VideoCall = () => {
         };
 
 
+       
+
         peerConnection.current.oniceconnectionstatechange = () => {
             console.log('ICE connection state:', peerConnection.current.iceConnectionState);
         };
@@ -70,6 +83,20 @@ const VideoCall = () => {
 
         console.log('Initialized new RTCPeerConnection');  
     }
+
+    useMemo(() => {
+        if (remoteTrack){
+            console.log('Received remote track',remoteTrack);
+            remoteVideoRef.current.srcObject = remoteTrack; 
+        }
+    }, [remoteTrack]);
+
+    useMemo(() => {
+        if (localTrack){
+            console.log('Received remote track',remoteTrack);
+            localVideoRef.current.srcObject = localTrack; 
+        }
+    }, [localTrack]);
 
     // Offer Handler
     const handleOffer = async (offer,targetLanguage) => {
@@ -96,8 +123,16 @@ const VideoCall = () => {
             setCallStarted(true)
         }
         
-        
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio:true });
+        const constraints = {
+            video: {
+              width: { ideal: 1280, max: 1920 },
+              height: { ideal: 720, max: 1080 },
+              frameRate: { ideal: 30, max: 60 }
+            },
+            audio: true
+          };
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        setLocalTrack(stream);
         localVideoRef.current.srcObject = stream;
 
         if (stream){
@@ -178,13 +213,24 @@ const VideoCall = () => {
             }
         };
 
-
+        const constraints = {
+            video: {
+              width: { ideal: 1280, max: 1920 },
+              height: { ideal: 720, max: 1080 },
+              frameRate: { ideal: 30, max: 60 }
+            },
+            audio: true
+          };
         
         // Capture local media stream (video and audio)
        
-            navigator.mediaDevices.getUserMedia({ video:true, audio:true})
+            navigator.mediaDevices.getUserMedia(constraints)
             .then(stream => {
-                localVideoRef.current.srcObject = stream;
+                setLocalTrack(stream);
+                if (localVideoRef.current) {
+                    localVideoRef.current.srcObject = stream;
+                }
+                
             });
         
            
@@ -200,23 +246,58 @@ const VideoCall = () => {
                 socket.current.disconnect();
             }
         }
-    }, [ localTargetLanguage]);
+    }, [localTargetLanguage ]);
+
+        // Function to get supported codecs for a given media kind
+    function getSupportedCodecs(kind) {
+        const codecs = RTCRtpSender.getCapabilities(kind).codecs;
+       
+        return codecs;
+    };
+
+    const waitForStableState = () => {
+        return new Promise((resolve, reject) => {
+            const checkState = () => {
+                if (peerConnection.current.signalingState === 'stable') {
+                    resolve();
+                } else {
+                    setTimeout(checkState, 100); // Retry after 100ms
+                }
+            };
+            checkState();
+        });
+    }
 
     const createOffer = async () => {
-
-        if (peerConnection.current && peerConnection.current.signalingState !== 'stable') {
-            console.warn('Attempted to create offer in non-stable state, ignoring');
-            return;
-        }
+       
+        // if (peerConnection.current && peerConnection.current.signalingState !== 'stable') {
+        //     console.warn('Attempted to create offer in non-stable state, ignoring');
+        //     return;
+        // }
+        
+        try {
 
         // Initialize the peer connection
         if (!peerConnection.current){
             initializePeerConnection();
-        }
-       
+        };
 
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio:true });
+        await waitForStableState();
+       
+        const constraints = {
+            video: {
+              width: { ideal: 1280, max: 1920 },
+              height: { ideal: 720, max: 1080 },
+              frameRate: { ideal: 30, max: 60 }
+            },
+            audio: true
+          };
+
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
         localVideoRef.current.srcObject = stream;
+        setLocalTrack(stream);
+        console.log(localVideoRef.current.srcObject, "localVideoRef")  
+      
 
         if (stream){
             stream.getTracks().forEach(track => {
@@ -225,12 +306,52 @@ const VideoCall = () => {
             });
         }
 
+        const videoSender = await peerConnection.current.getSenders().find(s => s.track.kind === 'video');
+        const videoTransceiver = await peerConnection.current.getTransceivers().find(t => t.sender === videoSender);
+        
+        if (videoTransceiver) {
+            const supportedVideoCodecs = getSupportedCodecs('video');
+             // Set codec preferences
+             const videoCodecs = [
+                {mimeType: "video/AV1"},
+                { mimeType: 'video/VP9' },
+                { mimeType: 'video/VP8' }
+              ]
+              
+              const allowedCodecs = supportedVideoCodecs.filter(codec => videoCodecs.some(c => codec.mimeType === c.mimeType))
+              
+              if (allowedCodecs.length > 0) {
+                videoTransceiver.setCodecPreferences(allowedCodecs);
+              }
+        }
+
+        const audioSender = await peerConnection.current.getSenders().find(s => s.track.kind === 'audio');
+        const audioTransceiver = await peerConnection.current.getTransceivers().find(t => t.sender === audioSender);
+        if (audioTransceiver) {
+            const supportedAudioCodecs = getSupportedCodecs('video');  
+          const audioCodecs = [
+            { mimeType: 'audio/opus', clockRate: 48000 },
+            { mimeType: 'audio/PCMU', clockRate: 8000 }, // Fallback codecs
+            { mimeType: 'audio/PCMA', clockRate: 8000 }
+          ];
+
+          const allowedCodecs = supportedAudioCodecs.filter(codec => audioCodecs.some(c => codec.mimeType === c.mimeType));
+          if (allowedCodecs.length > 0) {
+            audioTransceiver.setCodecPreferences(allowedCodecs);
+          }
+          
+        }
+
         const offer = await peerConnection.current.createOffer();
         await peerConnection.current.setLocalDescription(offer);
-        console.log('Created and sent offer');
+        console.log('Created and sent offer',localTargetLanguage);
 
         socket.current.emit('offer', offer,localTargetLanguage);
         setCallStarted(true);
+        }catch(error){
+            console.error('Error creating offer:', error);
+        }
+
     }
 
 
