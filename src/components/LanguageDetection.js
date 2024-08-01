@@ -13,7 +13,8 @@ const LanguageDetection = ({stream,onLanguageDetected}) => {
 
         try {
             const audioContent = await blobToBase64(audioBlob);
-            const response = await axios.post('http://localhost:5001/detectLanguage',{audioContent});
+            // const response = await axios.post('http://localhost:5001/detectLanguage',{audioContent});
+            const response = await axios.post('https://socket.platocity.com/detectLanguage',{audioContent});
             const detectedLanguage = response.data.language;
             onLanguageDetected(detectedLanguage);
         }catch(e){
