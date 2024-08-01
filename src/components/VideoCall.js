@@ -2,8 +2,10 @@ import React, { useRef, useEffect, useState, useMemo } from 'react';
 import io from 'socket.io-client';
 import { IconButton, Select, MenuItem, Menu, FormControl } from '@mui/material';
 import { Videocam, Mic, VolumeUp, Chat, Phone, Cancel, Translate } from '@mui/icons-material';
+import {debounce} from 'lodash';
 
 import Translation from './Translation';
+import LanguageDetection from './LanguageDetection';
 import { translateText } from "../services/translateService";
 
 
@@ -26,6 +28,8 @@ const VideoCall = () => {
     const [recognizedText, setRecognizedText] = useState('');
     const [remoteTrack, setRemoteTrack] = useState(null);
     const [localTrack, setLocalTrack] = useState(null);
+    const [initiateRecongnization,setInitiateRecongnization] = useState(false);
+    const [detectedLanguage, setDetectedLanguage] = useState(false);
 
 
     const generateDeviceId = () => {
@@ -171,8 +175,8 @@ const VideoCall = () => {
 
     const initializeSocket = () => {
         // socket.current = io('https://translations-1153aabe3d6b.herokuapp.com');
-        socket.current = io('https://socket.platocity.com');
-        // socket.current = io('http://localhost:5001');
+        // socket.current = io('https://socket.platocity.com');
+        socket.current = io('http://localhost:5001');
 
         socket.current.on('connect', () => {
             setConnected(true);
@@ -230,6 +234,8 @@ const VideoCall = () => {
                 if (localVideoRef.current) {
                     localVideoRef.current.srcObject = stream;
                 }
+
+                setInitiateRecongnization(true);
                 
             });
         
@@ -361,15 +367,20 @@ const VideoCall = () => {
         }
     },[userRole,remoteTargetLanguage]);
 
+    // Debounce translated text
+    const debouncedText = debounce(async(text,targetLanguage,setTranslation) => {
+        try{
+            const translation = await translateText(text,targetLanguage);
+            setTranslation(translation);
+        }catch(error){
+            console.error('Translation error:', error);
+        }
+    },100);
+
     //Translating on the client side
     useEffect(() => {
         if (recognizedText) {
-            const translate = async () => {
-                const translated = await translateText(recognizedText, localTargetLanguage);
-                setTranslatedText(translated);
-            };
-
-            translate();
+          debouncedText(recognizedText,localTargetLanguage,setTranslatedText);
         }
     },[recognizedText,localTargetLanguage])
 
@@ -441,11 +452,18 @@ const VideoCall = () => {
             </div>
           {/* </div> */}
           <div className="user-info">
-            {callStarted &&  
+            {callStarted && !detectedLanguage && initiateRecongnization && 
+                <LanguageDetection
+                    onLanguageDetected={setDetectedLanguage}
+                    stream={localTrack}
+                />
+            }
+            {detectedLanguage &&  
                 <Translation 
                     socket = {socket.current} 
                     role={userRole} 
-                    targetLanguage="en" 
+                    detectedLanguage={detectedLanguage}
+                    initiateRecongnization = {initiateRecongnization}
                 />}
            
             {translatedText && 

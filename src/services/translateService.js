@@ -16,3 +16,23 @@ export const translateText = async (text, targetLanguage) => {
       }
     return data.data.translations[0].translatedText;
   };
+
+
+  export const detectLanguage = async (text) => {
+    const response = await fetch(`https://translation.googleapis.com/language/translate/v2/detect?key=AIzaSyAZ0pSWf7xR8FOXhvyv96DqSwMmc9CcraM`, {
+        method: 'POST',
+        headers:{
+            'Content-Type': 'application/json',
+        },
+        body:JSON.stringify({
+          q: text
+        }),
+    });
+
+    const data = await response.json();
+    if (data.error){
+        throw new Error(data.error.message);
+    }
+
+    return data.data.detections[0][0].language;
+};

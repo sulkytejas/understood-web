@@ -3,7 +3,7 @@ import { translateText } from "../services/translateService";
 
 
 
-const Translation = ({role, targetLanguage, socket}) => {
+const Translation = ({role, detectedLanguage, socket}) => {
     const [userSpeechToText,setUserSpeechToText] = useState('');
     const [recognizing, setRecognizing] = useState(false);
    
@@ -13,28 +13,29 @@ const Translation = ({role, targetLanguage, socket}) => {
 
     // Handle transcript results
     const handleResult = (event) => {
-        console.log(event);
-        const transcript = Array.from(event.results)
-        .map(result => result[0].transcript)
-        .join('');
+        let finalTranscript = '';
+        let interimTranscript = '';
 
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+            if (event.results[i].isFinal) {
+                finalTranscript += event.results[i][0].transcript;
+            } else {
+                interimTranscript += event.results[i][0].transcript;
+            }
+        }
 
-        console.log("transcripts", transcript);
+        const fullTranscript = finalTranscript || interimTranscript;
+        setUserSpeechToText(fullTranscript);
+        console.log("transcripts", fullTranscript);
 
-        setUserSpeechToText(transcript);
-        // try {
-        //     const translation = await translateText(transcript,targetLanguage);
-        //     console.log(`[${role}] Translated text:`, translation);
-        //     setTranslation(translation);
-        // }catch (e){
-        //     console.error(`[${role}] Translation error:`, e);
-        // }
+        // Emit recognized text to the server
+        socket.emit('userSpeechToText', fullTranscript);
     }
 
     // Initial speech instance
     const initializeRecognition = () => {
         const recognition =  new ( window.webkitSpeechRecognition ||  window.SpeechRecognition )();
-        recognition.lang = 'en-US';
+        recognition.lang = detectedLanguage;
         recognition.interimResults = true;
         recognition.continous = true;
 
@@ -102,13 +103,13 @@ const Translation = ({role, targetLanguage, socket}) => {
             
           };
 
-    },[role, targetLanguage])
+    },[role, detectedLanguage])
 
-    useEffect(() => {
-        if (userSpeechToText){
-            socket.emit('userSpeechToText',userSpeechToText);
-        }
-    },[userSpeechToText,socket]);
+    // useEffect(() => {
+    //     if (userSpeechToText){
+    //         socket.emit('userSpeechToText',userSpeechToText);
+    //     }
+    // },[userSpeechToText,socket]);
 
     return (
         <div className="subtitles">
