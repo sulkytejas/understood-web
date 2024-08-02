@@ -3,6 +3,7 @@ import io from 'socket.io-client';
 import { IconButton, Select, MenuItem, Menu, FormControl } from '@mui/material';
 import { Videocam, Mic, VolumeUp, Chat, Phone, Cancel, Translate } from '@mui/icons-material';
 import {debounce} from 'lodash';
+import axios from 'axios';
 
 // import Translation from './Translation';
 // import LanguageDetection from './LanguageDetection';
@@ -42,16 +43,33 @@ const VideoCall = () => {
     };
 
     // Setup peerConnection
-    const initializePeerConnection = () => {
+    const initializePeerConnection = async () => {
+        try {
+            // const turnResponse = await axios.get('http://localhost:5001/turnCredentials');
+            
+        const turnResponse = await axios.get('https://socket.platocity.com/turnCredentials');
+        const turnConfig = turnResponse.data;
+
         const configuration = {
             iceServers: [
-              {
-                urls: 'stun:stun.l.google.com:19302'
-              }
+                {
+                    urls: 'turn:turn.platocity.com:3478',
+                    username: turnConfig.username,
+                    credential: turnConfig.credential
+                },
+                {
+                    urls: 'turns:turn.platocity.com:5349',
+                    username: turnConfig.username,
+                    credential: turnConfig.credential
+                }
+            //   {
+            //     urls: 'stun:stun.l.google.com:19302'
+            //   }
             ]
           };
 
         peerConnection.current = new RTCPeerConnection(configuration);
+        console.log( peerConnection.current)
 
         // Handle incoming media stream from remote peer
          peerConnection.current.ontrack = event => {
@@ -69,7 +87,15 @@ const VideoCall = () => {
                 if (!candidates.current.has(candidateString)) {
                     candidates.current.add(candidateString);
                     console.log('Sending candidate:', event.candidate);
-                    socket.current.emit('candidate', event.candidate, null,false);
+
+                    const candidate = {
+                        candidate: event.candidate.candidate,
+                        sdpMid: event.candidate.sdpMid,
+                        sdpMLineIndex: event.candidate.sdpMLineIndex,
+                        usernameFragment: event.candidate.usernameFragment
+                    }
+
+                    socket.current.emit('candidate', {...candidate}, null,false);
                 }  
             }
         };
@@ -90,6 +116,10 @@ const VideoCall = () => {
         };
 
         console.log('Initialized new RTCPeerConnection');  
+        }catch(error){
+            console.error('Error initializing peer connection:', error);
+            throw error;
+        }
     }
 
     useMemo(() => {
@@ -110,7 +140,7 @@ const VideoCall = () => {
     const handleOffer = async (offer,targetLanguage) => {
         console.log("handle offer triggerd")
         if (!peerConnection.current){
-            initializePeerConnection(); // Ensure peer connection is initialized
+            await initializePeerConnection(); // Ensure peer connection is initialized
         }
 
         if (peerConnection.current.signalingState !== 'stable') {
@@ -175,7 +205,6 @@ const VideoCall = () => {
     }
 
     const initializeSocket = () => {
-        // socket.current = io('https://translations-1153aabe3d6b.herokuapp.com');
         socket.current = io('https://socket.platocity.com');
         // socket.current = io('http://localhost:5001');
 
@@ -195,7 +224,22 @@ const VideoCall = () => {
  
          socket.current.on('candidate', async (candidate) => {
              console.log('Received candidate:',candidate);
-             await peerConnection.current.addIceCandidate(new RTCIceCandidate(candidate));
+
+            try {
+                const iceCandidate = new RTCIceCandidate({
+                    candidate: candidate.candidate,
+                    sdpMid: candidate.sdpMid,
+                    sdpMLineIndex: candidate.sdpMLineIndex,
+                    usernameFragment: candidate.usernameFragment
+                });
+
+                console.log('Adding ICE candidate:',iceCandidate, peerConnection.current);
+                await peerConnection.current.addIceCandidate(iceCandidate);
+                console.log('Added ICE candidate');
+            } catch (error) {
+                console.error('Error adding received ICE candidate', error);
+            }
+            
          });
  
         socket.current.on('recognizedText', (text) => {
@@ -282,17 +326,13 @@ const VideoCall = () => {
 
         // Initialize the peer connection
         if (!peerConnection.current){
-            initializePeerConnection();
+           await initializePeerConnection();
         };
 
         await waitForStableState();
        
         const constraints = {
-            video: {
-              width: { ideal: 1280, max: 1920 },
-              height: { ideal: 720, max: 1080 },
-              frameRate: { ideal: 30, max: 60 }
-            },
+            video: true,
             audio: true
           };
 
