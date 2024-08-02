@@ -79,6 +79,10 @@ const VideoCall = () => {
 
         peerConnection.current.oniceconnectionstatechange = () => {
             console.log('ICE connection state:', peerConnection.current.iceConnectionState);
+            if (peerConnection.current.iceConnectionState === 'failed') {
+                console.log('ICE connection failed, restarting ICE...');
+                peerConnection.current.restartIce();
+            }
         };
 
         peerConnection.current.onsignalingstatechange = () => {
