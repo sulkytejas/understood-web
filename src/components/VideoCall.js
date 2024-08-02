@@ -235,7 +235,7 @@ const VideoCall = () => {
                     localVideoRef.current.srcObject = stream;
                 }
 
-                setInitiateRecongnization(true);
+                // setInitiateRecongnization(true);
                 
             });
         
