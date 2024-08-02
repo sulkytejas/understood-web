@@ -4,8 +4,8 @@ import { IconButton, Select, MenuItem, Menu, FormControl } from '@mui/material';
 import { Videocam, Mic, VolumeUp, Chat, Phone, Cancel, Translate } from '@mui/icons-material';
 import {debounce} from 'lodash';
 
-import Translation from './Translation';
-import LanguageDetection from './LanguageDetection';
+// import Translation from './Translation';
+// import LanguageDetection from './LanguageDetection';
 import { translateText } from "../services/translateService";
 
 
