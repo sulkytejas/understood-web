@@ -132,16 +132,13 @@ const VideoCall = () => {
         }
         
         const constraints = {
-            video: {
-              width: { ideal: 1280, max: 1920 },
-              height: { ideal: 720, max: 1080 },
-              frameRate: { ideal: 30, max: 60 }
-            },
+            video: true,
             audio: true
           };
         const stream = await navigator.mediaDevices.getUserMedia(constraints);
-        setLocalTrack(stream);
         localVideoRef.current.srcObject = stream;
+        setLocalTrack(stream);
+        
 
         if (stream){
             stream.getTracks().forEach(track => {
@@ -222,11 +219,7 @@ const VideoCall = () => {
         };
 
         const constraints = {
-            video: {
-              width: { ideal: 1280, max: 1920 },
-              height: { ideal: 720, max: 1080 },
-              frameRate: { ideal: 30, max: 60 }
-            },
+            video: true,
             audio: true
           };
         
@@ -234,11 +227,11 @@ const VideoCall = () => {
        
             navigator.mediaDevices.getUserMedia(constraints)
             .then(stream => {
-                setLocalTrack(stream);
+                
                 if (localVideoRef.current) {
                     localVideoRef.current.srcObject = stream;
                 }
-
+                setLocalTrack(stream);
                 // setInitiateRecongnization(true);
                 
             });
