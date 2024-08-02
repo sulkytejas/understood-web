@@ -452,7 +452,7 @@ const VideoCall = () => {
             </div>
           {/* </div> */}
           <div className="user-info">
-            {callStarted && !detectedLanguage && initiateRecongnization && 
+            {/* {callStarted && !detectedLanguage && initiateRecongnization && 
                 <LanguageDetection
                     onLanguageDetected={setDetectedLanguage}
                     stream={localTrack}
@@ -465,7 +465,7 @@ const VideoCall = () => {
                     detectedLanguage={detectedLanguage}
                     initiateRecongnization = {initiateRecongnization}
                 />}
-           
+            */}
             {translatedText && 
                 <div>{translatedText}
             </div>}
