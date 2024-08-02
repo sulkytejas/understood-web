@@ -5,8 +5,8 @@ import { Videocam, Mic, VolumeUp, Chat, Phone, Cancel, Translate } from '@mui/ic
 import {debounce} from 'lodash';
 import axios from 'axios';
 
-// import Translation from './Translation';
-// import LanguageDetection from './LanguageDetection';
+import Translation from './Translation';
+import LanguageDetection from './LanguageDetection';
 import { translateText } from "../services/translateService";
 
 
@@ -276,7 +276,7 @@ const VideoCall = () => {
                     localVideoRef.current.srcObject = stream;
                 }
                 setLocalTrack(stream);
-                // setInitiateRecongnization(true);
+                setInitiateRecongnization(true);
                 
             });
         
@@ -489,7 +489,7 @@ const VideoCall = () => {
             </div>
           {/* </div> */}
           <div className="user-info">
-            {/* {callStarted && !detectedLanguage && initiateRecongnization && 
+            {callStarted && !detectedLanguage && initiateRecongnization && 
                 <LanguageDetection
                     onLanguageDetected={setDetectedLanguage}
                     stream={localTrack}
@@ -502,7 +502,7 @@ const VideoCall = () => {
                     detectedLanguage={detectedLanguage}
                     initiateRecongnization = {initiateRecongnization}
                 />}
-            */}
+           
             {translatedText && 
                 <div>{translatedText}
             </div>}

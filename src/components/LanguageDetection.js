@@ -7,21 +7,32 @@ const LanguageDetection = ({stream,onLanguageDetected}) => {
     const [isDetecting, setIsDetecting] = useState(false);
     const [error,setError] = useState(null);
     const mediaRecorderRef = useRef(null);
+    const detectionAttemptRef = useRef(false);
 
     const handleSpeechDetection = async (audioBlob) => {
         setIsDetecting(true);
+        const audioContent = await blobToBase64(audioBlob);
 
-        try {
-            const audioContent = await blobToBase64(audioBlob);
-            // const response = await axios.post('http://localhost:5001/detectLanguage',{audioContent});
-            const response = await axios.post('https://socket.platocity.com/detectLanguage',{audioContent});
-            const detectedLanguage = response.data.language;
-            onLanguageDetected(detectedLanguage);
-        }catch(e){
-            setError(e.message);
-        }finally{
-            setIsDetecting(false);
+        const detectLanguage = async () => {
+            if (detectionAttemptRef.current){
+                return;
+            }
+
+            try {
+                // const response = await axios.post('http://localhost:5001/detectLanguage',{audioContent});
+                const response = await axios.post('https://socket.platocity.com/detectLanguage',{audioContent});
+                const detectedLanguage = response.data.language;
+                onLanguageDetected(detectedLanguage);
+                detectionAttemptRef.current = true;
+                setIsDetecting(false);
+            }catch(e){
+                setError(e.message);
+                console.error("Language detection failed, retrying...", e);
+                setTimeout(detectLanguage, 3000); // Retry after 1 second
+            }
         }
+
+        detectLanguage();
     };
 
     const blobToBase64 = (blob) => {
