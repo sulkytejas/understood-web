@@ -1,5 +1,5 @@
 export const translateText = async (text, targetLanguage) => {
-    const response = await fetch(`https://translation.googleapis.com/language/translate/v2?key=AIzaSyAZ0pSWf7xR8FOXhvyv96DqSwMmc9CcraM`, {
+    const response = await fetch(`https://translation.googleapis.com/language/translate/v2?key=`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -19,7 +19,7 @@ export const translateText = async (text, targetLanguage) => {
 
 
   export const detectLanguage = async (text) => {
-    const response = await fetch(`https://translation.googleapis.com/language/translate/v2/detect?key=AIzaSyAZ0pSWf7xR8FOXhvyv96DqSwMmc9CcraM`, {
+    const response = await fetch(`https://translation.googleapis.com/language/translate/v2/detect?key=`, {
         method: 'POST',
         headers:{
             'Content-Type': 'application/json',

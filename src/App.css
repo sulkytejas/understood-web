@@ -95,21 +95,18 @@
 .user-info {
   position: absolute;
   bottom: 120px;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
+  right: 0;
+  width: 100%;
   text-align: center;
   z-index: 2;
   opacity: 0.8;
-  background: black;
+  padding: 10px;
+  box-sizing: border-box;
 }
 
 .user-info div {
-  font-size: 25px;
-}
-
-.user-info h2 {
-  margin: 0;
-  font-size: 24px;
+  font-size: 20px;
 }
 
 .user-info p {
@@ -253,4 +250,46 @@
 
 .hide-video {
   display: none;
+}
+
+.translated-texts {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  position: absolute;
+  bottom: 0;
+  right: 10px;
+  left: 10px; /* Ensure it occupies the full width minus the margins */
+  width: auto;
+}
+
+.text-bubble {
+  background-color: #333;
+  color: white;
+  padding: 4px 4px;
+  border-radius: 20px;
+  margin: 5px 0;
+  width: 95%;
+  word-wrap: break-word;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  transition: opacity 0.3s, transform 0.3s;
+  animation: elasticExpand 0.3s ease-out;
+}
+
+@keyframes elasticExpand {
+  0% {
+    transform: scale(0.9);
+  }
+  40% {
+    transform: scale(1.05);
+  }
+  60% {
+    transform: scale(0.95);
+  }
+  80% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1);
+  }
 }

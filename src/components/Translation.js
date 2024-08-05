@@ -1,15 +1,13 @@
 import { useEffect, useRef, useState } from "react";
-import { translateText } from "../services/translateService";
 
 
 
-const Translation = ({role, detectedLanguage, socket}) => {
-    const [userSpeechToText,setUserSpeechToText] = useState('');
+
+const Translation = ({role, detectedLanguage, socket,targetLanguage}) => {
     const [recognizing, setRecognizing] = useState(false);
-   
-
     const recognitionRef = useRef(null);
     const isRecongnitionActive = useRef(false);
+    const segmentCounter = useRef(0); 
 
     // Handle transcript results
     const handleResult = (event) => {
@@ -24,16 +22,22 @@ const Translation = ({role, detectedLanguage, socket}) => {
             }
         }
 
-        const fullTranscript = finalTranscript || interimTranscript;
-        setUserSpeechToText(fullTranscript);
-        console.log("transcripts", fullTranscript);
+        const segmentId = segmentCounter.current;
 
-        // Emit recognized text to the server
-        socket.emit('userSpeechToText', fullTranscript);
+        if (finalTranscript){
+            socket.emit('translateText', finalTranscript,targetLanguage,true,segmentId);
+            segmentCounter.current ++ ;
+        }else {
+            socket.emit('translateText', interimTranscript,targetLanguage,false,segmentId);
+        }        
     }
 
     // Initial speech instance
     const initializeRecognition = () => {
+        if (recognitionRef.current) {
+            return; // Prevent multiple initializations
+        }
+        
         const recognition =  new ( window.webkitSpeechRecognition ||  window.SpeechRecognition )();
         recognition.lang = detectedLanguage;
         recognition.interimResults = true;
@@ -112,9 +116,7 @@ const Translation = ({role, detectedLanguage, socket}) => {
     // },[userSpeechToText,socket]);
 
     return (
-        <div className="subtitles">
-          {recognizing && <p>Listening as ${role}...</p>}
-        </div>
+        <></>
     );
 }
 

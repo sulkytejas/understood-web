@@ -25,13 +25,14 @@ const VideoCall = () => {
     const [remoteTargetLanguage, setRemoteTargetLanguage] = useState('');
     // const [receivedTranslation, setReceivedTranslation] = useState('');
     const [anchorEl, setAnchorEl] = useState(null);
-    const [translatedText,setTranslatedText] = useState('');
     const [recognizedText, setRecognizedText] = useState('');
     const [remoteTrack, setRemoteTrack] = useState(null);
     const [localTrack, setLocalTrack] = useState(null);
     const [initiateRecongnization,setInitiateRecongnization] = useState(false);
-    const [detectedLanguage, setDetectedLanguage] = useState(false);
+    const [detectedLanguage, setDetectedLanguage] = useState(null);
+    
 
+    const [translatedTexts, setTranslatedTexts] = useState([]);
 
     const generateDeviceId = () => {
         let deviceId = localStorage.getItem('deviceId');
@@ -42,6 +43,24 @@ const VideoCall = () => {
         return deviceId;
     };
 
+    const addOrUpdateTranslatedText = (id, text, isFinal) => {
+        setTranslatedTexts(prev => {
+            const index = prev.findIndex(item => item.id === id);
+            const newTexts = [...prev];
+
+            if (index !== -1) {
+                newTexts[index] = { ...newTexts[index], text, isFinal };
+            } else {
+                newTexts.push({ id, text, isFinal });
+            }
+
+            if (newTexts.length > 2) {
+                newTexts.shift(); // Remove the oldest text if there are more than 3
+            }
+
+            return newTexts;
+        });
+    };
     // Setup peerConnection
     const initializePeerConnection = async () => {
         try {
@@ -245,6 +264,10 @@ const VideoCall = () => {
         socket.current.on('recognizedText', (text) => {
             setRecognizedText(text);
         });
+
+        socket.current.on('translatedText', ({text,id,isFinal}) => {
+            addOrUpdateTranslatedText(id, text, isFinal);
+        });
  
            // Listen for disconnection message
          socket.current.on('userCallDisconnected', () => {
@@ -414,13 +437,7 @@ const VideoCall = () => {
         }
     },100);
 
-    //Translating on the client side
-    useEffect(() => {
-        if (recognizedText) {
-          debouncedText(recognizedText,localTargetLanguage,setTranslatedText);
-        }
-    },[recognizedText,localTargetLanguage])
-
+  
     const handleDisconnectCall = () => {
         // Notify remote user
         socket.current.emit('userCallDisconnected');
@@ -457,7 +474,8 @@ const VideoCall = () => {
         setLocalTargetLanguage('');
         setRemoteTargetLanguage('');
         setRecognizedText('');
-        setTranslatedText('');
+        setTranslatedTexts([]);
+        setDetectedLanguage(null);
         };   
 
     const handleClick = () => {
@@ -479,6 +497,90 @@ const VideoCall = () => {
     setAnchorEl(null);
   };
 
+  const blobToBase64 = (blob) => {
+    return new Promise((resolve,reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(blob);
+        reader.onloadend = () => {
+            const base64data = reader.result.split(',')[1];
+            resolve(base64data);
+        };
+
+        reader.onerror = error => reject(error);
+    });
+}
+
+  useEffect(() => {
+    if (!localTrack || !callStarted) return;
+    
+
+    const audioTracks = localTrack.getAudioTracks();
+    const audioStream = new MediaStream(audioTracks);
+
+    const mediaRecorder = new MediaRecorder(audioStream);
+
+    let timeoutId;
+    
+    const startRecording = () => {
+        if (mediaRecorder.state === 'recording') {
+            mediaRecorder.stop(); // Stop the existing recording if it's already recording
+        }
+
+        mediaRecorder.ondataavailable = async event => {
+            console.log("triggered on data")
+            if (event.data.size > 0){
+                const audioContent = await blobToBase64(event.data);
+                socket.current.emit('detectLanguage', { audioContent }); 
+            }   
+        }
+    
+        mediaRecorder.start();
+    
+        timeoutId = setTimeout(() => {
+            mediaRecorder.stop();
+            console.log('Recording stopped after 5 seconds');
+        }, 7000); // Stop recording after 5 seconds
+
+    }
+
+
+    startRecording();
+   
+    const handleLanguageDetected = (detectedLanguage) => {
+        console.log(detectedLanguage)
+        if (detectedLanguage === 'no-language') {
+            startRecording();
+        } else {
+            setDetectedLanguage(detectedLanguage);
+        }
+
+        
+        if (detectedLanguage === 'no-language') {
+            socket.current.on('languageDetected', handleLanguageDetected);
+        }else{
+            socket.current.off('languageDetected', handleLanguageDetected);
+        }
+       
+    };
+
+    socket.current.on('languageDetected', handleLanguageDetected);
+    
+    return () => {
+        // if (mediaRecorder && mediaRecorder.state !== "inactive") {
+        //     const handleDataAvailable = mediaRecorder.ondataavailable;
+        //     mediaRecorder.ondataavailable = null; // Temporarily remove the event handler to prevent unwanted calls
+        //     mediaRecorder.stop(); // Stop recording only if necessary
+        //     mediaRecorder.ondataavailable = handleDataAvailable; // Restore the event handler
+        //     console.log('Cleanup: Recording stopped');
+        // }
+        socket.current.off('languageDetected', handleLanguageDetected);
+        if (timeoutId) {
+            clearTimeout(timeoutId); // Clear the timeout if the effect is cleaned up
+        }     
+    }
+  },[localVideoRef.current?.srcObject,callStarted]);
+
+  console.log(detectedLanguage,"detectedLanguage")
     return (
         <div className="video-chat">
         {/* <div className="video-chat-content"> */}
@@ -489,23 +591,36 @@ const VideoCall = () => {
             </div>
           {/* </div> */}
           <div className="user-info">
-            {callStarted && !detectedLanguage && initiateRecongnization && 
+            {/* {callStarted && !detectedLanguage && initiateRecongnization && 
                 <LanguageDetection
                     onLanguageDetected={setDetectedLanguage}
                     stream={localTrack}
+                    socket={socket.current}
                 />
-            }
+            } */}
             {detectedLanguage &&  
                 <Translation 
                     socket = {socket.current} 
                     role={userRole} 
                     detectedLanguage={detectedLanguage}
                     initiateRecongnization = {initiateRecongnization}
+                    targetLanguage={localTargetLanguage}
                 />}
            
-            {translatedText && 
-                <div>{translatedText}
-            </div>}
+           <div className="translated-texts">
+                {translatedTexts.map((text, index) => {
+                    const totalTexts = translatedTexts.length;
+                    const opacity = (index + 1) / totalTexts;
+                    const scale = 1 - (index * 0.1);
+                    const fontSize = index === totalTexts -1 ? 20 : 12;
+
+                    return (
+                        <div key={index} className="text-bubble" style={{ opacity, transform: `scale(${scale})`,fontSize }}>
+                            {text.text}
+                        </div>
+                    );
+                })}
+            </div>    
           </div>
         {/* </div> */}
         <div>

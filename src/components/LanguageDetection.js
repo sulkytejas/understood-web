@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useRef } from "react";
 import axios from 'axios';
+import { debounce } from 'lodash';
 
 
-
-const LanguageDetection = ({stream,onLanguageDetected}) => {
+const LanguageDetection = ({stream,onLanguageDetected, socket}) => {
     const [isDetecting, setIsDetecting] = useState(false);
     const [error,setError] = useState(null);
     const mediaRecorderRef = useRef(null);
@@ -12,28 +12,23 @@ const LanguageDetection = ({stream,onLanguageDetected}) => {
     const handleSpeechDetection = async (audioBlob) => {
         setIsDetecting(true);
         const audioContent = await blobToBase64(audioBlob);
+        detectLanguage(audioContent);
+    };
 
-        const detectLanguage = async () => {
-            if (detectionAttemptRef.current){
-                return;
-            }
-
-            try {
-                // const response = await axios.post('http://localhost:5001/detectLanguage',{audioContent});
-                const response = await axios.post('https://socket.platocity.com/detectLanguage',{audioContent});
-                const detectedLanguage = response.data.language;
-                onLanguageDetected(detectedLanguage);
-                detectionAttemptRef.current = true;
-                setIsDetecting(false);
-            }catch(e){
-                setError(e.message);
-                console.error("Language detection failed, retrying...", e);
-                setTimeout(detectLanguage, 3000); // Retry after 1 second
-            }
+    const detectLanguage = debounce ((audioContent) => {
+        if (detectionAttemptRef.current){
+            return;
         }
 
-        detectLanguage();
-    };
+        socket.emit('detectLanguage', {audioContent});
+
+        socket.on('languageDetected', (detectLanguage) => {
+            onLanguageDetected(detectLanguage);
+            detectionAttemptRef.current = true;
+            setIsDetecting(false);
+        });
+
+    },2000);
 
     const blobToBase64 = (blob) => {
         return new Promise((resolve,reject) => {
@@ -65,9 +60,18 @@ const LanguageDetection = ({stream,onLanguageDetected}) => {
 
         mediaRecorder.start();
 
-        setTimeout(() => {
+        const timeoutId = setTimeout(() => {
             mediaRecorder.stop();
-        }, 5000)
+        }, 10000);
+
+        return () => {
+            if (mediaRecorder) {
+                mediaRecorder.stop();
+            }
+            if (timeoutId) {
+                clearTimeout(timeoutId); // Clear the timeout if the effect is cleaned up
+            }     
+        }
     },[stream]);
 
 
