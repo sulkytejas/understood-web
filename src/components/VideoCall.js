@@ -542,7 +542,7 @@ const VideoCall = () => {
         timeoutId = setTimeout(() => {
             mediaRecorder.stop();
             console.log('Recording stopped after 5 seconds');
-        }, 7000); // Stop recording after 5 seconds
+        }, 5000); // Stop recording after 5 seconds
 
     }
 
@@ -574,7 +574,7 @@ const VideoCall = () => {
                     return acc;
                 },{});
     
-                if (updateCounts.length <= 5){
+                if (updateCounts.length <= 7){
                     const mostFrequnctLanguage = Object.keys(languageFrequncy)
                         .reduce((a,b) => languageFrequncy[a] > languageFrequncy[b] ? a:b);
                     setDetectedLanguage(mostFrequnctLanguage);
