@@ -31,6 +31,8 @@ const VideoCall = () => {
     const [initiateRecongnization,setInitiateRecongnization] = useState(false);
     const [detectedLanguage, setDetectedLanguage] = useState(null);
     
+    const [languageCounts, setLanguageCounts] = useState([]);
+    const [activeRequests, setActiveRequests] = useState(0);
 
     const [translatedTexts, setTranslatedTexts] = useState([]);
 
@@ -530,6 +532,7 @@ const VideoCall = () => {
             console.log("triggered on data")
             if (event.data.size > 0){
                 const audioContent = await blobToBase64(event.data);
+                setActiveRequests(prev => prev + 1); 
                 socket.current.emit('detectLanguage', { audioContent }); 
             }   
         }
@@ -547,22 +550,53 @@ const VideoCall = () => {
     startRecording();
    
     const handleLanguageDetected = (detectedLanguage) => {
-        console.log(detectedLanguage)
-        if (detectedLanguage === 'no-language') {
-            startRecording();
-        } else {
-            setDetectedLanguage(detectedLanguage);
-        }
+        
+        // if (detectedLanguage === 'no-language') {
+        //     startRecording();
+        // } else {
+        //     setDetectedLanguage(detectedLanguage);
+        // }
 
         
-        if (detectedLanguage === 'no-language') {
-            socket.current.on('languageDetected', handleLanguageDetected);
-        }else{
-            socket.current.off('languageDetected', handleLanguageDetected);
+        // if (detectedLanguage === 'no-language') {
+        //     socket.current.on('languageDetected', handleLanguageDetected);
+        // }else{
+        //     socket.current.off('languageDetected', handleLanguageDetected);
+        // }
+        let localLanguageCount = 0;
+        if (detectedLanguage !== 'no-language'){
+            setLanguageCounts(prevCounts => {
+                const updateCounts = [...prevCounts, detectedLanguage];
+                localLanguageCount = updateCounts.length;
+                const languageFrequncy = updateCounts.reduce((acc,lang) => {
+                    acc[lang] = (acc[lang] || 0) + 1;
+    
+                    return acc;
+                },{});
+    
+                if (updateCounts.length <= 5){
+                    const mostFrequnctLanguage = Object.keys(languageFrequncy)
+                        .reduce((a,b) => languageFrequncy[a] > languageFrequncy[b] ? a:b);
+                    setDetectedLanguage(mostFrequnctLanguage);
+                    
+                    return updateCounts;
+                }else {
+                    return updateCounts;
+                }
+            });
+    
+            setActiveRequests(prev => {
+                const newCount = prev - 1;
+                
+                if (newCount === 0 && localLanguageCount < 5){
+                    startRecording();
+                }
+    
+                return newCount;
+            });
         }
-       
     };
-
+    startRecording(); 
     socket.current.on('languageDetected', handleLanguageDetected);
     
     return () => {
@@ -580,7 +614,7 @@ const VideoCall = () => {
     }
   },[localVideoRef.current?.srcObject,callStarted]);
 
-  console.log(detectedLanguage,"detectedLanguage")
+  console.log(detectedLanguage,"detectedLanguage",languageCounts)
     return (
         <div className="video-chat">
         {/* <div className="video-chat-content"> */}
