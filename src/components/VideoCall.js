@@ -66,9 +66,9 @@ const VideoCall = () => {
     // Setup peerConnection
     const initializePeerConnection = async () => {
         try {
-            // const turnResponse = await axios.get('http://localhost:5001/turnCredentials');
+            const turnResponse = await axios.get('http://localhost:5001/api/turnCredentials');
             
-        const turnResponse = await axios.get('https://socket.platocity.com/turnCredentials');
+        // const turnResponse = await axios.get('https://socket.platocity.com/turnCredentials');
         const turnConfig = turnResponse.data;
 
         const configuration = {
@@ -226,8 +226,8 @@ const VideoCall = () => {
     }
 
     const initializeSocket = () => {
-        socket.current = io('https://socket.platocity.com');
-        // socket.current = io('http://localhost:5001');
+        // socket.current = io('https://socket.platocity.com');
+        socket.current = io('http://localhost:5001');
 
         socket.current.on('connect', () => {
             setConnected(true);

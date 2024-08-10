@@ -19,24 +19,30 @@ export const initializeSocket = ({ handleOffer, handleAnswer, setUserRole, onDis
     return socket;
 };
 
-export const handleDisconnectCall = (peerConnection, localVideoRef, remoteVideoRef, setCallStarted, socket) => {
-    if (peerConnection.current) {
-        peerConnection.current.close();
+export const generateDeviceId = () => {
+    let deviceId = localStorage.getItem('deviceId');
+    if (!deviceId) {
+        deviceId = 'device-' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('deviceId', deviceId);
     }
+    return deviceId;
+};
 
-    if (localVideoRef.current && localVideoRef.current.srcObject) {
-        localVideoRef.current.srcObject.getTracks().forEach((track) => track.stop());
-        localVideoRef.current.srcObject = null;
-    }
+export const addOrUpdateTranslatedText = (id, text, isFinal, setTranslatedTexts) => {
+    setTranslatedTexts(prev => {
+        const index = prev.findIndex(item => item.id === id);
+        const newTexts = [...prev];
 
-    if (remoteVideoRef.current && remoteVideoRef.current.srcObject) {
-        remoteVideoRef.current.srcObject.getTracks().forEach((track) => track.stop());
-        remoteVideoRef.current.srcObject = null;
-    }
+        if (index !== -1) {
+            newTexts[index] = { ...newTexts[index], text, isFinal };
+        } else {
+            newTexts.push({ id, text, isFinal });
+        }
 
-    setCallStarted(false);
+        if (newTexts.length > 2) {
+            newTexts.shift(); // Remove the oldest text if there are more than 3
+        }
 
-    if (socket) {
-        socket.disconnect();
-    }
+        return newTexts;
+    });
 };
