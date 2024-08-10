@@ -102,15 +102,6 @@ const VideoCall = () => {
        
     }
 
-  const handleLanguageChange = (lang) => {
-    setLocalTargetLanguage(lang);
-    handleClose();
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
-
   const blobToBase64 = (blob) => {
     return new Promise((resolve,reject) => {
         const reader = new FileReader();
