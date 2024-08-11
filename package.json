@@ -23,7 +23,9 @@
     "start": "node --max-old-space-size=4096 node_modules/.bin/react-scripts start",
     "build": "node --max-old-space-size=4096 node_modules/.bin/react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "lint": "eslint .",
+    "format": "prettier --write \"**/*.{js,jsx,json,css,md}\""
   },
   "eslintConfig": {
     "extends": [
@@ -42,5 +44,12 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.2.1",
+    "eslint-plugin-react": "^7.35.0",
+    "prettier": "^3.3.3"
   }
 }

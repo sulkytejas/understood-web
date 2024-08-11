@@ -236,7 +236,7 @@
 
 @keyframes blinker {
   50% {
-      opacity: 0;
+    opacity: 0;
   }
 }
 .local-video-broadcast {
@@ -272,7 +272,9 @@
   width: 95%;
   word-wrap: break-word;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-  transition: opacity 0.3s, transform 0.3s;
+  transition:
+    opacity 0.3s,
+    transform 0.3s;
   animation: elasticExpand 0.3s ease-out;
 }
 

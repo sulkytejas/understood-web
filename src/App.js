@@ -8,15 +8,16 @@ import VideoCall from './components/VideoCall/VideoCall';
 import BroadcastVid from './components/BroadcastVid';
 
 function App() {
-  const [mode,setMode] = useState(null);
+  const [mode, setMode] = useState(null);
 
   return (
     <div className="App app-container">
       {!mode && <Button onClick={() => setMode('single')}>Single User</Button>}
-      {!mode && <Button onClick={() => setMode('broadcast')}> Broadcast</Button>}
-      { mode === 'single' && <VideoCall />}
-      { mode === 'broadcast' && <BroadcastVid />}
-
+      {!mode && (
+        <Button onClick={() => setMode('broadcast')}> Broadcast</Button>
+      )}
+      {mode === 'single' && <VideoCall />}
+      {mode === 'broadcast' && <BroadcastVid />}
     </div>
   );
 }
