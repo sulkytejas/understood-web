@@ -1,24 +1,29 @@
-import React, { useEffect, useState } from 'react';
-
+/* eslint-disable */
+import React, { useEffect, useState, useMemo } from 'react';
 import useWebRTC from '../hooks/useWebRTC';
 import TranslationOverlay from './TranslationOverlay';
 import VideoControls from './VideoControls';
 import TranslatedTextView from './TranslatedText';
 import VideoPlayer from './VideoPlayer';
+import { useSocket } from '../context/SocketContext';
+import { useSelector } from 'react-redux';
 
 const VideoCall = () => {
   const [localTargetLanguage, setLocalTargetLanguage] = useState('');
   const [remoteTargetLanguage, setRemoteTargetLanguage] = useState('');
-  const [anchorEl, setAnchorEl] = useState(null);
   const [detectedLanguage, setDetectedLanguage] = useState(null);
+
+  // eslint-disable-next-line no-unused-vars
   const [languageCounts, setLanguageCounts] = useState([]);
+  // eslint-disable-next-line no-unused-vars
   const [activeRequests, setActiveRequests] = useState(0);
 
+  const meetingId = useSelector((state) => state.meeting.meetingId);
+  const hostId = useSelector((state) => state.meeting.hostId);
+
   const {
-    initializeSocket,
-    createOffer,
+    initializeWebRTCSocket,
     handleDisconnectCall,
-    socket,
     localVideoRef,
     setLocalTrack,
     setInitiateRecongnization,
@@ -28,7 +33,6 @@ const VideoCall = () => {
     localTrack,
     remoteVideoRef,
     translatedTexts,
-    initiateRecongnization,
     remoteTrack,
   } = useWebRTC({
     localTargetLanguage,
@@ -38,15 +42,27 @@ const VideoCall = () => {
     remoteTargetLanguage,
   });
 
-  useEffect(() => {
-    initializeSocket();
+  const socket = useSocket();
 
-    const handleBeforeUnload = () => {
-      if (socket.current) {
-        socket.current.emit('userCallDisconnected');
-        socket.current.disconnect();
+  // Initialize socket connection
+  useEffect(() => {
+    if (socket) {
+      console.log('Rendering socket connection', socket);
+      initializeWebRTCSocket();
+
+      if (socket.id === hostId) {
+        socket.emit('readyForParticipants', meetingId);
       }
-    };
+    }
+  }, [socket]);
+
+  useEffect(() => {
+    // const handleBeforeUnload = () => {
+    //   if (socket) {
+    //     socket.emit('userCallDisconnected');
+    //     socket.disconnect();
+    //   }
+    // };
 
     const constraints = {
       video: true,
@@ -63,29 +79,23 @@ const VideoCall = () => {
       setInitiateRecongnization(true);
     });
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
+    // window.addEventListener('beforeunload', handleBeforeUnload);
 
     return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
+      // window.removeEventListener('beforeunload', handleBeforeUnload);
       if (peerConnection.current) {
         peerConnection.current.close();
       }
 
-      if (socket.current) {
-        socket.current.disconnect();
-      }
+      // if (socket) {
+      //   socket.disconnect();
+      // }
     };
-  }, [localTargetLanguage]);
-
-  useEffect(() => {
-    if (userRole === 'broadcaster') {
-      createOffer();
-    }
-  }, [userRole, remoteTargetLanguage]);
+  }, [localTargetLanguage, socket]);
 
   const handleClick = () => {
     if (!callStarted) {
-      socket.current.emit('initiateCall');
+      socket.emit('initiateCall');
     } else {
       handleDisconnectCall();
     }
@@ -124,7 +134,7 @@ const VideoCall = () => {
         if (event.data.size > 0) {
           const audioContent = await blobToBase64(event.data);
           setActiveRequests((prev) => prev + 1);
-          socket.current.emit('detectLanguage', { audioContent });
+          socket.emit('detectLanguage', { audioContent });
         }
       };
 
@@ -174,15 +184,15 @@ const VideoCall = () => {
       }
     };
     startRecording();
-    socket.current.on('languageDetected', handleLanguageDetected);
+    socket.on('languageDetected', handleLanguageDetected);
 
     return () => {
-      socket.current.off('languageDetected', handleLanguageDetected);
+      socket.off('languageDetected', handleLanguageDetected);
       if (timeoutId) {
         clearTimeout(timeoutId); // Clear the timeout if the effect is cleaned up
       }
     };
-  }, [localVideoRef.current?.srcObject, callStarted]);
+  }, [localVideoRef.current?.srcObject, callStarted, socket]);
 
   return (
     <div className="video-chat">

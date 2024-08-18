@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 import { useEffect, useRef, useState } from 'react';
 
 const Translation = ({ role, detectedLanguage, socket, targetLanguage }) => {

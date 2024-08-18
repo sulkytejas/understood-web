@@ -1,3 +1,6 @@
+//Disable ESLint for this file
+
+/* eslint-disable */
 import React, { useRef, useEffect, useState, useMemo } from 'react';
 import io from 'socket.io-client';
 import {

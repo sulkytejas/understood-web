@@ -1,23 +1,24 @@
-import logo from './logo.svg';
+/* eslint-disable */
+
 import './App.css';
 import { useState } from 'react';
 import { Button } from '@mui/material';
-
+import { SocketProvider } from './components/context/SocketContext';
+import { Routes, Route } from 'react-router-dom';
 // import VideoCall from './components/VideoCall';
 import VideoCall from './components/VideoCall/VideoCall';
-import BroadcastVid from './components/BroadcastVid';
+// import BroadcastVid from './components/BroadcastVid';
+import CreateMeetingPage from './components/Meeting/CreateMeeting';
 
 function App() {
-  const [mode, setMode] = useState(null);
-
   return (
     <div className="App app-container">
-      {!mode && <Button onClick={() => setMode('single')}>Single User</Button>}
-      {!mode && (
-        <Button onClick={() => setMode('broadcast')}> Broadcast</Button>
-      )}
-      {mode === 'single' && <VideoCall />}
-      {mode === 'broadcast' && <BroadcastVid />}
+      <SocketProvider>
+        <Routes>
+          <Route path="/" element={<CreateMeetingPage />} />
+          <Route path="/videocall" element={<VideoCall />} />
+        </Routes>
+      </SocketProvider>
     </div>
   );
 }

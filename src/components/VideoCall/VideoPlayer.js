@@ -1,12 +1,6 @@
 import React from 'react';
 
-const VideoPlayer = ({
-  localVideoRef,
-  remoteVideoRef,
-  localTrack,
-  remoteTrack,
-  callStarted,
-}) => {
+const VideoPlayer = ({ localVideoRef, remoteVideoRef, callStarted }) => {
   return (
     <div className="video-player">
       <video

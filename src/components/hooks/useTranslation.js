@@ -91,7 +91,7 @@ const useTranslation = ({ role, detectedLanguage, socket, targetLanguage }) => {
           isRecognitionActive.current = true;
         }
       })
-      .catch((err) => {
+      .catch(() => {
         alert(
           'Microphone access is required for speech recognition. Please enable the microphone permissions.',
         );

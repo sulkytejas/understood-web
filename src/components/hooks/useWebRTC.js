@@ -1,32 +1,38 @@
+/* eslint-disable */
 import { useRef, useState, useMemo } from 'react';
 import axios from 'axios';
-import io from 'socket.io-client';
-import {
-  generateDeviceId,
-  addOrUpdateTranslatedText,
-} from '../utils/peerConnectionUtils';
+
+import { addOrUpdateTranslatedText } from '../utils/peerConnectionUtils';
+import { useSelector } from 'react-redux';
+import { useSocket } from '../context/SocketContext';
+
+import { selectMeetingId } from '../../redux/meetingSlice';
 
 const useWebRTC = ({
   localTargetLanguage,
   setRemoteTargetLanguage,
   setLocalTargetLanguage,
   setDetectedLanguage,
-  remoteTargetLanguage,
 }) => {
   const [remoteTrack, setRemoteTrack] = useState(null);
   const [localTrack, setLocalTrack] = useState(null);
   const [userRole, setUserRole] = useState(null);
   const [callStarted, setCallStarted] = useState(false);
+  // eslint-disable-next-line no-unused-vars
   const [recognizedText, setRecognizedText] = useState('');
   const [initiateRecongnization, setInitiateRecongnization] = useState(false);
   const [translatedTexts, setTranslatedTexts] = useState([]);
+  // eslint-disable-next-line no-unused-vars
   const [connected, setConnected] = useState(false);
+  const socket = useSocket();
+  const offerCreated = useRef(false);
 
   const candidates = useRef(new Set());
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const peerConnection = useRef(null);
-  const socket = useRef(null);
+
+  const meetingId = useSelector(selectMeetingId);
 
   // Setup peerConnection
   const initializePeerConnection = async () => {
@@ -61,9 +67,9 @@ const useWebRTC = ({
 
       // Handle incoming media stream from remote peer
       peerConnection.current.ontrack = (event) => {
-        console.log('Received remote track');
+        console.log('Received remote track in peerConnection');
         setRemoteTrack(event.streams[0]);
-        remoteVideoRef.current.srcObject = event.streams[0];
+        // remoteVideoRef.current.srcObject = event.streams[0];
       };
 
       // When a new ICE candidate is found, this event is triggered
@@ -83,7 +89,7 @@ const useWebRTC = ({
               usernameFragment: event.candidate.usernameFragment,
             };
 
-            socket.current.emit('candidate', { ...candidate }, null, false);
+            socket.emit('candidate', { ...candidate }, meetingId);
           }
         }
       };
@@ -128,7 +134,7 @@ const useWebRTC = ({
   }, [localTrack]);
 
   const waitForStableState = () => {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       const checkState = () => {
         if (peerConnection.current.signalingState === 'stable') {
           resolve();
@@ -146,13 +152,13 @@ const useWebRTC = ({
 
     return codecs;
   }
-
+  let isOfferCreated = false;
   const createOffer = async () => {
     // if (peerConnection.current && peerConnection.current.signalingState !== 'stable') {
     //     console.warn('Attempted to create offer in non-stable state, ignoring');
     //     return;
     // }
-
+    console.log('create offer triggered');
     try {
       // Initialize the peer connection
       if (!peerConnection.current) {
@@ -167,9 +173,9 @@ const useWebRTC = ({
       };
 
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      localVideoRef.current.srcObject = stream;
+      // localVideoRef.current.srcObject = stream;
       setLocalTrack(stream);
-      console.log(localVideoRef.current.srcObject, 'localVideoRef');
+      // console.log(localVideoRef.current.srcObject, 'localVideoRef');
 
       if (stream) {
         stream.getTracks().forEach((track) => {
@@ -225,16 +231,50 @@ const useWebRTC = ({
         }
       }
 
-      const offer = await peerConnection.current.createOffer();
-      await peerConnection.current.setLocalDescription(offer);
-      console.log('Created and sent offer', localTargetLanguage);
-
-      socket.current.emit('offer', offer, localTargetLanguage);
-      setCallStarted(true);
+      if (!isOfferCreated) {
+        const offer = await peerConnection.current.createOffer();
+        await peerConnection.current.setLocalDescription(offer);
+        console.log('Created and sent offer', localTargetLanguage);
+        socket.emit('offer', offer, localTargetLanguage, meetingId);
+        setCallStarted(true);
+        isOfferCreated = true;
+      }
     } catch (error) {
       console.error('Error creating offer:', error);
     }
   };
+
+  // Retry mechanism for remote description
+  const retrySetRemoteDescription = async (
+    description,
+    retries = 3,
+    delay = 1000,
+  ) => {
+    for (let i = 0; i < retries; i++) {
+      try {
+        if (
+          peerConnection.current.signalingState === 'stable' ||
+          peerConnection.current.signalingState === 'have-local-offer'
+        ) {
+          await peerConnection.current.setRemoteDescription(
+            new RTCSessionDescription(description),
+          );
+          console.log('Set remote description after retry');
+          return;
+        } else {
+          console.warn(
+            'Signaling state not ready for setting remote description. Retrying...',
+          );
+          await new Promise((res) => setTimeout(res, delay));
+        }
+      } catch (error) {
+        console.error('Retry failed to set remote description:', error);
+      }
+    }
+    console.error('Failed to set remote description after retries');
+  };
+
+  let isAnswerCreated = false;
 
   // Offer Handler
   const handleOffer = async (offer, targetLanguage) => {
@@ -243,48 +283,53 @@ const useWebRTC = ({
       await initializePeerConnection(); // Ensure peer connection is initialized
     }
 
-    if (peerConnection.current.signalingState !== 'stable') {
-      console.warn('Received offer in non-stable state, ignoring');
-      return;
-    }
+    // if (peerConnection.current.signalingState !== 'stable') {
+    //   console.warn('Received offer in non-stable state, ignoring');
+    //   return;
+    // }
 
-    if (targetLanguage) {
-      setRemoteTargetLanguage(targetLanguage);
-    }
+    // if (targetLanguage) {
+    //   setRemoteTargetLanguage(targetLanguage);
+    // }
 
-    console.log('Received offer', remoteTargetLanguage);
-    // Set the received offer as the remote description
+    // // Set the received offer as the remote description
 
-    await peerConnection.current.setRemoteDescription(
-      new RTCSessionDescription(offer),
-    );
-    console.log('Set remote description for offer');
-    if (!callStarted) {
-      setCallStarted(true);
-    }
+    // try {
+    //   await retrySetRemoteDescription(offer);
+    // } catch (error) {
+    //   console.error('Failed to handle offer:', error);
+    // }
+    // console.log('Set remote description for offer');
 
-    const constraints = {
-      video: true,
-      audio: true,
-    };
-    const stream = await navigator.mediaDevices.getUserMedia(constraints);
-    localVideoRef.current.srcObject = stream;
-    setLocalTrack(stream);
+    // if (!callStarted) {
+    //   setCallStarted(true);
+    // }
 
-    if (stream) {
-      stream.getTracks().forEach((track) => {
-        peerConnection.current.addTrack(track, stream);
-        console.log('Added local track to peer connection:', track);
-      });
-    }
+    // const constraints = {
+    //   video: true,
+    //   audio: true,
+    // };
+    // const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    // // localVideoRef.current.srcObject = stream;
+    // setLocalTrack(stream);
 
-    // Create an answer and set it as the local description
-    const answer = await peerConnection.current.createAnswer();
-    await peerConnection.current.setLocalDescription(answer);
+    // if (stream) {
+    //   stream.getTracks().forEach((track) => {
+    //     peerConnection.current.addTrack(track, stream);
+    //     console.log('Added local track to peer connection:', track);
+    //   });
+    // }
 
-    console.log('localTargetLanguage', localTargetLanguage);
-    // Send the answer back to the remote peer
-    socket.current.emit('answer', answer, localTargetLanguage);
+    // if (!isAnswerCreated) {
+    //   // Create an answer and set it as the local description
+    //   const answer = await peerConnection.current.createAnswer();
+    //   await peerConnection.current.setLocalDescription(answer);
+
+    //   console.log('localTargetLanguage', localTargetLanguage);
+    //   // Send the answer back to the remote peer
+    //   socket.emit('answer', answer, localTargetLanguage, meetingId);
+    //   isAnswerCreated = true;
+    // }
   };
 
   // Answer Handler
@@ -293,41 +338,32 @@ const useWebRTC = ({
       'peerConnection.current.signalingState:',
       peerConnection.current.signalingState,
     );
-    if (peerConnection.current.signalingState !== 'have-local-offer') {
-      console.warn('Received answer in non-have-local-offer state, ignoring');
-      return;
-    }
     console.log('Received answer');
 
     if (targetLanguage) {
       setRemoteTargetLanguage(targetLanguage);
     }
     // Set the received answer as the remote description
-    await peerConnection.current.setRemoteDescription(
-      new RTCSessionDescription(answer),
-    );
+    try {
+      await retrySetRemoteDescription(answer);
+    } catch (error) {
+      console.error('Failed to handle answer:', error);
+    }
+
     console.log('Set remote description for answer');
   };
 
-  const initializeSocket = () => {
-    // socket.current = io('https://socket.platocity.com');
-    socket.current = io('http://localhost:5001');
-
-    socket.current.on('connect', () => {
-      setConnected(true);
-      const deviceId = generateDeviceId();
-      socket.current.emit('registerDevice', deviceId);
-
-      console.log('Connected to signaling server');
-    });
+  const initializeWebRTCSocket = () => {
+    if (!socket) {
+      return;
+    }
 
     // socket event
+    socket.on('roleAssignment', (role) => setUserRole(role));
+    socket.on('offer', handleOffer);
+    socket.on('answer', handleAnswer);
 
-    socket.current.on('roleAssignment', (role) => setUserRole(role));
-    socket.current.on('offer', handleOffer);
-    socket.current.on('answer', handleAnswer);
-
-    socket.current.on('candidate', async (candidate) => {
+    socket.on('candidate', async (candidate) => {
       console.log('Received candidate:', candidate);
 
       try {
@@ -350,26 +386,43 @@ const useWebRTC = ({
       }
     });
 
-    socket.current.on('recognizedText', (text) => {
+    socket.on('recognizedText', (text) => {
       setRecognizedText(text);
     });
 
-    socket.current.on('translatedText', ({ text, id, isFinal }) => {
+    socket.on('translatedText', ({ text, id, isFinal }) => {
       addOrUpdateTranslatedText(id, text, isFinal);
     });
 
+    console.log('created offer', offerCreated.current);
+    socket.on(
+      'participantJoined',
+      async ({ totalParticipants, hostSocketId }) => {
+        console.log('created offer called', offerCreated.current);
+        if (
+          totalParticipants === 2 &&
+          hostSocketId === socket.id &&
+          !offerCreated.current
+        ) {
+          // Now that both User A and User B are connected, create the offer
+          await createOffer();
+          offerCreated.current = true;
+        }
+      },
+    );
+
     // Listen for disconnection message
-    socket.current.on('userCallDisconnected', () => {
+    socket.on('userCallDisconnected', () => {
       handleDisconnectCall();
     });
   };
 
   const handleDisconnectCall = () => {
     // Notify remote user
-    socket.current.emit('userCallDisconnected');
+    socket.emit('userCallDisconnected');
 
-    if (socket.current) {
-      socket.current.disconnect();
+    if (socket) {
+      socket.disconnect();
     }
 
     if (peerConnection.current) {
@@ -405,7 +458,7 @@ const useWebRTC = ({
 
   return {
     initializePeerConnection,
-    initializeSocket,
+    initializeWebRTCSocket,
     handleDisconnectCall,
     createOffer: () => createOffer(), // Ensure this accesses the latest ref values
     handleAnswer: (answer, targetLanguage) =>
