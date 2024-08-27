@@ -1,6 +1,3 @@
-export const JOIN_MEETING = 'JOIN_MEETING';
+import { createAction } from '@reduxjs/toolkit';
 
-export const joinMeeting = (meetingId) => ({
-  type: JOIN_MEETING,
-  payload: meetingId,
-});
+export const cleanupState = createAction('CLEANUP_STATE');

@@ -16,13 +16,14 @@ import {
 import { styled } from '@mui/system';
 import { useDispatch } from 'react-redux';
 import { useSocket } from '../context/SocketContext';
-import { joinMeeting, setHostId } from '../../redux/meetingSlice';
+import { joinMeeting, setHostSocketId } from '../../redux/meetingSlice';
 
 const CustomTextField = styled(TextField)({
   backgroundColor: '#F9F9F9',
-  borderRadius: '8px',
+  marginTop: 10,
+  borderRadius: '0px',
   '& .MuiOutlinedInput-root': {
-    padding: '8px',
+    padding: '0px',
     '& fieldset': {
       border: 'none', // Remove the default border
     },
@@ -31,12 +32,11 @@ const CustomTextField = styled(TextField)({
     '& input': {
       height: '48px', // Set a fixed height for the input
       boxSizing: 'border-box', // Ensure padding is included in the height
-      lineHeight: '48px', // Align text vertically
-      padding: '0 12px', // Adjust padding inside the input
-      fontSize: '16px', // Font size for the input
+      lineHeight: '22px', // Align text vertically
+      fontSize: '12px', // Font size for the input
       color: '#000000',
       '&.Mui-disabled': {
-        color: '#000',
+        color: '#707070',
         opacity: 0.8,
         '-webkit-text-fill-color': '#000',
       },
@@ -47,20 +47,24 @@ const CustomTextField = styled(TextField)({
     },
   },
   '& .MuiInputAdornment-root': {
-    marginRight: '8px',
+    marginRight: '10px',
+    marginLeft: 10,
     display: 'flex',
     alignItems: 'center',
+    borderRadius: 2,
   },
 });
 
 const CustomIcon = styled('div')({
   color: '#5abcc9',
   backgroundColor: '#DFEBFF',
-  padding: '8px',
-  borderRadius: '8px',
+  padding: '4px',
+  borderRadius: '5px',
   display: 'flex',
   alignItems: 'center', // Vertically center the icon inside the box
   justifyContent: 'center',
+  width: 20,
+  height: 20,
 });
 
 const HostControl = () => {
@@ -84,7 +88,7 @@ const HostControl = () => {
         console.log('generated createMeeting event');
         setMeetingId(meetingId);
         dispatch(joinMeeting(meetingId));
-        dispatch(setHostId(hostSocketId));
+        dispatch(setHostSocketId(hostSocketId));
         setLoading(false);
       });
     } else {
@@ -93,7 +97,7 @@ const HostControl = () => {
   };
 
   const onClickJoin = () => {
-    socket.emit('hostStartMeeting', meetingId);
+    // socket.emit('hostStartMeeting', meetingId);
     // Programmatically navigate to "/videocall"
     navigate('/videocall');
   };
@@ -108,7 +112,7 @@ const HostControl = () => {
     <div>
       <p className="host-control-title"> Host Meeting </p>
       <CustomTextField
-        placeholder="Add Meeting Title (Optional)"
+        placeholder="Username"
         variant="outlined"
         fullWidth
         margin="normal"
@@ -153,7 +157,7 @@ const HostControl = () => {
           fullWidth
           className="create-invite-button"
           onClick={onClickJoin}
-          sx={{ marginTop: '80px', color: '#fff', fontSize: '18px' }}
+          sx={{ marginTop: '45px', color: '#fff', fontSize: '18px' }}
         >
           Join
         </Button>
@@ -164,7 +168,7 @@ const HostControl = () => {
           fullWidth
           className="create-invite-button"
           onClick={createMeetingHandler}
-          sx={{ marginTop: '80px', color: '#fff', fontSize: '18px' }}
+          sx={{ marginTop: '45px', color: '#fff', fontSize: '18px' }}
         >
           {loading ? (
             <CircularProgress size={24} color="inherit" />

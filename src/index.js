@@ -8,6 +8,10 @@ import store from './redux/store';
 import { ThemeProvider } from '@mui/material/styles';
 import theme from './theme';
 import { BrowserRouter } from 'react-router-dom';
+import { GoogleOAuthProvider } from '@react-oauth/google';
+
+const CLIENT_ID =
+  '771148754740-uheeqabk9qbfudu53apqs9maegcrnbne.apps.googleusercontent.com';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
@@ -15,7 +19,9 @@ root.render(
     <Provider store={store}>
       <BrowserRouter>
         <ThemeProvider theme={theme}>
-          <App />
+          <GoogleOAuthProvider clientId={CLIENT_ID}>
+            <App />
+          </GoogleOAuthProvider>
         </ThemeProvider>
       </BrowserRouter>
     </Provider>

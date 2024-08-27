@@ -1,9 +1,27 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useMemo, useState } from 'react';
+import { useSocket } from '../context/SocketContext';
+import { useSelector } from 'react-redux';
 
-const useTranslation = ({ role, detectedLanguage, socket, targetLanguage }) => {
+const useTranslation = ({ role, detectedLanguage }) => {
+  const [lang, setLang] = useState('');
   const recognitionRef = useRef(null);
   const isRecognitionActive = useRef(false);
   const segmentCounter = useRef(0);
+  const socket = useSocket();
+
+  const localSpokenLanguage = useSelector(
+    (state) => state.translation.localSpokenLanguage,
+  );
+
+  const meetingId = useSelector((state) => state.meeting.meetingId);
+
+  useMemo(() => {
+    if (!lang) {
+      setLang(localSpokenLanguage);
+    } else if (detectedLanguage !== localSpokenLanguage) {
+      setLang(detectedLanguage);
+    }
+  }, [detectedLanguage, localSpokenLanguage]);
 
   const handleResult = (event) => {
     let finalTranscript = '';
@@ -18,24 +36,32 @@ const useTranslation = ({ role, detectedLanguage, socket, targetLanguage }) => {
     }
 
     const segmentId = segmentCounter.current;
-
+    console.log(finalTranscript, interimTranscript);
     if (finalTranscript) {
+      // socket.emit(
+      //   'translateText',
+      //   finalTranscript,
+      //   targetLanguage,
+      //   true,
+      //   segmentId,
+      // );
       socket.emit(
-        'translateText',
+        'speakerRawText',
         finalTranscript,
-        targetLanguage,
         true,
         segmentId,
+        meetingId,
       );
       segmentCounter.current++;
     } else {
-      socket.emit(
-        'translateText',
-        interimTranscript,
-        targetLanguage,
-        false,
-        segmentId,
-      );
+      // socket.emit(
+      //   'translateText',
+      //   interimTranscript,
+      //   targetLanguage,
+      //   false,
+      //   segmentId,
+      // );
+      socket.emit('speakerRawText', interimTranscript, false, segmentId);
     }
   };
 
@@ -46,7 +72,7 @@ const useTranslation = ({ role, detectedLanguage, socket, targetLanguage }) => {
 
     const recognition = new (window.webkitSpeechRecognition ||
       window.SpeechRecognition)();
-    recognition.lang = detectedLanguage;
+    recognition.lang = lang;
     recognition.interimResults = true;
     recognition.continuous = true;
 

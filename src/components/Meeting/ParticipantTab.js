@@ -1,18 +1,18 @@
 import React, { useState } from 'react';
 import { TextField, Button, InputAdornment } from '@mui/material';
-import { Videocam } from '@mui/icons-material';
+import { Add as AddIcon, Videocam } from '@mui/icons-material';
 import { useDispatch } from 'react-redux';
 import { styled } from '@mui/system';
 import { useNavigate } from 'react-router-dom';
 
 import { joinMeeting } from '../../redux/meetingSlice';
-import { useSocket } from '../context/SocketContext';
 
 const CustomTextField = styled(TextField)({
   backgroundColor: '#F9F9F9',
-  borderRadius: '8px',
+  marginTop: 10,
+  borderRadius: '0px',
   '& .MuiOutlinedInput-root': {
-    padding: '8px',
+    padding: '0px',
     '& fieldset': {
       border: 'none', // Remove the default border
     },
@@ -21,12 +21,11 @@ const CustomTextField = styled(TextField)({
     '& input': {
       height: '48px', // Set a fixed height for the input
       boxSizing: 'border-box', // Ensure padding is included in the height
-      lineHeight: '48px', // Align text vertically
-      padding: '0 12px', // Adjust padding inside the input
-      fontSize: '16px', // Font size for the input
+      lineHeight: '22px', // Align text vertically
+      fontSize: '12px', // Font size for the input
       color: '#000000',
       '&.Mui-disabled': {
-        color: '#000',
+        color: '#707070',
         opacity: 0.8,
         '-webkit-text-fill-color': '#000',
       },
@@ -37,37 +36,55 @@ const CustomTextField = styled(TextField)({
     },
   },
   '& .MuiInputAdornment-root': {
-    marginRight: '8px',
+    marginRight: '10px',
+    marginLeft: 10,
     display: 'flex',
     alignItems: 'center',
+    borderRadius: 2,
   },
 });
 
 const CustomIcon = styled('div')({
   color: '#5abcc9',
   backgroundColor: '#DFEBFF',
-  padding: '8px',
-  borderRadius: '8px',
+  padding: '4px',
+  borderRadius: '5px',
   display: 'flex',
   alignItems: 'center', // Vertically center the icon inside the box
   justifyContent: 'center',
+  width: 20,
+  height: 20,
 });
 
 const ParticipantTab = () => {
   const dispatch = useDispatch();
-  const socket = useSocket();
   const navigate = useNavigate();
 
   const [meetingId, setMeetingId] = useState(null);
 
   const onClickHandler = () => {
     dispatch(joinMeeting(meetingId));
-    socket.emit('joinMeeting', meetingId);
     navigate('/videocall');
   };
 
   return (
     <div>
+      <p className="host-control-title"> Join Meeting </p>
+      <CustomTextField
+        placeholder="Username"
+        variant="outlined"
+        fullWidth
+        margin="normal"
+        InputProps={{
+          startAdornment: (
+            <InputAdornment position="start">
+              <CustomIcon>
+                <AddIcon />
+              </CustomIcon>
+            </InputAdornment>
+          ),
+        }}
+      />
       <CustomTextField
         placeholder="Insert Meeting ID"
         variant="outlined"
@@ -91,7 +108,7 @@ const ParticipantTab = () => {
         className="create-invite-button"
         onClick={onClickHandler}
         disabled={!meetingId}
-        sx={{ marginTop: '80px', color: '#fff', fontSize: '18px' }}
+        sx={{ marginTop: '45px', color: '#fff', fontSize: '18px' }}
       >
         Join
       </Button>

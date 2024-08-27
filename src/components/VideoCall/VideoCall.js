@@ -1,5 +1,5 @@
 /* eslint-disable */
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import useWebRTC from '../hooks/useWebRTC';
 import TranslationOverlay from './TranslationOverlay';
 import VideoControls from './VideoControls';
@@ -12,6 +12,7 @@ const VideoCall = () => {
   const [localTargetLanguage, setLocalTargetLanguage] = useState('');
   const [remoteTargetLanguage, setRemoteTargetLanguage] = useState('');
   const [detectedLanguage, setDetectedLanguage] = useState(null);
+  const [translatedTexts, setTranslatedTexts] = useState([]);
 
   // eslint-disable-next-line no-unused-vars
   const [languageCounts, setLanguageCounts] = useState([]);
@@ -24,7 +25,7 @@ const VideoCall = () => {
   const {
     initializeWebRTCSocket,
     handleDisconnectCall,
-    localVideoRef,
+    // localVideoRef,
     setLocalTrack,
     setInitiateRecongnization,
     peerConnection,
@@ -32,7 +33,6 @@ const VideoCall = () => {
     callStarted,
     localTrack,
     remoteVideoRef,
-    translatedTexts,
     remoteTrack,
   } = useWebRTC({
     localTargetLanguage,
@@ -40,20 +40,45 @@ const VideoCall = () => {
     setLocalTargetLanguage,
     setDetectedLanguage,
     remoteTargetLanguage,
+    setTranslatedTexts,
   });
 
   const socket = useSocket();
+  const localVideoRef = useRef(null);
 
+  useEffect(() => {
+    if (localTrack && localVideoRef.current) {
+      localVideoRef.current.srcObject = localTrack;
+    }
+  }, [localTrack]);
+
+  console.log(
+    localVideoRef.current?.srcObject,
+    'localtrack',
+    localTrack,
+    'callStarted',
+  );
   // Initialize socket connection
   useEffect(() => {
     if (socket) {
-      console.log('Rendering socket connection', socket);
-      initializeWebRTCSocket();
+      socket.off('createOfferForMeeting');
+      socket.off('roleAssignment');
+      socket.off('offer');
+      socket.off('answer');
+      socket.off('candidate');
+      socket.off('userCallDisconnected');
 
-      if (socket.id === hostId) {
-        socket.emit('readyForParticipants', meetingId);
-      }
+      initializeWebRTCSocket();
     }
+
+    return () => {
+      socket.off('createOfferForMeeting');
+      socket.off('roleAssignment');
+      socket.off('offer');
+      socket.off('answer');
+      socket.off('candidate');
+      socket.off('userCallDisconnected');
+    };
   }, [socket]);
 
   useEffect(() => {
@@ -76,7 +101,6 @@ const VideoCall = () => {
         localVideoRef.current.srcObject = stream;
       }
       setLocalTrack(stream);
-      setInitiateRecongnization(true);
     });
 
     // window.addEventListener('beforeunload', handleBeforeUnload);
@@ -91,14 +115,10 @@ const VideoCall = () => {
       //   socket.disconnect();
       // }
     };
-  }, [localTargetLanguage, socket]);
+  }, [socket]);
 
   const handleClick = () => {
-    if (!callStarted) {
-      socket.emit('initiateCall');
-    } else {
-      handleDisconnectCall();
-    }
+    handleDisconnectCall();
   };
 
   const blobToBase64 = (blob) => {
@@ -115,84 +135,98 @@ const VideoCall = () => {
   };
 
   useEffect(() => {
-    if (!localTrack || !callStarted) return;
+    // Get raw text from other person
+    socket.off('speakerText');
 
-    const audioTracks = localTrack.getAudioTracks();
-    const audioStream = new MediaStream(audioTracks);
-
-    const mediaRecorder = new MediaRecorder(audioStream);
-
-    let timeoutId;
-
-    const startRecording = () => {
-      if (mediaRecorder.state === 'recording') {
-        mediaRecorder.stop(); // Stop the existing recording if it's already recording
-      }
-
-      mediaRecorder.ondataavailable = async (event) => {
-        console.log('triggered on data');
-        if (event.data.size > 0) {
-          const audioContent = await blobToBase64(event.data);
-          setActiveRequests((prev) => prev + 1);
-          socket.emit('detectLanguage', { audioContent });
-        }
-      };
-
-      mediaRecorder.start();
-
-      timeoutId = setTimeout(() => {
-        mediaRecorder.stop();
-        console.log('Recording stopped after 5 seconds');
-      }, 5000); // Stop recording after 5 seconds
-    };
-
-    startRecording();
-
-    const handleLanguageDetected = (detectedLanguage) => {
-      let localLanguageCount = 0;
-      if (detectedLanguage !== 'no-language') {
-        setLanguageCounts((prevCounts) => {
-          const updateCounts = [...prevCounts, detectedLanguage];
-          localLanguageCount = updateCounts.length;
-          const languageFrequncy = updateCounts.reduce((acc, lang) => {
-            acc[lang] = (acc[lang] || 0) + 1;
-
-            return acc;
-          }, {});
-
-          if (updateCounts.length <= 7) {
-            const mostFrequnctLanguage = Object.keys(languageFrequncy).reduce(
-              (a, b) => (languageFrequncy[a] > languageFrequncy[b] ? a : b),
-            );
-            setDetectedLanguage(mostFrequnctLanguage);
-
-            return updateCounts;
-          } else {
-            return updateCounts;
-          }
-        });
-
-        setActiveRequests((prev) => {
-          const newCount = prev - 1;
-
-          if (newCount === 0 && localLanguageCount < 5) {
-            startRecording();
-          }
-
-          return newCount;
-        });
-      }
-    };
-    startRecording();
-    socket.on('languageDetected', handleLanguageDetected);
+    socket.on('speakerText', (text, isFinal, id) => {
+      console.log('received raw text', text);
+      socket.emit('translateText', text, localTargetLanguage, isFinal, id);
+    });
 
     return () => {
-      socket.off('languageDetected', handleLanguageDetected);
-      if (timeoutId) {
-        clearTimeout(timeoutId); // Clear the timeout if the effect is cleaned up
-      }
+      socket.off('speakerText');
     };
-  }, [localVideoRef.current?.srcObject, callStarted, socket]);
+  }, [localTargetLanguage]);
+
+  // useEffect(() => {
+  //   if (!localTrack || !callStarted) return;
+
+  //   const audioTracks = localTrack.getAudioTracks();
+  //   const audioStream = new MediaStream(audioTracks);
+
+  //   const mediaRecorder = new MediaRecorder(audioStream);
+
+  //   let timeoutId;
+
+  //   const startRecording = () => {
+  //     if (mediaRecorder.state === 'recording') {
+  //       mediaRecorder.stop(); // Stop the existing recording if it's already recording
+  //     }
+
+  //     mediaRecorder.ondataavailable = async (event) => {
+  //       console.log('triggered on data');
+  //       if (event.data.size > 0) {
+  //         const audioContent = await blobToBase64(event.data);
+  //         setActiveRequests((prev) => prev + 1);
+  //         socket.emit('detectLanguage', { audioContent });
+  //       }
+  //     };
+
+  //     mediaRecorder.start();
+
+  //     timeoutId = setTimeout(() => {
+  //       mediaRecorder.stop();
+  //       console.log('Recording stopped after 5 seconds');
+  //     }, 5000); // Stop recording after 5 seconds
+  //   };
+
+  //   startRecording();
+
+  //   const handleLanguageDetected = (detectedLanguage) => {
+  //     let localLanguageCount = 0;
+  //     if (detectedLanguage !== 'no-language') {
+  //       setLanguageCounts((prevCounts) => {
+  //         const updateCounts = [...prevCounts, detectedLanguage];
+  //         localLanguageCount = updateCounts.length;
+  //         const languageFrequncy = updateCounts.reduce((acc, lang) => {
+  //           acc[lang] = (acc[lang] || 0) + 1;
+
+  //           return acc;
+  //         }, {});
+
+  //         if (updateCounts.length <= 7) {
+  //           const mostFrequnctLanguage = Object.keys(languageFrequncy).reduce(
+  //             (a, b) => (languageFrequncy[a] > languageFrequncy[b] ? a : b),
+  //           );
+  //           setDetectedLanguage(mostFrequnctLanguage);
+
+  //           return updateCounts;
+  //         } else {
+  //           return updateCounts;
+  //         }
+  //       });
+
+  //       setActiveRequests((prev) => {
+  //         const newCount = prev - 1;
+
+  //         if (newCount === 0 && localLanguageCount < 5) {
+  //           startRecording();
+  //         }
+
+  //         return newCount;
+  //       });
+  //     }
+  //   };
+  //   startRecording();
+  //   socket.on('languageDetected', handleLanguageDetected);
+
+  //   return () => {
+  //     socket.off('languageDetected', handleLanguageDetected);
+  //     if (timeoutId) {
+  //       clearTimeout(timeoutId); // Clear the timeout if the effect is cleaned up
+  //     }
+  //   };
+  // }, [localVideoRef.current?.srcObject, callStarted, socket]);
 
   return (
     <div className="video-chat">
@@ -210,13 +244,14 @@ const VideoCall = () => {
         socket={socket}
       />
 
-      <TranslatedTextView translatedTexts={translatedTexts} />
+      {/* <TranslatedTextView translatedTexts={translatedTexts} /> */}
 
       <VideoControls
         callStarted={callStarted}
         localTargetLanguage={localTargetLanguage}
         setLocalTargetLanguage={setLocalTargetLanguage}
         onCallToggle={handleClick}
+        translatedTexts={translatedTexts}
       />
     </div>
   );

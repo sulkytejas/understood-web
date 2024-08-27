@@ -8,14 +8,12 @@ const TranslationOverlay = ({
   socket,
 }) => {
   return (
-    detectedLanguage && (
-      <Translation
-        socket={socket} // Pass the socket object here
-        role={userRole}
-        detectedLanguage={detectedLanguage}
-        targetLanguage={localTargetLanguage}
-      />
-    )
+    <Translation
+      socket={socket} // Pass the socket object here
+      role={userRole}
+      detectedLanguage={detectedLanguage}
+      targetLanguage={localTargetLanguage}
+    />
   );
 };
 

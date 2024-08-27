@@ -141,35 +141,49 @@ const UserAvatar = () => {
     <Box
       sx={{
         position: 'relative',
-        width: 150,
-        height: 150,
+        width: 120,
+        height: 120,
         borderRadius: '50%',
         overflow: 'hidden',
-        backgroundColor: '#e0e0e0',
+        backgroundColor: '#fff',
         mb: 3,
+        padding: '2px',
+        boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.25)',
       }}
     >
-      <video
-        ref={videoRef}
-        // onPlay={handleVideoPlay}
-        style={{
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
+      <Box
+        sx={{
+          position: 'relative',
+          width: 120,
+          height: 120,
           borderRadius: '50%',
+          overflow: 'hidden',
+          backgroundColor: '#e0e0e0',
+          mb: 3,
         }}
-        playsInline
-      />
-      <canvas
-        ref={canvasRef}
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-        }}
-      />
+      >
+        <video
+          ref={videoRef}
+          // onPlay={handleVideoPlay}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            borderRadius: '50%',
+          }}
+          playsInline
+        />
+        <canvas
+          ref={canvasRef}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+          }}
+        />
+      </Box>
     </Box>
   );
 };

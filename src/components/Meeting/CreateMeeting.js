@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Container, Paper, Tabs, Tab } from '@mui/material';
+import { Box, Tabs, Tab } from '@mui/material';
 import { styled } from '@mui/system';
 // import { useSelector } from 'react-redux';
 
@@ -43,25 +43,27 @@ const CreateMeetingPage = () => {
   });
 
   return (
-    <Container maxWidth="sm">
-      <Paper elevation={3} className="create-meeting-paper">
-        <CustomTabs
-          value={activeTab}
-          onChange={(e, newValue) => setActiveTab(newValue)}
-          indicatorColor="primary"
-          textColor="primary"
-          variant="fullWidth"
-        >
-          <CustomTab label="Host Meeting" />
-          <CustomTab label="Join Meeting" />
-        </CustomTabs>
-        <div className="create-meeting-content">
-          <UserAvatar />
-        </div>
+    <Box
+      sx={{
+        margin: '16px',
+      }}
+    >
+      <CustomTabs
+        value={activeTab}
+        onChange={(e, newValue) => setActiveTab(newValue)}
+        indicatorColor="primary"
+        textColor="primary"
+        variant="fullWidth"
+      >
+        <CustomTab label="Host Meeting" />
+        <CustomTab label="Join Meeting" />
+      </CustomTabs>
+      <div className="create-meeting-content">
+        <UserAvatar />
+      </div>
 
-        {activeTab === 0 ? <HostControl /> : <ParticipantTab />}
-      </Paper>
-    </Container>
+      {activeTab === 0 ? <HostControl /> : <ParticipantTab />}
+    </Box>
   );
 };
 
