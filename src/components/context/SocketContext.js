@@ -10,6 +10,7 @@ export const useSocket = () => {
 
 export const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
+  const [isSocketConnected, setSocketIsConnected] = useState(false);
 
   useEffect(() => {
     const newSocket = io('http://localhost:5001');
@@ -18,6 +19,7 @@ export const SocketProvider = ({ children }) => {
       newSocket.emit('registerDevice', deviceId);
       console.log('Connected to server with socket ID:', newSocket.id);
       setSocket(newSocket); // Set the socket after connection
+      setSocketIsConnected(true);
     });
 
     return () => {
@@ -26,6 +28,8 @@ export const SocketProvider = ({ children }) => {
   }, []);
 
   return (
-    <SocketContext.Provider value={socket}>{children}</SocketContext.Provider>
+    <SocketContext.Provider value={{ socket, isSocketConnected }}>
+      {children}
+    </SocketContext.Provider>
   );
 };

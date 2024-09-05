@@ -2,18 +2,26 @@ import { useEffect, useRef, useMemo, useState } from 'react';
 import { useSocket } from '../context/SocketContext';
 import { useSelector } from 'react-redux';
 
-const useTranslation = ({ role, detectedLanguage }) => {
+const useTranslation = ({ detectedLanguage }) => {
   const [lang, setLang] = useState('');
   const recognitionRef = useRef(null);
   const isRecognitionActive = useRef(false);
   const segmentCounter = useRef(0);
-  const socket = useSocket();
+  const { socket } = useSocket();
 
   const localSpokenLanguage = useSelector(
     (state) => state.translation.localSpokenLanguage,
   );
 
   const meetingId = useSelector((state) => state.meeting.meetingId);
+
+  useEffect(() => {
+    if (socket) {
+      socket.on('speakerRawText', (text, isFinal, id, meetingId) => {
+        socket.broadcast.to(meetingId).emit('speakerText', text, isFinal, id);
+      });
+    }
+  }, [socket]);
 
   useMemo(() => {
     if (!lang) {
@@ -78,7 +86,7 @@ const useTranslation = ({ role, detectedLanguage }) => {
 
     recognition.onstart = () => {
       isRecognitionActive.current = true;
-      console.log(`[${role}] Speech recognition started.`);
+      console.log(` Speech recognition started.`);
     };
 
     recognition.onend = () => {
@@ -129,7 +137,7 @@ const useTranslation = ({ role, detectedLanguage }) => {
         isRecognitionActive.current = false;
       }
     };
-  }, [role, detectedLanguage]);
+  }, []);
 
   return {};
 };

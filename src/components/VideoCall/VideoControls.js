@@ -11,42 +11,80 @@ import {
   Typography,
   Menu,
   MenuItem,
-  Drawer,
-  Backdrop,
   Avatar,
 } from '@mui/material';
-import { Home, Translate, Chat, MoreVert } from '@mui/icons-material';
+import { MoreVert, Check } from '@mui/icons-material';
 import CallEndIcon from '@mui/icons-material/CallEnd';
 
 import TranslatedTextView from './TranslatedText';
 import { setLocalTranslationLanguage } from '../../redux/translationSlice';
 import { setCallMenuOpen, setCallSideMenu } from '../../redux/uiSlice';
 import SideMenu from './SideMenu';
-import { color } from '@mui/system';
+import { ReactComponent as CurvedMenuBackground } from './assets/curved_menu.svg';
+import { ReactComponent as CaptionIcon } from './assets/caption_icon.svg';
+import { ReactComponent as MessageIcon } from './assets/message.svg';
+import { ReactComponent as TranslationIcon } from './assets/translation_icon.svg';
 
 const CustomBottomNavigationAction = styled(BottomNavigationAction)({
   color: 'white',
+  minWidth: '60px',
+  padding: 0,
+  flexGrow: 0,
+  margin: '0 20px',
+  // fontSize: '36 px',
+  '&.Mui-selected': {
+    backgroundColor: 'white',
+    borderRadius: '50%',
+    width: '60px',
+    height: '60px',
+    transition: 'all 0.3s ease',
+    '& svg': {
+      fill: '#008080',
+    },
+  },
   '&:hover': {
-    color: 'secondary.light',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'white',
+    borderRadius: '50%',
+    width: '60px',
+    height: '60px',
+    transition: 'all 0.3s ease',
+    '& svg': {
+      fill: '#008080',
+      color: '#4abbc9',
+    },
   },
 });
 
-const VideoControls = ({
-  callStarted,
-  localTargetLanguage,
-  setLocalTargetLanguage,
-  onCallToggle,
-  translatedTexts,
-}) => {
+const langauges = [
+  {
+    language: 'Hindi',
+    languageCode: 'hi',
+    avatar: 'अ',
+  },
+  {
+    language: 'Russian',
+    languageCode: 'ru',
+    avatar: 'Б',
+  },
+  {
+    language: 'English',
+    languageCode: 'en',
+    avatar: 'C',
+  },
+];
+
+const VideoControls = ({ callStarted, onCallToggle, translatedTexts }) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const isMainMenuOpen = useSelector((state) => state.ui.callMenuOpen);
   const isSideMenuOpen = useSelector((state) => state.ui.callSideMenu);
+  const userTranslationLanguage = useSelector(
+    (state) => state.translation.localTranslationLanguage,
+  );
+
   const dispatch = useDispatch();
   const drawerContainerRef = useRef(null);
 
   const handleLanguageChange = (lang) => {
-    setLocalTargetLanguage(lang);
     handleClose();
     dispatch(setLocalTranslationLanguage(lang));
   };
@@ -124,69 +162,41 @@ const VideoControls = ({
             Select Language
           </Typography>
         </MenuItem>
-        <MenuItem
-          value="en"
-          onClick={() => handleLanguageChange('en')}
-          sx={{
-            fontSize: '12px',
-            color: '#AFAFAF',
-          }}
-        >
-          <Avatar
+        {langauges.map((lang) => (
+          <MenuItem
+            value={lang.languageCode}
+            onClick={() => handleLanguageChange(lang.languageCode)}
             sx={{
-              bgcolor: '#4abbc9',
-              color: '#fff',
-              height: 20,
-              width: 20,
-              marginRight: 3,
+              fontSize: '12px',
+              color:
+                userTranslationLanguage === lang.languageCode
+                  ? '#4abbc9'
+                  : '#AFAFAF',
             }}
           >
-            U
-          </Avatar>
-          English
-        </MenuItem>
-        <MenuItem
-          value="ru"
-          onClick={() => handleLanguageChange('ru')}
-          sx={{
-            fontSize: '12px',
-            color: '#AFAFAF',
-          }}
-        >
-          <Avatar
-            sx={{
-              bgcolor: '#4abbc9',
-              color: '#fff',
-              height: 20,
-              width: 20,
-              marginRight: 3,
-            }}
-          >
-            п
-          </Avatar>
-          Russian
-        </MenuItem>
-        <MenuItem
-          value="hi"
-          onClick={() => handleLanguageChange('hi')}
-          sx={{
-            fontSize: '12px',
-            color: '#AFAFAF',
-          }}
-        >
-          <Avatar
-            sx={{
-              bgcolor: '#4abbc9',
-              color: '#fff',
-              height: 20,
-              width: 20,
-              marginRight: 3,
-            }}
-          >
-            अ
-          </Avatar>
-          Hindi
-        </MenuItem>
+            <Avatar
+              sx={{
+                bgcolor: '#4abbc9',
+                color: '#fff',
+                height: 20,
+                width: 20,
+                marginRight: 3,
+              }}
+            >
+              {lang.avatar}
+            </Avatar>
+            {lang.language}
+            {userTranslationLanguage === lang.languageCode && (
+              <Check
+                sx={{
+                  height: '20px',
+                  width: '18px',
+                  marginLeft: '10px',
+                }}
+              />
+            )}
+          </MenuItem>
+        ))}
       </Menu>
       {callStarted && (
         <Box
@@ -215,6 +225,9 @@ const VideoControls = ({
           background: '#fff',
           borderRadius: '30px 30px 0 0',
           fontSize: '12px',
+          textAlign: 'center',
+          lineHeight: '18px',
+          fontWeight: 500,
           height: 182,
           width: '100%',
           animation: isMainMenuOpen
@@ -222,20 +235,18 @@ const VideoControls = ({
             : 'moveDown 0.2s ease-in-out forwards',
         }}
       >
-        <Typography>
-          <TranslatedTextView translatedTexts={translatedTexts} />
-        </Typography>
+        <TranslatedTextView translatedTexts={translatedTexts} />
       </Box>
 
       <Box
         sx={{
           position: 'absolute',
-          top: '-30px' /* Adjust depending on the size of the circle */,
+          top: '-44px' /* Adjust depending on the size of the circle */,
           left: '50%',
           transform: 'translateX(-50%)',
           borderRadius: '50%',
-          width: '60px',
-          height: '60px',
+          width: '66px',
+          height: '66px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -247,9 +258,9 @@ const VideoControls = ({
             position: 'absolute',
             top: '0px',
             boxShadow: '0px 3px 10px rgba(0, 0, 0, 0.2)',
-            width: '60px',
-            height: '60px',
-            backgroundColor: '#FF7722',
+            width: '66px',
+            height: '66px',
+            backgroundColor: '#DF4303',
             color: '#fff',
           }}
           onClick={() => onCallToggle()}
@@ -297,13 +308,19 @@ const VideoControls = ({
         /> */}
       <Box
         sx={{
-          backgroundColor: '#4abbc9',
-          color: 'white',
-          fontSize: '25px',
-          WebkitMaskImage:
-            'radial-gradient(circle at top, transparent 40px, black 41px)',
-          width: '100%',
-          height: '92px',
+          // backgroundColor: '#4abbc9',
+          // color: 'white',
+          // fontSize: '25px',
+          // WebkitMaskImage:
+          //   'radial-gradient(circle at top, transparent 40px, black 41px)',
+          // width: '100%',
+          // height: '92px',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          width: '100%', // Ensure the container takes full width
+          height: '95px', // Set the desired height
+          overflow: 'hidden',
         }}
       >
         <BottomNavigation
@@ -314,61 +331,47 @@ const VideoControls = ({
             justifyContent: 'space-around',
             alignItems: 'center',
             height: '100%',
-            marginTop: '10px',
+            top: '7px',
+            position: 'absolute',
+            zIndex: 1,
+            width: '100%',
+            justifyContent: 'space-around',
           }}
         >
-          <Box
-            sx={{
-              display: 'inline-flex', // Prevents the button from taking full width
-              justifyContent: 'center',
-              alignItems: 'center',
-              width: 'auto',
+          <CustomBottomNavigationAction
+            icon={<CaptionIcon sx={{ fontSize: 36 }} />}
+            onClick={() => {
+              dispatch(setCallMenuOpen(!isMainMenuOpen));
+
+              if (isSideMenuOpen) {
+                dispatch(setCallSideMenu(false));
+              }
             }}
-          >
-            <BottomNavigationAction
-              icon={<Translate sx={{ fontSize: 36 }} />}
-              sx={{
-                color: '#fff',
-                '&.Mui-selected': {
-                  color: '#4db7c4', // Adjust icon color when selected
-                  backgroundColor: 'white', // Circle background color
-                  borderRadius: '50%', // Make the background circular
-                  padding: '8px', // Add padding for a larger circle
-                  boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.25)', // Optiona
-                },
-                '&:hover': {
-                  color: '#4db7c4', // Adjust icon color when selected
-                  backgroundColor: 'white', // Circle background color
-                  borderRadius: '50%', // Make the background circular
-                  padding: '8px', // Add padding for a larger circle
-                  boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.25)', // Optiona
-                },
-              }}
-              onClick={() => {
-                dispatch(setCallMenuOpen(!isMainMenuOpen));
+          />
 
-                if (isSideMenuOpen) {
-                  dispatch(setCallSideMenu(false));
-                }
-              }}
-            />
-          </Box>
-
-          <BottomNavigationAction
-            icon={<Home sx={{ fontSize: 36 }} />}
-            sx={{ color: 'white' }}
+          <CustomBottomNavigationAction
+            icon={<TranslationIcon sx={{ fontSize: 36 }} />}
             onClick={(event) => setAnchorEl(event.currentTarget)}
           />
 
-          <BottomNavigationAction
-            icon={<Chat sx={{ fontSize: 36, marginLeft: 3 }} />}
+          <CustomBottomNavigationAction
+            icon={<MessageIcon sx={{ fontSize: 36, marginLeft: 3 }} />}
             sx={{ color: 'white' }}
           />
-          <BottomNavigationAction
+          <CustomBottomNavigationAction
             icon={<MoreVert sx={{ fontSize: 36 }} />}
-            sx={{ color: 'white' }}
           />
         </BottomNavigation>
+        <CurvedMenuBackground
+          style={{
+            position: 'relative',
+            bottom: 0,
+            left: 0,
+            preserveAspectRatio: 'none',
+            width: '100%', // Full width
+            height: '100%', // Adjust the height to match your design
+          }}
+        />
       </Box>
     </div>
 

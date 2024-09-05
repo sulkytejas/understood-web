@@ -1,23 +1,18 @@
 import React from 'react';
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, Alert } from '@mui/material';
 import { useSelector } from 'react-redux';
 
-const VideoPlayer = ({ localVideoRef, remoteVideoRef, callStarted }) => {
-  // useEffect(() => {
-  //   if (callStarted) {
-  //     const remoteTrack = remoteVideoRef.current.srcObject;
-
-  //     remoteVideoRef.current.srcObject = localVideoRef.current.srcObject;
-  //     localVideoRef.current.srcObject = remoteTrack;
-  //   }
-  // }, [callStarted]);
+const VideoPlayer = ({ localStream, remoteVideoRef, callStarted }) => {
   const isMainMenuOpen = useSelector((state) => state.ui.callMenuOpen);
+
+  // Check if the srcObject is available or not
+  const showAlert = !remoteVideoRef?.current?.srcObject;
 
   const circularRemoteVideo = {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    backgroundColor: '#4EC7CF',
+    backgroundColor: '#DF4303',
     borderRadius: '50px',
     padding: ' 4px',
     width: '60pxpx',
@@ -75,7 +70,12 @@ const VideoPlayer = ({ localVideoRef, remoteVideoRef, callStarted }) => {
             }
           >
             <video
-              ref={localVideoRef}
+              // ref={localVideoRef}
+              ref={(video) => {
+                if (video) {
+                  video.srcObject = localStream;
+                }
+              }}
               autoPlay
               playsInline
               muted
@@ -108,6 +108,26 @@ const VideoPlayer = ({ localVideoRef, remoteVideoRef, callStarted }) => {
           )}
         </Box>
       </div>
+
+      {showAlert && (
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)', // Optional dark overlay
+          }}
+        >
+          <Alert severity="warning">
+            Waiting for the participant to join...
+          </Alert>
+        </Box>
+      )}
     </div>
   );
 };

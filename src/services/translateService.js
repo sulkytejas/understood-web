@@ -41,3 +41,12 @@ export const detectLanguage = async (text) => {
 
   return data.data.detections[0][0].language;
 };
+
+export const generateDeviceId = () => {
+  let deviceId = localStorage.getItem('deviceId');
+  if (!deviceId) {
+    deviceId = 'device-' + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem('deviceId', deviceId);
+  }
+  return deviceId;
+};

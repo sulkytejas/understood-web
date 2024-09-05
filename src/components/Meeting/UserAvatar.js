@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Box } from '@mui/material';
-import * as faceapi from 'face-api.js';
 
+let faceapi;
 const UserAvatar = () => {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -10,9 +10,8 @@ const UserAvatar = () => {
   useEffect(() => {
     const loadModels = async () => {
       const MODEL_URL = '/models';
+      faceapi = await import('face-api.js');
       await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
-      await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
-      await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
       setIsModelLoaded(true);
     };
 
@@ -31,8 +30,8 @@ const UserAvatar = () => {
               console.log(
                 `Video dimensions: ${video.videoWidth}x${video.videoHeight}`,
               );
-              canvasRef.current.width = video.videoWidth;
-              canvasRef.current.height = video.videoHeight;
+              canvasRef.current.width = 200;
+              canvasRef.current.height = 200;
               handleVideoPlay();
             };
             video

@@ -1,152 +1,101 @@
 /* eslint-disable */
 import React, { useEffect, useState, useMemo, useRef } from 'react';
-import useWebRTC from '../hooks/useWebRTC';
+// import useWebRTC from '../hooks/useWebRTC';
 import TranslationOverlay from './TranslationOverlay';
 import VideoControls from './VideoControls';
 import TranslatedTextView from './TranslatedText';
+
 import VideoPlayer from './VideoPlayer';
 import { useSocket } from '../context/SocketContext';
+import { useWebRTC } from '../context/WebrtcContext';
 import { useSelector } from 'react-redux';
+import { addOrUpdateTranslatedText } from '../utils/peerConnectionUtils';
 
 const VideoCall = () => {
-  const [localTargetLanguage, setLocalTargetLanguage] = useState('');
-  const [remoteTargetLanguage, setRemoteTargetLanguage] = useState('');
   const [detectedLanguage, setDetectedLanguage] = useState(null);
   const [translatedTexts, setTranslatedTexts] = useState([]);
 
-  // eslint-disable-next-line no-unused-vars
-  const [languageCounts, setLanguageCounts] = useState([]);
-  // eslint-disable-next-line no-unused-vars
-  const [activeRequests, setActiveRequests] = useState(0);
+  const remoteVideoRef = useRef(null);
+  const remoteAudioRef = useRef(null);
 
-  const meetingId = useSelector((state) => state.meeting.meetingId);
-  const hostId = useSelector((state) => state.meeting.hostId);
+  const localTranslationLanguage = useSelector(
+    (state) => state.translation.localTranslationLanguage,
+  );
+
+  // // eslint-disable-next-line no-unused-vars
+  // const [languageCounts, setLanguageCounts] = useState([]);
+  // // eslint-disable-next-line no-unused-vars
+  // const [activeRequests, setActiveRequests] = useState(0);
 
   const {
-    initializeWebRTCSocket,
+    startStreaming,
     handleDisconnectCall,
-    // localVideoRef,
-    setLocalTrack,
-    setInitiateRecongnization,
-    peerConnection,
-    userRole,
+    localStream,
+    remoteStream,
     callStarted,
-    localTrack,
-    remoteVideoRef,
-    remoteTrack,
-  } = useWebRTC({
-    localTargetLanguage,
-    setRemoteTargetLanguage,
-    setLocalTargetLanguage,
-    setDetectedLanguage,
-    remoteTargetLanguage,
-    setTranslatedTexts,
-  });
+  } = useWebRTC();
 
-  const socket = useSocket();
-  const localVideoRef = useRef(null);
+  const { socket } = useSocket();
 
   useEffect(() => {
-    if (localTrack && localVideoRef.current) {
-      localVideoRef.current.srcObject = localTrack;
-    }
-  }, [localTrack]);
+    startStreaming();
+  }, []);
 
-  console.log(
-    localVideoRef.current?.srcObject,
-    'localtrack',
-    localTrack,
-    'callStarted',
-  );
-  // Initialize socket connection
   useEffect(() => {
-    if (socket) {
-      socket.off('createOfferForMeeting');
-      socket.off('roleAssignment');
-      socket.off('offer');
-      socket.off('answer');
-      socket.off('candidate');
-      socket.off('userCallDisconnected');
+    const handleBeforeUnload = () => {
+      if (socket) {
+        handleDisconnectCall();
+      }
+    };
 
-      initializeWebRTCSocket();
-    }
+    window.addEventListener('beforeunload', handleBeforeUnload);
 
     return () => {
-      socket.off('createOfferForMeeting');
-      socket.off('roleAssignment');
-      socket.off('offer');
-      socket.off('answer');
-      socket.off('candidate');
-      socket.off('userCallDisconnected');
+      window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, [socket]);
-
+  console.log(remoteStream, 'remoteTrack');
   useEffect(() => {
-    // const handleBeforeUnload = () => {
-    //   if (socket) {
-    //     socket.emit('userCallDisconnected');
-    //     socket.disconnect();
-    //   }
-    // };
-
-    const constraints = {
-      video: true,
-      audio: true,
-    };
-
-    // Capture local media stream (video and audio)
-
-    navigator.mediaDevices.getUserMedia(constraints).then((stream) => {
-      if (localVideoRef.current) {
-        localVideoRef.current.srcObject = stream;
-      }
-      setLocalTrack(stream);
-    });
-
-    // window.addEventListener('beforeunload', handleBeforeUnload);
-
-    return () => {
-      // window.removeEventListener('beforeunload', handleBeforeUnload);
-      if (peerConnection.current) {
-        peerConnection.current.close();
-      }
-
-      // if (socket) {
-      //   socket.disconnect();
-      // }
-    };
-  }, [socket]);
+    if (remoteVideoRef.current && remoteStream) {
+      remoteVideoRef.current.srcObject = remoteStream;
+    }
+  }, [remoteStream]);
 
   const handleClick = () => {
     handleDisconnectCall();
   };
 
-  const blobToBase64 = (blob) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(blob);
-      reader.onloadend = () => {
-        const base64data = reader.result.split(',')[1];
-        resolve(base64data);
-      };
+  // const blobToBase64 = (blob) => {
+  //   return new Promise((resolve, reject) => {
+  //     const reader = new FileReader();
+  //     reader.readAsDataURL(blob);
+  //     reader.onloadend = () => {
+  //       const base64data = reader.result.split(',')[1];
+  //       resolve(base64data);
+  //     };
 
-      reader.onerror = (error) => reject(error);
-    });
-  };
+  //     reader.onerror = (error) => reject(error);
+  //   });
+  // };
 
   useEffect(() => {
     // Get raw text from other person
     socket.off('speakerText');
+    socket.off('translatedText');
 
     socket.on('speakerText', (text, isFinal, id) => {
-      console.log('received raw text', text);
-      socket.emit('translateText', text, localTargetLanguage, isFinal, id);
+      socket.emit('translateText', text, localTranslationLanguage, isFinal, id);
+    });
+
+    socket.on('translatedText', ({ text, id, isFinal }) => {
+      addOrUpdateTranslatedText(id, text, isFinal, setTranslatedTexts);
     });
 
     return () => {
       socket.off('speakerText');
+      socket.off('translatedText');
     };
-  }, [localTargetLanguage]);
+  }, [localTranslationLanguage]);
 
   // useEffect(() => {
   //   if (!localTrack || !callStarted) return;
@@ -231,25 +180,20 @@ const VideoCall = () => {
   return (
     <div className="video-chat">
       <VideoPlayer
-        localVideoRef={localVideoRef}
+        localStream={localStream}
+        // remoteTrack={remoteStream}
         remoteVideoRef={remoteVideoRef}
-        localTrack={localTrack}
-        remoteTrack={remoteTrack}
+        // remoteAudioRef={remoteAudioRef}
         callStarted={callStarted}
       />
       <TranslationOverlay
         detectedLanguage={detectedLanguage}
-        localTargetLanguage={localTargetLanguage}
-        userRole={userRole}
+        localTargetLanguage={localTranslationLanguage}
         socket={socket}
       />
 
-      {/* <TranslatedTextView translatedTexts={translatedTexts} /> */}
-
       <VideoControls
         callStarted={callStarted}
-        localTargetLanguage={localTargetLanguage}
-        setLocalTargetLanguage={setLocalTargetLanguage}
         onCallToggle={handleClick}
         translatedTexts={translatedTexts}
       />

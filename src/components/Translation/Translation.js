@@ -1,8 +1,8 @@
 import useTranslation from '../hooks/useTranslation';
 // import './Translation.module.css';
 
-const Translation = ({ role, detectedLanguage, socket, targetLanguage }) => {
-  useTranslation({ role, detectedLanguage, socket, targetLanguage });
+const Translation = ({ detectedLanguage, socket, targetLanguage }) => {
+  useTranslation({ detectedLanguage, socket, targetLanguage });
 
   return null;
 };

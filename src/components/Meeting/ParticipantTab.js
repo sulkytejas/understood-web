@@ -1,16 +1,35 @@
-import React, { useState } from 'react';
-import { TextField, Button, InputAdornment } from '@mui/material';
-import { Add as AddIcon, Videocam } from '@mui/icons-material';
-import { useDispatch } from 'react-redux';
+import React, { useEffect, useState } from 'react';
+import {
+  TextField,
+  Button,
+  InputAdornment,
+  Box,
+  IconButton,
+} from '@mui/material';
+import {
+  Add as AddIcon,
+  Videocam,
+  Settings as SettingsIcon,
+  ContentCopy as CopyIcon,
+} from '@mui/icons-material';
+import { useSelector, useDispatch } from 'react-redux';
 import { styled } from '@mui/system';
+import { useWebRTC } from '../context/WebrtcContext';
+import { useSocket } from '../context/SocketContext';
+import {
+  joinMeeting,
+  setHostSocketId,
+  setIsHost,
+} from '../../redux/meetingSlice';
 import { useNavigate } from 'react-router-dom';
 
-import { joinMeeting } from '../../redux/meetingSlice';
+// import { useSocket } from '../context/SocketContext';
 
 const CustomTextField = styled(TextField)({
   backgroundColor: '#F9F9F9',
   marginTop: 10,
   borderRadius: '0px',
+  borderBottom: '1px solid #A0A0A0',
   '& .MuiOutlinedInput-root': {
     padding: '0px',
     '& fieldset': {
@@ -56,22 +75,76 @@ const CustomIcon = styled('div')({
   height: 20,
 });
 
-const ParticipantTab = () => {
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-
+const ParticipantTab = ({
+  onSetOpenSettingMenu,
+  persistedUserName,
+  phoneNumber,
+  email,
+}) => {
+  // const socket = useSocket();
   const [meetingId, setMeetingId] = useState(null);
+  const [username, setUsername] = useState(persistedUserName);
 
-  const onClickHandler = () => {
-    dispatch(joinMeeting(meetingId));
-    navigate('/videocall');
+  const reduxmeetingId = useSelector((state) => state.meeting.meetingId);
+  const { joinRoom } = useWebRTC();
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { socket } = useSocket();
+
+  useEffect(() => {
+    if (reduxmeetingId) {
+      setMeetingId(reduxmeetingId);
+    }
+  }, [reduxmeetingId]);
+
+  const onClickHandler = async () => {
+    console.log('clicked');
+    const { joined, hostSocketId, isHost } = await joinRoom(meetingId);
+    console.log('clicked', joined, hostSocketId, isHost);
+
+    if (joined) {
+      dispatch(joinMeeting(meetingId));
+      dispatch(setHostSocketId(hostSocketId));
+      dispatch(setIsHost(isHost));
+
+      if (username !== persistedUserName) {
+        socket.emit('updateUsername', { username, phoneNumber, email });
+      }
+
+      navigate(`/videocall/${meetingId}`);
+    }
+  };
+
+  const handleCopyClick = () => {
+    navigator.clipboard.writeText(meetingId).then(() => {
+      console.log('Text copied to clipboard!');
+    });
   };
 
   return (
     <div>
-      <p className="host-control-title"> Join Meeting </p>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          paddingRight: '18px',
+          // padding: '8px 16px', // Adjust padding as needed
+        }}
+      >
+        <p className="host-control-title"> Join Meeting </p>
+        <IconButton aria-label="settings" edge="end">
+          <SettingsIcon
+            sx={{ color: ' #DF4303' }}
+            onClick={() => onSetOpenSettingMenu((prev) => !prev)}
+          />
+        </IconButton>
+      </Box>
+
       <CustomTextField
-        placeholder="Username"
+        placeholder="Add Username"
+        value={username && username !== 'new_user' ? username : null}
+        onChange={(e) => setUsername(e.target.value)}
         variant="outlined"
         fullWidth
         margin="normal"
@@ -90,6 +163,7 @@ const ParticipantTab = () => {
         variant="outlined"
         fullWidth
         margin="normal"
+        value={reduxmeetingId}
         onChange={(e) => setMeetingId(e.target.value)}
         InputProps={{
           startAdornment: (
@@ -97,6 +171,13 @@ const ParticipantTab = () => {
               <CustomIcon>
                 <Videocam />
               </CustomIcon>
+            </InputAdornment>
+          ),
+          endAdornment: (
+            <InputAdornment position="end">
+              <IconButton disabled={!meetingId} onClick={handleCopyClick}>
+                <CopyIcon color="action" />
+              </IconButton>
             </InputAdornment>
           ),
         }}

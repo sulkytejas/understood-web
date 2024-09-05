@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 
 import {
   TextField,
@@ -7,21 +6,30 @@ import {
   Button,
   CircularProgress,
   InputAdornment,
+  Box,
 } from '@mui/material';
 import {
   Add as AddIcon,
   Link as LinkIcon,
   ContentCopy as CopyIcon,
+  Settings as SettingsIcon,
 } from '@mui/icons-material';
 import { styled } from '@mui/system';
 import { useDispatch } from 'react-redux';
 import { useSocket } from '../context/SocketContext';
-import { joinMeeting, setHostSocketId } from '../../redux/meetingSlice';
+import {
+  joinMeeting,
+  setHostSocketId,
+  setIsHost,
+} from '../../redux/meetingSlice';
+
+import { setUserName } from '../../redux/userSlice';
 
 const CustomTextField = styled(TextField)({
   backgroundColor: '#F9F9F9',
   marginTop: 10,
   borderRadius: '0px',
+  borderBottom: '1px solid #A0A0A0',
   '& .MuiOutlinedInput-root': {
     padding: '0px',
     '& fieldset': {
@@ -67,40 +75,54 @@ const CustomIcon = styled('div')({
   height: 20,
 });
 
-const HostControl = () => {
+const HostControl = ({
+  onSetOpenSettingMenu,
+  persistedUserName,
+  phoneNumber,
+  email,
+}) => {
   const dispatch = useDispatch();
-  const socket = useSocket();
-  const navigate = useNavigate();
+  const { socket } = useSocket();
+  // const navigate = useNavigate();
 
   const [meetingId, setMeetingId] = useState('');
   const [loading, setLoading] = useState(false);
+  const [username, setUsername] = useState(persistedUserName);
 
   const createMeetingHandler = async () => {
     setLoading(true);
 
     if (socket) {
-      socket.emit('createMeeting', {
-        meetingTitle: 'My Meeting',
-        userId: 'test',
-      });
+      socket.emit(
+        'createMeeting',
+        {
+          phoneNumber,
+          email,
+        },
+        ({ meetingId, hostSocketId }) => {
+          console.log('Meeting created with ID:', meetingId);
+          setMeetingId(meetingId);
+          dispatch(joinMeeting(meetingId));
+          dispatch(setHostSocketId(hostSocketId));
+          dispatch(setIsHost(true));
+          dispatch(setUserName(username));
+          setLoading(false);
+        },
+      );
 
-      socket.on('generatedMeetingId', ({ meetingId, hostSocketId }) => {
-        console.log('generated createMeeting event');
-        setMeetingId(meetingId);
-        dispatch(joinMeeting(meetingId));
-        dispatch(setHostSocketId(hostSocketId));
-        setLoading(false);
-      });
+      if (username !== persistedUserName) {
+        socket.emit('updateUsername', { username, phoneNumber, email });
+      }
     } else {
       console.error('Socket not initialized');
     }
   };
 
-  const onClickJoin = () => {
-    // socket.emit('hostStartMeeting', meetingId);
-    // Programmatically navigate to "/videocall"
-    navigate('/videocall');
-  };
+  // const onClickJoin = () => {
+  //   socket.emit('hostStartMeeting', meetingId);
+  //   // Programmatically navigate to "/videocall"
+  //   navigate(`/videocall/${meetingId}`);
+  // };
 
   const handleCopyClick = () => {
     navigator.clipboard.writeText(meetingId).then(() => {
@@ -110,9 +132,28 @@ const HostControl = () => {
 
   return (
     <div>
-      <p className="host-control-title"> Host Meeting </p>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          paddingRight: '18px',
+          // padding: '8px 16px', // Adjust padding as needed
+        }}
+      >
+        <p className="host-control-title"> Host Meeting </p>
+        <IconButton aria-label="settings" edge="end">
+          <SettingsIcon
+            sx={{ color: ' #DF4303' }}
+            onClick={() => onSetOpenSettingMenu((prev) => !prev)}
+          />
+        </IconButton>
+      </Box>
+
       <CustomTextField
-        placeholder="Username"
+        placeholder="Add Username"
+        value={username && username !== 'new_user' ? username : null}
+        onChange={(e) => setUsername(e.target.value)}
         variant="outlined"
         fullWidth
         margin="normal"
@@ -150,33 +191,20 @@ const HostControl = () => {
           ),
         }}
       />
-      {meetingId ? (
-        <Button
-          variant="contained"
-          color="primary"
-          fullWidth
-          className="create-invite-button"
-          onClick={onClickJoin}
-          sx={{ marginTop: '45px', color: '#fff', fontSize: '18px' }}
-        >
-          Join
-        </Button>
-      ) : (
-        <Button
-          variant="contained"
-          color="primary"
-          fullWidth
-          className="create-invite-button"
-          onClick={createMeetingHandler}
-          sx={{ marginTop: '45px', color: '#fff', fontSize: '18px' }}
-        >
-          {loading ? (
-            <CircularProgress size={24} color="inherit" />
-          ) : (
-            'Create Meeting'
-          )}
-        </Button>
-      )}
+      <Button
+        variant="contained"
+        color="primary"
+        fullWidth
+        className="create-invite-button"
+        onClick={createMeetingHandler}
+        sx={{ marginTop: '45px', color: '#fff', fontSize: '18px' }}
+      >
+        {loading ? (
+          <CircularProgress size={24} color="inherit" />
+        ) : (
+          'Create Meeting'
+        )}
+      </Button>
     </div>
   );
 };
