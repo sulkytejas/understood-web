@@ -13,11 +13,13 @@ import { styled } from '@mui/material/styles';
 import { useDispatch } from 'react-redux';
 import { ReactComponent as LogoIcon } from '../assets/understood_logo_text.svg';
 import { setLocalSpokenLanguage } from '../../redux/translationSlice';
+import i18n from '../../i18n';
+import { useTranslation } from 'react-i18next';
 
 const countries = [
-  { code: 'IN', languageCode: 'hi-Hi', name: 'Hindi' },
-  { code: 'US', languageCode: 'en-US', name: 'English' },
-  { code: 'RU', languageCode: 'ru-RU', name: 'Russian' },
+  { code: 'IN', languageCode: 'hi-Hi', name: 'Hindi', locale: 'hi' },
+  { code: 'US', languageCode: 'en-US', name: 'English', locale: 'en' },
+  { code: 'RU', languageCode: 'ru-RU', name: 'Russian', locale: 'ru' },
   // Add more countries as needed
 ];
 
@@ -71,13 +73,16 @@ const StyledLanguagesContainer = styled(Grid)(({ theme }) => ({
 
 const WelcomeScreen = () => {
   const [languageCode, setLanguageCode] = useState('');
+  const [locale, setLocale] = useState('');
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const dispatch = useDispatch();
 
   const handleClick = () => {
     console.log('clicked', languageCode);
     dispatch(setLocalSpokenLanguage(languageCode));
     localStorage.setItem('spokenLanguage', languageCode);
+    localStorage.setItem('locale', locale);
     navigate('/login');
   };
 
@@ -105,7 +110,7 @@ const WelcomeScreen = () => {
             fontWeight: '500',
           }}
         >
-          Let’s Get Started!
+          {t('Dreams Without Boundaries')}
         </Typography>
         <Typography
           sx={{
@@ -114,7 +119,7 @@ const WelcomeScreen = () => {
             fontWeight: '400',
           }}
         >
-          Select your spoken language
+          {t('Select your spoken language')}
         </Typography>
       </Box>
 
@@ -129,7 +134,11 @@ const WelcomeScreen = () => {
         {countries.map((option) => (
           <Grid item key={option.name}>
             <IconButton
-              onClick={() => setLanguageCode(option.languageCode)}
+              onClick={() => {
+                setLanguageCode(option.languageCode);
+                setLocale(option.locale);
+                i18n.changeLanguage(option.locale);
+              }}
               sx={{
                 width: 47,
                 height: 47,
@@ -165,7 +174,7 @@ const WelcomeScreen = () => {
         sx={{ color: '#fff', fontSize: '18px', zIndex: 3 }}
         disabled={!languageCode}
       >
-        Confirm & Join
+        {t('Confirm & Join')}
       </Button>
     </StyledContainer>
   );

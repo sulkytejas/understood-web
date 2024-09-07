@@ -1,9 +1,11 @@
 import React, { useState, useRef } from 'react';
 import { TextField, Box, Typography } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 
 const OtpVerification = ({ onSetOtp, length = 6, phoneNumber }) => {
   const [otp, setOtp] = useState(new Array(length).fill(''));
   const inputRefs = useRef([]);
+  const { t } = useTranslation();
 
   const handleChange = (element, index) => {
     const value = element.value.replace(/[^0-9]/g, ''); // Only allow numbers
@@ -38,7 +40,7 @@ const OtpVerification = ({ onSetOtp, length = 6, phoneNumber }) => {
           color: '#DF4303',
         }}
       >
-        Verify your number
+        {t('Verify your number')}
       </Typography>
       <Typography
         sx={{
@@ -49,7 +51,7 @@ const OtpVerification = ({ onSetOtp, length = 6, phoneNumber }) => {
           marginBottom: '70px',
         }}
       >
-        Enter OTP sent to{' '}
+        {t('Enter OTP sent to')}
         <span style={{ color: '#DF4303' }}>{phoneNumber}</span>
       </Typography>
 

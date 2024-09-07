@@ -22,6 +22,7 @@ import {
   setHostSocketId,
   setIsHost,
 } from '../../redux/meetingSlice';
+import { useTranslation } from 'react-i18next';
 
 import { setUserName } from '../../redux/userSlice';
 
@@ -83,6 +84,7 @@ const HostControl = ({
 }) => {
   const dispatch = useDispatch();
   const { socket } = useSocket();
+  const { t } = useTranslation();
   // const navigate = useNavigate();
 
   const [meetingId, setMeetingId] = useState('');
@@ -118,12 +120,6 @@ const HostControl = ({
     }
   };
 
-  // const onClickJoin = () => {
-  //   socket.emit('hostStartMeeting', meetingId);
-  //   // Programmatically navigate to "/videocall"
-  //   navigate(`/videocall/${meetingId}`);
-  // };
-
   const handleCopyClick = () => {
     navigator.clipboard.writeText(meetingId).then(() => {
       console.log('Text copied to clipboard!');
@@ -141,7 +137,7 @@ const HostControl = ({
           // padding: '8px 16px', // Adjust padding as needed
         }}
       >
-        <p className="host-control-title"> Host Meeting </p>
+        <p className="host-control-title">{t('Host Meeting')} </p>
         <IconButton aria-label="settings" edge="end">
           <SettingsIcon
             sx={{ color: ' #DF4303' }}
@@ -151,7 +147,7 @@ const HostControl = ({
       </Box>
 
       <CustomTextField
-        placeholder="Add Username"
+        placeholder={t('Add Username')}
         value={username && username !== 'new_user' ? username : null}
         onChange={(e) => setUsername(e.target.value)}
         variant="outlined"
@@ -168,7 +164,7 @@ const HostControl = ({
         }}
       />
       <CustomTextField
-        placeholder="Meeting ID"
+        placeholder={t('Meeting ID')}
         disabled
         variant="outlined"
         fullWidth
@@ -202,7 +198,7 @@ const HostControl = ({
         {loading ? (
           <CircularProgress size={24} color="inherit" />
         ) : (
-          'Create Meeting'
+          t('Create Meeting')
         )}
       </Button>
     </div>

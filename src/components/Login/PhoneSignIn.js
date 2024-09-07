@@ -20,6 +20,7 @@ import {
 } from '@mui/material';
 import { AsYouType } from 'libphonenumber-js';
 import { useDispatch } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 
 import { setUserPhoneNumber, setUserName } from '../../redux/userSlice';
 import OtpVerification from './OtpVerification';
@@ -94,6 +95,7 @@ const PhoneSignIn = forwardRef(
     const [loading, setLoading] = useState(true);
     const [country, setCountry] = useState(countries[0]);
     const [userData, setUserData] = useState(null);
+    const { t } = useTranslation();
 
     useEffect(() => {
       const loadRecaptchaScript = () => {
@@ -235,7 +237,8 @@ const PhoneSignIn = forwardRef(
             setUserData({ ...user });
 
             try {
-              const response = await fetch('http://localhost:5001/api/login', {
+              const apiUrl = process.env.REACT_APP_API_URL;
+              const response = await fetch(`${apiUrl}/api/login`, {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
@@ -298,7 +301,7 @@ const PhoneSignIn = forwardRef(
         {!confirmationResult && (
           <FormControl fullWidth>
             <CustomTextField
-              placeholder="Enter phone number"
+              placeholder={t('Your Number – Your Ticket to Talk')}
               variant="outlined"
               fullWidth
               margin="normal"

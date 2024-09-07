@@ -15,7 +15,7 @@ import {
 } from '@mui/material';
 import { MoreVert, Check } from '@mui/icons-material';
 import CallEndIcon from '@mui/icons-material/CallEnd';
-
+import { useTranslation } from 'react-i18next';
 import TranslatedTextView from './TranslatedText';
 import { setLocalTranslationLanguage } from '../../redux/translationSlice';
 import { setCallMenuOpen, setCallSideMenu } from '../../redux/uiSlice';
@@ -55,24 +55,6 @@ const CustomBottomNavigationAction = styled(BottomNavigationAction)({
   },
 });
 
-const langauges = [
-  {
-    language: 'Hindi',
-    languageCode: 'hi',
-    avatar: 'अ',
-  },
-  {
-    language: 'Russian',
-    languageCode: 'ru',
-    avatar: 'Б',
-  },
-  {
-    language: 'English',
-    languageCode: 'en',
-    avatar: 'C',
-  },
-];
-
 const VideoControls = ({ callStarted, onCallToggle, translatedTexts }) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const isMainMenuOpen = useSelector((state) => state.ui.callMenuOpen);
@@ -80,6 +62,25 @@ const VideoControls = ({ callStarted, onCallToggle, translatedTexts }) => {
   const userTranslationLanguage = useSelector(
     (state) => state.translation.localTranslationLanguage,
   );
+  const { t } = useTranslation();
+
+  const langauges = [
+    {
+      language: t('Hindi'),
+      languageCode: 'hi',
+      avatar: 'अ',
+    },
+    {
+      language: t('Russian'),
+      languageCode: 'ru',
+      avatar: 'Б',
+    },
+    {
+      language: t('English'),
+      languageCode: 'en',
+      avatar: 'C',
+    },
+  ];
 
   const dispatch = useDispatch();
   const drawerContainerRef = useRef(null);
@@ -94,42 +95,6 @@ const VideoControls = ({ callStarted, onCallToggle, translatedTexts }) => {
   };
 
   return (
-    // <div className="video-chat-controls">
-    //   <div className={`control-icons ${callStarted && 'call-connected'}`}>
-    //     <IconButton onClick={(event) => setAnchorEl(event.currentTarget)}>
-    //       {localTargetLanguage ? localTargetLanguage : <Translate />}
-    //     </IconButton>
-    //     <Menu
-    //       anchorEl={anchorEl}
-    //       open={Boolean(anchorEl)}
-    //       onClose={handleClose}
-    //     >
-    //       <MenuItem value="en" onClick={() => handleLanguageChange('en')}>
-    //         English
-    //       </MenuItem>
-    //       <MenuItem value="ru" onClick={() => handleLanguageChange('ru')}>
-    //         Russian
-    //       </MenuItem>
-    //       <MenuItem value="hi" onClick={() => handleLanguageChange('hi')}>
-    //         Hindi
-    //       </MenuItem>
-    //     </Menu>
-    //     {/* <IconButton><Mic /></IconButton> */}
-
-    //     {/* <IconButton><Chat /></IconButton> */}
-    //     <IconButton
-    //       onClick={() => onCallToggle()}
-    //       // disabled = {!!userRole && !connected || callStarted}
-    //     >
-    //       <Phone style={{ color: !callStarted ? 'green' : 'red' }} />
-    //     </IconButton>
-    //     <IconButton>
-    //       <Cancel />
-    //     </IconButton>
-    //   </div>
-    // </div>
-    // <div className="video-chat-controls">
-
     <div className="video-chat-controls" ref={drawerContainerRef}>
       <SideMenu />
       <Menu
@@ -159,7 +124,7 @@ const VideoControls = ({ callStarted, onCallToggle, translatedTexts }) => {
               fontWeight: 500,
             }}
           >
-            Select Language
+            {t('Select Language ')}
           </Typography>
         </MenuItem>
         {langauges.map((lang) => (
@@ -235,7 +200,15 @@ const VideoControls = ({ callStarted, onCallToggle, translatedTexts }) => {
             : 'moveDown 0.2s ease-in-out forwards',
         }}
       >
-        <TranslatedTextView translatedTexts={translatedTexts} />
+        {!userTranslationLanguage &&
+          t('Please select the language for translation')}
+        {userTranslationLanguage && translatedTexts.length > 0 && (
+          <TranslatedTextView translatedTexts={translatedTexts} />
+        )}
+
+        {userTranslationLanguage &&
+          !translatedTexts.length &&
+          t('Translated text will appear here')}
       </Box>
 
       <Box
@@ -268,44 +241,7 @@ const VideoControls = ({ callStarted, onCallToggle, translatedTexts }) => {
           <CallEndIcon />
         </Fab>
       </Box>
-      {/* <Box
-          sx={{
-            position: 'absolute',
-            width: 19,
-            height: 20,
-            backgroundColor: 'transparent',
-            transform: 'translateY(-38%)',
-            borderRadius: '30%',
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              right: '-216px',
-              bottom: 26,
-              width: 186,
-              height: 25,
-              transform: 'rotate(180deg)',
-              backgroundColor: '#4abcc9', // Light gray color for the notch
-              borderBottomLeftRadius: 0,
-              borderBottomRightRadius: 15,
-              boxShadow: '0 10px 20px rgba(0, 0, 0, 0.2)', // Optional: Shadow effect
-              zIndex: 1,
-            },
-            '&::after': {
-              content: '""',
-              position: 'absolute',
-              left: '-216px',
-              bottom: 26,
-              width: 186,
-              height: 25,
-              transform: 'rotate(180deg)',
-              backgroundColor: '#4abcc9', // Light gray color for the notch
-              borderBottomLeftRadius: 15,
-              borderBottomRightRadius: 0,
-              boxShadow: '0 10px 20px rgba(0, 0, 0, 0.2)', // Optional: Shadow effect
-              zIndex: 1,
-            },
-          }}
-        /> */}
+
       <Box
         sx={{
           // backgroundColor: '#4abbc9',

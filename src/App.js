@@ -41,7 +41,8 @@ function App() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const response = await fetch('http://localhost:5001/api/check-auth', {
+        const apiURL = process.env.REACT_APP_API_URL;
+        const response = await fetch(`${apiURL}/api/check-auth`, {
           method: 'GET',
           credentials: 'include',
         });

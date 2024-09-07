@@ -13,6 +13,7 @@ import { ReactComponent as LogoIcon } from '../assets/understood_logo.svg';
 import { setLocalSpokenLanguage } from '../../redux/translationSlice';
 import { joinMeeting } from '../../redux/meetingSlice';
 import LoadingSpinner from '../onBoarding/LoadingSpinner';
+import { useTranslation } from 'react-i18next';
 
 const CustomTabs = styled(Tabs)({
   '& .MuiTabs-indicator': {
@@ -54,6 +55,7 @@ const StyledLogoBox = styled(Box)(() => ({
 const CreateMeetingPage = () => {
   const dispatch = useDispatch();
   const { socket, isSocketConnected } = useSocket();
+  const { t } = useTranslation();
 
   const [activeTab, setActiveTab] = useState(0);
   const meetingId = useSelector((state) => state.meeting.meetingId);
@@ -62,7 +64,7 @@ const CreateMeetingPage = () => {
   const email = useSelector((state) => state.user.email);
   const [openSettingMenu, setOpenSettingMenu] = useState(false);
   const [loading, setLoading] = useState(true);
-  console.log(email, persistedUserName, 'persistedUserName');
+
   const handleSettingClose = (languageCode) => {
     setOpenSettingMenu(false);
     dispatch(setLocalSpokenLanguage(languageCode));
@@ -76,7 +78,6 @@ const CreateMeetingPage = () => {
 
   useEffect(() => {
     if (socket && isSocketConnected) {
-      console.log('getActiveMeetings');
       socket.emit(
         'getActiveMeetings',
         { phoneNumber, email },
@@ -114,8 +115,8 @@ const CreateMeetingPage = () => {
         textColor="primary"
         variant="fullWidth"
       >
-        <CustomTab label="Host Meeting" disabled={!!meetingId} />
-        <CustomTab label="Join Meeting" />
+        <CustomTab label={t('Host Meeting')} disabled={!!meetingId} />
+        <CustomTab label={t('Join Meeting')} />
       </CustomTabs>
       <div className="create-meeting-content">
         <UserAvatar />

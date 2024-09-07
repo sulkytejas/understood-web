@@ -7,16 +7,18 @@ import ListItemText from '@mui/material/ListItemText';
 import DialogTitle from '@mui/material/DialogTitle';
 import Dialog from '@mui/material/Dialog';
 import { blue } from '@mui/material/colors';
-
-const countries = [
-  { code: 'IN', languageCode: 'hi-Hi', name: 'Hindi' },
-  { code: 'US', languageCode: 'en-US', name: 'English' },
-  { code: 'RU', languageCode: 'ru-RU', name: 'Russian' },
-  // Add more countries as needed
-];
+import { useTranslation } from 'react-i18next';
 
 function AccountSeetingDialog(props) {
   const { onClose, selectedValue, open } = props;
+  const { t } = useTranslation();
+
+  const countries = [
+    { code: 'IN', languageCode: 'hi-Hi', name: t('Hindi') },
+    { code: 'US', languageCode: 'en-US', name: t('English') },
+    { code: 'RU', languageCode: 'ru-RU', name: t('Russian') },
+    // Add more countries as needed
+  ];
 
   const handleClose = () => {
     onClose(selectedValue);
@@ -35,7 +37,7 @@ function AccountSeetingDialog(props) {
           lineHeight: '22px',
         }}
       >
-        Change Spoken Language
+        {t('Change Spoken Language')}
       </DialogTitle>
       <List sx={{ pt: 0 }}>
         {countries.map((option) => (

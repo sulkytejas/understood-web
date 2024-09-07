@@ -67,7 +67,13 @@ export const WebRTCProvider = ({ children }) => {
       socket.emit(
         'joinMeeting',
         enteredMeetingId,
-        async ({ success, routerRtpCapabilities, isHost, hostSocketId }) => {
+        async ({
+          success,
+          routerRtpCapabilities,
+          isHost,
+          hostSocketId,
+          error,
+        }) => {
           console.log(enteredMeetingId);
           if (success) {
             const newDevice = new Device();
@@ -85,7 +91,7 @@ export const WebRTCProvider = ({ children }) => {
               reject(error);
             }
           } else {
-            reject({ error: 'cannot join meeting in socket io' });
+            reject({ error });
           }
         },
       );

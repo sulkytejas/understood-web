@@ -16,7 +16,8 @@ function GoogleCallback() {
 
     if (code) {
       // Send the authorization code to your backend for exchange with an access token
-      fetch('http://localhost:5001/api/auth/google', {
+      const apiUrl = process.env.REACT_APP_API_URL;
+      fetch(`${apiUrl}/api/auth/google`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -29,7 +30,8 @@ function GoogleCallback() {
           console.log('Server response:', data);
           if (data?.message === 'Authentication successful') {
             try {
-              const response = await fetch('http://localhost:5001/api/login', {
+              const apiUrl = process.env.REACT_APP_API_URL;
+              const response = await fetch(`${apiUrl}/api/login`, {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',

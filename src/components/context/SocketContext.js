@@ -13,7 +13,8 @@ export const SocketProvider = ({ children }) => {
   const [isSocketConnected, setSocketIsConnected] = useState(false);
 
   useEffect(() => {
-    const newSocket = io('http://localhost:5001');
+    const apiUrl = process.env.REACT_APP_API_URL;
+    const newSocket = io(apiUrl);
     newSocket.on('connect', () => {
       const deviceId = generateDeviceId();
       newSocket.emit('registerDevice', deviceId);

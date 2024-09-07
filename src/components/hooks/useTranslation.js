@@ -1,9 +1,8 @@
-import { useEffect, useRef, useMemo, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { useSocket } from '../context/SocketContext';
 import { useSelector } from 'react-redux';
 
-const useTranslation = ({ detectedLanguage }) => {
-  const [lang, setLang] = useState('');
+const useTranslation = () => {
   const recognitionRef = useRef(null);
   const isRecognitionActive = useRef(false);
   const segmentCounter = useRef(0);
@@ -23,14 +22,6 @@ const useTranslation = ({ detectedLanguage }) => {
     }
   }, [socket]);
 
-  useMemo(() => {
-    if (!lang) {
-      setLang(localSpokenLanguage);
-    } else if (detectedLanguage !== localSpokenLanguage) {
-      setLang(detectedLanguage);
-    }
-  }, [detectedLanguage, localSpokenLanguage]);
-
   const handleResult = (event) => {
     let finalTranscript = '';
     let interimTranscript = '';
@@ -44,7 +35,7 @@ const useTranslation = ({ detectedLanguage }) => {
     }
 
     const segmentId = segmentCounter.current;
-    console.log(finalTranscript, interimTranscript);
+
     if (finalTranscript) {
       // socket.emit(
       //   'translateText',
@@ -80,7 +71,7 @@ const useTranslation = ({ detectedLanguage }) => {
 
     const recognition = new (window.webkitSpeechRecognition ||
       window.SpeechRecognition)();
-    recognition.lang = lang;
+    recognition.lang = localSpokenLanguage;
     recognition.interimResults = true;
     recognition.continuous = true;
 

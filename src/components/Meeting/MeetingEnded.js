@@ -5,6 +5,7 @@ import { ReactComponent as LogoIcon } from '../assets/understood_logo_text.svg';
 import { useNavigate } from 'react-router-dom';
 import { useSocket } from '../context/SocketContext';
 import { useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 const PageContainer = styled(Box)(() => ({
   display: 'flex',
@@ -51,6 +52,7 @@ const MeetingEnded = () => {
   const ratingRef = useRef(null);
   const navigate = useNavigate();
   const { socket } = useSocket();
+  const { t } = useTranslation();
 
   const [searchParams] = useSearchParams();
 
@@ -90,7 +92,7 @@ const MeetingEnded = () => {
             paddingBottom: '25px',
           }}
         >
-          You Left the meeting
+          {t('Meeting Ended!')}
         </Typography>
 
         <RatingCard>
@@ -103,7 +105,7 @@ const MeetingEnded = () => {
               marginTop: '15px',
             }}
           >
-            How was the quality of the call?
+            {t('How was the quality of the call?')}
           </Typography>
           <Rating
             name="rating"
@@ -139,14 +141,14 @@ const MeetingEnded = () => {
               color="white"
               sx={{ marginLeft: '12px' }}
             >
-              Very bad
+              {t('Very bad')}
             </Typography>
             <Typography
               variant="caption"
               color="white"
               sx={{ marginLeft: '12px' }}
             >
-              Excellent
+              {t('Excellent')}
             </Typography>
           </Box>
         </RatingCard>
@@ -155,7 +157,7 @@ const MeetingEnded = () => {
           fullWidth
           sx={{ fontWeight: '400', fontSize: '14px' }}
         >
-          Join again
+          {t('Join again ')}
         </JoinButton>
       </Container>
     </PageContainer>

@@ -3,29 +3,21 @@ import React, { useEffect, useState, useMemo, useRef } from 'react';
 // import useWebRTC from '../hooks/useWebRTC';
 import TranslationOverlay from './TranslationOverlay';
 import VideoControls from './VideoControls';
-import TranslatedTextView from './TranslatedText';
 
 import VideoPlayer from './VideoPlayer';
 import { useSocket } from '../context/SocketContext';
 import { useWebRTC } from '../context/WebrtcContext';
 import { useSelector } from 'react-redux';
-import { addOrUpdateTranslatedText } from '../utils/peerConnectionUtils';
 
 const VideoCall = () => {
   const [detectedLanguage, setDetectedLanguage] = useState(null);
   const [translatedTexts, setTranslatedTexts] = useState([]);
 
   const remoteVideoRef = useRef(null);
-  const remoteAudioRef = useRef(null);
 
   const localTranslationLanguage = useSelector(
     (state) => state.translation.localTranslationLanguage,
   );
-
-  // // eslint-disable-next-line no-unused-vars
-  // const [languageCounts, setLanguageCounts] = useState([]);
-  // // eslint-disable-next-line no-unused-vars
-  // const [activeRequests, setActiveRequests] = useState(0);
 
   const {
     startStreaming,
@@ -78,24 +70,18 @@ const VideoCall = () => {
   //   });
   // };
 
-  useEffect(() => {
-    // Get raw text from other person
-    socket.off('speakerText');
-    socket.off('translatedText');
+  // useEffect(() => {
+  //   // Get raw text from other person
+  //   socket.off('speakerText');
 
-    socket.on('speakerText', (text, isFinal, id) => {
-      socket.emit('translateText', text, localTranslationLanguage, isFinal, id);
-    });
+  //   socket.on('speakerText', (text, isFinal, id) => {
+  //     socket.emit('translateText', text, localTranslationLanguage, isFinal, id);
+  //   });
 
-    socket.on('translatedText', ({ text, id, isFinal }) => {
-      addOrUpdateTranslatedText(id, text, isFinal, setTranslatedTexts);
-    });
-
-    return () => {
-      socket.off('speakerText');
-      socket.off('translatedText');
-    };
-  }, [localTranslationLanguage]);
+  //   return () => {
+  //     socket.off('speakerText');
+  //   };
+  // }, [localTranslationLanguage]);
 
   // useEffect(() => {
   //   if (!localTrack || !callStarted) return;
@@ -189,6 +175,7 @@ const VideoCall = () => {
       <TranslationOverlay
         detectedLanguage={detectedLanguage}
         localTargetLanguage={localTranslationLanguage}
+        setTranslatedTexts={setTranslatedTexts}
         socket={socket}
       />
 

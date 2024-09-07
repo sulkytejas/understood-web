@@ -4,6 +4,7 @@ import GoogleAuthentication from './GoogleAuthentication';
 import PhoneSignIn from './PhoneSignIn';
 import { styled } from '@mui/material/styles';
 import { ReactComponent as LogoIcon } from '../assets/understood_logo.svg';
+import { useTranslation } from 'react-i18next';
 
 const BackgroundLogo = styled(Box)(() => ({
   position: 'absolute ',
@@ -23,7 +24,7 @@ const BackgroundLogo = styled(Box)(() => ({
 
 const UserLogin = () => {
   const [loginMethod, setLoginMethod] = useState(null);
-
+  const { t } = useTranslation();
   const [isPhoneNumberSubmitted, setIsPhoneNumberSubmitted] = useState(false);
   const phoneLoginRef = useRef(null);
 
@@ -60,7 +61,7 @@ const UserLogin = () => {
               color: '#DF4303',
             }}
           >
-            Welcome back!
+            {t('Welcome Back, Globe-Trotter!')}
           </Typography>
           <Typography
             sx={{
@@ -70,7 +71,7 @@ const UserLogin = () => {
               color: '#595959',
             }}
           >
-            Login with Phone or Google
+            {t('Let’s get you talking—no passports needed.')}
           </Typography>
         </div>
       )}
@@ -90,7 +91,7 @@ const UserLogin = () => {
             margin: '40px 0',
           }}
         >
-          or
+          {t(' or')}
         </Typography>
       )}
 
@@ -110,7 +111,7 @@ const UserLogin = () => {
           fontSize: '18px',
         }}
       >
-        {isPhoneNumberSubmitted ? 'Verify' : 'Send OTP'}
+        {isPhoneNumberSubmitted ? t('Verify & Hop Back In!') : t('Send OTP')}
       </Button>
     </Box>
   );

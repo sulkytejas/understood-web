@@ -5,6 +5,7 @@ import {
   InputAdornment,
   Box,
   IconButton,
+  FormHelperText,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -22,8 +23,7 @@ import {
   setIsHost,
 } from '../../redux/meetingSlice';
 import { useNavigate } from 'react-router-dom';
-
-// import { useSocket } from '../context/SocketContext';
+import { useTranslation } from 'react-i18next';
 
 const CustomTextField = styled(TextField)({
   backgroundColor: '#F9F9F9',
@@ -84,12 +84,14 @@ const ParticipantTab = ({
   // const socket = useSocket();
   const [meetingId, setMeetingId] = useState(null);
   const [username, setUsername] = useState(persistedUserName);
+  const [error, setError] = useState(null);
 
   const reduxmeetingId = useSelector((state) => state.meeting.meetingId);
   const { joinRoom } = useWebRTC();
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { socket } = useSocket();
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (reduxmeetingId) {
@@ -98,20 +100,24 @@ const ParticipantTab = ({
   }, [reduxmeetingId]);
 
   const onClickHandler = async () => {
-    console.log('clicked');
-    const { joined, hostSocketId, isHost } = await joinRoom(meetingId);
-    console.log('clicked', joined, hostSocketId, isHost);
+    try {
+      const { joined, hostSocketId, isHost } = await joinRoom(meetingId);
+      console.log('clicked', joined, hostSocketId, isHost);
 
-    if (joined) {
-      dispatch(joinMeeting(meetingId));
-      dispatch(setHostSocketId(hostSocketId));
-      dispatch(setIsHost(isHost));
+      if (joined) {
+        dispatch(joinMeeting(meetingId));
+        dispatch(setHostSocketId(hostSocketId));
+        dispatch(setIsHost(isHost));
 
-      if (username !== persistedUserName) {
-        socket.emit('updateUsername', { username, phoneNumber, email });
+        if (username !== persistedUserName) {
+          socket.emit('updateUsername', { username, phoneNumber, email });
+        }
+
+        navigate(`/videocall/${meetingId}`);
       }
-
-      navigate(`/videocall/${meetingId}`);
+    } catch (e) {
+      console.log(e, 'err err');
+      setError(e?.error);
     }
   };
 
@@ -142,7 +148,7 @@ const ParticipantTab = ({
       </Box>
 
       <CustomTextField
-        placeholder="Add Username"
+        placeholder={t('Add Username')}
         value={username && username !== 'new_user' ? username : null}
         onChange={(e) => setUsername(e.target.value)}
         variant="outlined"
@@ -159,11 +165,11 @@ const ParticipantTab = ({
         }}
       />
       <CustomTextField
-        placeholder="Insert Meeting ID"
+        placeholder={t('Insert Meeting ID')}
         variant="outlined"
         fullWidth
         margin="normal"
-        value={reduxmeetingId}
+        value={meetingId}
         onChange={(e) => setMeetingId(e.target.value)}
         InputProps={{
           startAdornment: (
@@ -182,6 +188,8 @@ const ParticipantTab = ({
           ),
         }}
       />
+      {error && <FormHelperText error>{error}</FormHelperText>}
+
       <Button
         variant="contained"
         color="primary"
