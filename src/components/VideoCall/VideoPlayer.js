@@ -60,7 +60,6 @@ const VideoPlayer = ({ localStream, remoteVideoRef, callStarted }) => {
         ref={remoteVideoRef}
         autoPlay
         playsInline
-        muted={!callStarted}
       />
       <div className="remote-video">
         <Box sx={isMainMenuOpen ? circularRemoteVideo : mainRemoteVideo}>
