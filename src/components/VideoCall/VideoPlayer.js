@@ -3,7 +3,7 @@ import { Box, Typography } from '@mui/material';
 import { useSelector } from 'react-redux';
 // import { useTranslation } from 'react-i18next';
 
-const VideoPlayer = ({ localStream, remoteVideoRef, callStarted }) => {
+const VideoPlayer = ({ localStream, remoteVideoRef }) => {
   const isMainMenuOpen = useSelector((state) => state.ui.callMenuOpen);
   // const { t } = useTranslation();
   // Check if the srcObject is available or not
