@@ -3,6 +3,7 @@ import { Box, Tabs, Tab } from '@mui/material';
 import { styled } from '@mui/system';
 import { useSelector, useDispatch } from 'react-redux';
 import { useSocket } from '../context/SocketContext';
+import { useLocation } from 'react-router-dom';
 
 import HostControl from './HostControl';
 import UserAvatar from './UserAvatar';
@@ -55,6 +56,7 @@ const StyledLogoBox = styled(Box)(() => ({
 const CreateMeetingPage = () => {
   const dispatch = useDispatch();
   const { socket, isSocketConnected } = useSocket();
+  const location = useLocation();
   const { t } = useTranslation();
 
   const [activeTab, setActiveTab] = useState(0);
@@ -67,7 +69,9 @@ const CreateMeetingPage = () => {
 
   const handleSettingClose = (languageCode) => {
     setOpenSettingMenu(false);
-    dispatch(setLocalSpokenLanguage(languageCode));
+    if (languageCode) {
+      dispatch(setLocalSpokenLanguage(languageCode));
+    }
   };
 
   useEffect(() => {
@@ -77,19 +81,27 @@ const CreateMeetingPage = () => {
   }, [meetingId]);
 
   useEffect(() => {
-    if (socket && isSocketConnected) {
-      socket.emit(
-        'getActiveMeetings',
-        { phoneNumber, email },
-        ({ meetingId }) => {
-          console.log(meetingId, 'meetingId');
-          if (meetingId) {
-            dispatch(joinMeeting(meetingId));
-          }
+    const urlParams = new URLSearchParams(location.search);
+    const urlMeetingId = urlParams.get('meetingId');
 
-          setLoading(false);
-        },
-      );
+    if (socket && isSocketConnected) {
+      if (urlMeetingId) {
+        dispatch(joinMeeting(urlMeetingId));
+
+        setLoading(false);
+      } else {
+        socket.emit(
+          'getActiveMeetings',
+          { phoneNumber, email },
+          ({ meetingId }) => {
+            if (meetingId) {
+              dispatch(joinMeeting(meetingId));
+            }
+
+            setLoading(false);
+          },
+        );
+      }
     }
   }, [socket, isSocketConnected, phoneNumber, email, dispatch]);
 
@@ -115,7 +127,7 @@ const CreateMeetingPage = () => {
         textColor="primary"
         variant="fullWidth"
       >
-        <CustomTab label={t('Host Meeting')} disabled={!!meetingId} />
+        <CustomTab label={t('Host Meeting')} />
         <CustomTab label={t('Join Meeting')} />
       </CustomTabs>
       <div className="create-meeting-content">
@@ -128,6 +140,7 @@ const CreateMeetingPage = () => {
           persistedUserName={persistedUserName}
           phoneNumber={phoneNumber}
           email={email}
+          setActiveTab={setActiveTab}
         />
       ) : (
         <ParticipantTab

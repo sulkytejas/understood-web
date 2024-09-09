@@ -81,6 +81,7 @@ const HostControl = ({
   persistedUserName,
   phoneNumber,
   email,
+  setActiveTab,
 }) => {
   const dispatch = useDispatch();
   const { socket } = useSocket();
@@ -115,6 +116,7 @@ const HostControl = ({
       if (username !== persistedUserName) {
         socket.emit('updateUsername', { username, phoneNumber, email });
       }
+      setActiveTab(1);
     } else {
       console.error('Socket not initialized');
     }

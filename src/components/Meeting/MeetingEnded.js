@@ -3,7 +3,6 @@ import { Box, Typography, Button, Rating } from '@mui/material';
 import { styled } from '@mui/system';
 import { ReactComponent as LogoIcon } from '../assets/understood_logo_text.svg';
 import { useNavigate } from 'react-router-dom';
-import { useSocket } from '../context/SocketContext';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
@@ -51,7 +50,6 @@ const MeetingEnded = () => {
   const [ratingWidth, setRatingWidth] = useState(0);
   const ratingRef = useRef(null);
   const navigate = useNavigate();
-  const { socket } = useSocket();
   const { t } = useTranslation();
 
   const [searchParams] = useSearchParams();
@@ -65,16 +63,37 @@ const MeetingEnded = () => {
     }
   }, [ratingRef.current]);
 
-  const handleRatingChange = (newValue) => {
-    setValue(newValue);
+  const handleRatingChange = (_, newValue) => {
+    if (newValue !== null) {
+      setValue(newValue);
+    }
   };
 
-  const handleJoinCallClick = () => {
-    socket.emit('userRatingSubmitted', { meetingId, rating: value });
-    navigate('/meeting', { state: { fromMeetingEnded: true } });
-    window.location.reload();
-  };
+  const handleJoinCallClick = async () => {
+    try {
+      const apiUrl = process.env.REACT_APP_API_URL;
+      const response = await fetch(`${apiUrl}/api/submitRating`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          meetingId,
+          rating: value,
+        }),
+      });
 
+      if (response.ok) {
+        console.log('Rating submitted successfully');
+        navigate('/meeting', { state: { fromMeetingEnded: true } });
+        window.location.reload();
+      } else {
+        console.error('Failed to submit rating');
+      }
+    } catch (error) {
+      console.error('Error submitting rating:', error);
+    }
+  };
   return (
     <PageContainer>
       <StyledLogoBox>

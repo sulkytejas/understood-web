@@ -8,10 +8,15 @@ import DialogTitle from '@mui/material/DialogTitle';
 import Dialog from '@mui/material/Dialog';
 import { blue } from '@mui/material/colors';
 import { useTranslation } from 'react-i18next';
+import { useSelector } from 'react-redux';
+import { Check } from '@mui/icons-material';
 
 function AccountSeetingDialog(props) {
   const { onClose, selectedValue, open } = props;
   const { t } = useTranslation();
+  const localSpokenLanguage = useSelector(
+    (state) => state.translation.localSpokenLanguage,
+  );
 
   const countries = [
     { code: 'IN', languageCode: 'hi-Hi', name: t('Hindi') },
@@ -58,6 +63,17 @@ function AccountSeetingDialog(props) {
               </ListItemAvatar>
               <ListItemText primary={option.name} />
             </ListItemButton>
+
+            {option.languageCode === localSpokenLanguage && (
+              <Check
+                sx={{
+                  height: '30px',
+                  width: '28px',
+                  marginRight: '20px',
+                  color: '#4abbc9',
+                }}
+              />
+            )}
           </ListItem>
         ))}
       </List>

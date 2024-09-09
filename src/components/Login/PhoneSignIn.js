@@ -266,7 +266,14 @@ const PhoneSignIn = forwardRef(
                 dispatch(setUserPhoneNumber(serverResponse?.user?.phoneNumber));
                 dispatch(setUserName(serverResponse?.user?.username));
 
-                navigate('/meeting');
+                const redirectQuery = new URLSearchParams(location.search).get(
+                  'redirect',
+                );
+                if (redirectQuery) {
+                  navigate(`/meeting${decodeURIComponent(redirectQuery)}`);
+                } else {
+                  navigate('/meeting');
+                }
               }
             } catch (error) {
               console.error('Error from server to complete login ', error);
@@ -305,6 +312,10 @@ const PhoneSignIn = forwardRef(
               variant="outlined"
               fullWidth
               margin="normal"
+              inputProps={{
+                inputMode: 'numeric', // Ensures numeric keyboard
+                pattern: '[0-9]*', // Ensures only numbers are allowed
+              }}
               onChange={handlePhoneNumberChange}
               value={phoneNumber}
               InputProps={{

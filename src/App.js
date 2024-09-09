@@ -2,7 +2,8 @@
 
 import './App.css';
 import { React, useState, useEffect } from 'react';
-import { Box } from '@mui/material';
+import { Box, useMediaQuery } from '@mui/material';
+import Bowser from 'bowser';
 import { SocketProvider } from './components/context/SocketContext';
 import { WebRTCProvider } from './components/context/WebrtcContext';
 import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
@@ -15,6 +16,9 @@ import UserLogin from './components/Login/UserLogin';
 import MeetingEnded from './components/Meeting/MeetingEnded';
 import GoogleCallback from './components/Login/GoogleCallback';
 import ProtectedRoute from './components/onBoarding/ProtectedRoute';
+import PrivacyPolicy from './components/onBoarding/PrivacyPolicy';
+import UnsupportedBrowser from './components/onBoarding/Unsupported';
+import TermsAndCondition from './components/onBoarding/TermsAndCondition';
 
 import WelcomeScreen from './components/onBoarding/WelcomeScreen';
 import LoadingSpinner from './components/onBoarding/LoadingSpinner';
@@ -27,8 +31,20 @@ function App() {
   const [spokenLanguageStorage, setSpokenLanguageStorage] = useState(null);
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
-
+  const [isChrome, setIsChrome] = useState(true);
+  const isDeviceSupported = useMediaQuery('(max-width:430px)');
   const meetingId = useSelector((state) => state.meeting.meetingId);
+
+  useEffect(() => {
+    const browser = Bowser.getParser(window.navigator.userAgent);
+    const browserName = browser.getBrowserName();
+
+    console.log(browser, browserName);
+
+    if (browserName !== 'Chrome') {
+      setIsChrome(false);
+    }
+  }, []);
 
   useEffect(() => {
     const spokenLanguage = localStorage.getItem('spokenLanguage');
@@ -73,11 +89,19 @@ function App() {
     checkAuth();
   }, [dispatch, location]);
 
+  if (!isChrome) {
+    return <UnsupportedBrowser variant="browser" />;
+  }
+
+  if (!isDeviceSupported) {
+    return <UnsupportedBrowser variant="device" />;
+  }
+
   if (loading) {
     console.log('Loading state is true, rendering spinner...');
     return <LoadingSpinner />; // Render a loading indicator while waiting for user data
   }
-  console.log('loading', loading);
+
   return (
     <Box
       sx={{
@@ -135,6 +159,8 @@ function App() {
               }
             />
             <Route path="/meetingEnded" element={<MeetingEnded />} />
+            <Route path="/privacyPolicy" element={<PrivacyPolicy />} />
+            <Route path="/termsAndConditions" element={<TermsAndCondition />} />
           </Routes>
         </WebRTCProvider>
       </SocketProvider>

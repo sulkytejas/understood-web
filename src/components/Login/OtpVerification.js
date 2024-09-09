@@ -61,7 +61,12 @@ const OtpVerification = ({ onSetOtp, length = 6, phoneNumber }) => {
             <TextField
               key={index}
               value={data}
-              inputProps={{ maxLength: 1, style: { textAlign: 'center' } }}
+              inputProps={{
+                inputMode: 'numeric',
+                pattern: '[0-9]*',
+                maxLength: 1,
+                style: { textAlign: 'center' },
+              }}
               onChange={(e) => handleChange(e.target, index)}
               onKeyDown={(e) => handleKeyDown(e, index)}
               inputRef={(ref) => (inputRefs.current[index] = ref)}

@@ -6,7 +6,10 @@ import {
   Box,
   IconButton,
   FormHelperText,
+  Typography,
 } from '@mui/material';
+import WhatsAppIcon from '@mui/icons-material/WhatsApp';
+import LinkIcon from '@mui/icons-material/Link';
 import {
   Add as AddIcon,
   Videocam,
@@ -121,10 +124,23 @@ const ParticipantTab = ({
     }
   };
 
+  const handleWhatsAppShare = () => {
+    const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent('Join meeting with following link:')} ${encodeURIComponent(`https://www.myunderstood.com/meeting?meetingId=${meetingId}`)}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
   const handleCopyClick = () => {
     navigator.clipboard.writeText(meetingId).then(() => {
       console.log('Text copied to clipboard!');
     });
+  };
+
+  const handleCopyShare = () => {
+    navigator.clipboard
+      .writeText(`https://www.myunderstood.com/meeting?meetingId=${meetingId}`)
+      .then(() => {
+        console.log('Text copied to clipboard!');
+      });
   };
 
   return (
@@ -190,6 +206,46 @@ const ParticipantTab = ({
       />
       {error && <FormHelperText error>{error}</FormHelperText>}
 
+      <Typography
+        sx={{
+          fontSize: '16px',
+          fontWeight: 500,
+          lineHeight: '22px',
+          textAlign: 'center',
+        }}
+      >
+        {t('Share Link via')}
+      </Typography>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <IconButton
+          onClick={handleWhatsAppShare}
+          aria-label="Share on WhatsApp"
+          sx={{
+            backgroundColor: '#DFEBFF',
+            margin: '5px',
+          }}
+        >
+          <WhatsAppIcon style={{ color: '#25D366' }} />
+        </IconButton>
+
+        {/* Link Copy Button */}
+        <IconButton
+          onClick={handleCopyShare}
+          aria-label="Copy Link"
+          sx={{
+            backgroundColor: '#DFEBFF',
+            margin: '5px',
+          }}
+        >
+          <LinkIcon />
+        </IconButton>
+      </Box>
       <Button
         variant="contained"
         color="primary"
