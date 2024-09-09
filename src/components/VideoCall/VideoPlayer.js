@@ -7,7 +7,7 @@ const VideoPlayer = ({ localStream, remoteVideoRef, callStarted }) => {
   const isMainMenuOpen = useSelector((state) => state.ui.callMenuOpen);
   const { t } = useTranslation();
   // Check if the srcObject is available or not
-  const showAlert = !remoteVideoRef?.current?.srcObject;
+  // const showAlert = !remoteVideoRef?.current?.srcObject;
 
   const circularRemoteVideo = {
     display: 'flex',
@@ -109,7 +109,7 @@ const VideoPlayer = ({ localStream, remoteVideoRef, callStarted }) => {
         </Box>
       </div>
 
-      {showAlert && (
+      {/* {showAlert && (
         <Box
           sx={{
             position: 'absolute',
@@ -127,7 +127,7 @@ const VideoPlayer = ({ localStream, remoteVideoRef, callStarted }) => {
             {t('Waiting for the participant to join...')}
           </Alert>
         </Box>
-      )}
+      )} */}
     </div>
   );
 };
