@@ -155,17 +155,18 @@ const ParticipantTab = ({
         }}
       >
         <p className="host-control-title"> Join Meeting </p>
-        <IconButton aria-label="settings" edge="end">
-          <SettingsIcon
-            sx={{ color: ' #DF4303' }}
-            onClick={() => onSetOpenSettingMenu((prev) => !prev)}
-          />
+        <IconButton
+          aria-label="settings"
+          edge="end"
+          onClick={() => onSetOpenSettingMenu((prev) => !prev)}
+        >
+          <SettingsIcon sx={{ color: ' #DF4303' }} />
         </IconButton>
       </Box>
 
       <CustomTextField
         placeholder={t('Add Username')}
-        value={username && username !== 'new_user' ? username : null}
+        value={username && username !== 'new_user' ? username : ''}
         onChange={(e) => setUsername(e.target.value)}
         variant="outlined"
         fullWidth
@@ -185,7 +186,7 @@ const ParticipantTab = ({
         variant="outlined"
         fullWidth
         margin="normal"
-        value={meetingId}
+        value={meetingId || ''}
         onChange={(e) => setMeetingId(e.target.value)}
         InputProps={{
           startAdornment: (

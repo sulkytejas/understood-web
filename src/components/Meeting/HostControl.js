@@ -140,11 +140,12 @@ const HostControl = ({
         }}
       >
         <p className="host-control-title">{t('Host Meeting')} </p>
-        <IconButton aria-label="settings" edge="end">
-          <SettingsIcon
-            sx={{ color: ' #DF4303' }}
-            onClick={() => onSetOpenSettingMenu((prev) => !prev)}
-          />
+        <IconButton
+          aria-label="settings"
+          edge="end"
+          onClick={() => onSetOpenSettingMenu((prev) => !prev)}
+        >
+          <SettingsIcon sx={{ color: ' #DF4303' }} />
         </IconButton>
       </Box>
 

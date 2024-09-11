@@ -107,6 +107,7 @@ const VideoControls = ({ callStarted, onCallToggle, translatedTexts }) => {
       >
         <MenuItem
           disabled
+          key="title_side_menu"
           sx={{
             '&.Mui-disabled': {
               opacity: 1,
@@ -129,6 +130,7 @@ const VideoControls = ({ callStarted, onCallToggle, translatedTexts }) => {
         </MenuItem>
         {langauges.map((lang) => (
           <MenuItem
+            key={lang.languageCode}
             value={lang.languageCode}
             onClick={() => handleLanguageChange(lang.languageCode)}
             sx={{

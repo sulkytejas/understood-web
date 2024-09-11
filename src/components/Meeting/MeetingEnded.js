@@ -70,28 +70,33 @@ const MeetingEnded = () => {
   };
 
   const handleJoinCallClick = async () => {
-    try {
-      const apiUrl = process.env.REACT_APP_API_URL;
-      const response = await fetch(`${apiUrl}/api/submitRating`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          meetingId,
-          rating: value,
-        }),
-      });
+    if (meetingId) {
+      try {
+        const apiUrl = process.env.REACT_APP_API_URL;
+        const response = await fetch(`${apiUrl}/api/submitRating`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            meetingId,
+            rating: value,
+          }),
+        });
 
-      if (response.ok) {
-        console.log('Rating submitted successfully');
-        navigate('/meeting', { state: { fromMeetingEnded: true } });
-        window.location.reload();
-      } else {
-        console.error('Failed to submit rating');
+        if (response.ok) {
+          console.log('Rating submitted successfully');
+          navigate('/meeting', { state: { fromMeetingEnded: true } });
+          window.location.reload();
+        } else {
+          console.error('Failed to submit rating');
+        }
+      } catch (error) {
+        console.error('Error submitting rating:', error);
       }
-    } catch (error) {
-      console.error('Error submitting rating:', error);
+    } else {
+      navigate('/meeting', { state: { fromMeetingEnded: true } });
+      window.location.reload();
     }
   };
   return (

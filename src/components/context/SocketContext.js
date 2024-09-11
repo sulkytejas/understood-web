@@ -17,6 +17,7 @@ export const SocketProvider = ({ children }) => {
     const newSocket = io(apiUrl);
     newSocket.on('connect', () => {
       const deviceId = generateDeviceId();
+
       newSocket.emit('registerDevice', deviceId);
       console.log('Connected to server with socket ID:', newSocket.id);
       setSocket(newSocket); // Set the socket after connection
