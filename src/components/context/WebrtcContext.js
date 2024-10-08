@@ -30,6 +30,9 @@ export const WebRTCProvider = ({ children }) => {
   const [sendTransport, setSendTransport] = useState(null);
   const [recvTransport, setRecvTransport] = useState(null);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [currentBitrate, setCurrentBitrate] = useState(null);
+  const [packetLoss, setPacketLoss] = useState(null);
+  const [rtt, setRtt] = useState(null);
 
   const videoProducerRef = useRef(null);
   const audioProducerRef = useRef(null);
@@ -41,6 +44,8 @@ export const WebRTCProvider = ({ children }) => {
   useEffect(() => {
     console.log('Device state after update:', device);
   }, [device]);
+
+  console.log(packetLoss, rtt, currentBitrate, 'packetLoss,rtt,currentBitrate');
 
   useEffect(() => {
     if (videoProducerRef.current) {
@@ -61,6 +66,204 @@ export const WebRTCProvider = ({ children }) => {
       }
     }
   }, [isAudioPaused, audioProducerRef.current]);
+
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      if (videoProducerRef.current) {
+        try {
+          const pc = sendTransport._handler._pc;
+          const transportStats = await pc.getStats();
+          let bitrate;
+          let packetsLost;
+          let roundTripTime;
+          let packetsSent;
+
+          transportStats.forEach((report) => {
+            if (report.type === 'outbound-rtp' && report.kind === 'video') {
+              console.log('Outbound RTP:', report);
+              packetsSent = report.packetsSent;
+              bitrate = report.bytesSent;
+              setCurrentBitrate(bitrate);
+            }
+            if (
+              report.type === 'candidate-pair' &&
+              report.state === 'succeeded' &&
+              report.nominated
+            ) {
+              console.log('Candidate Pair:', report);
+              roundTripTime = report.currentRoundTripTime * 1000; // Convert to milliseconds
+              setRtt(roundTripTime);
+            }
+            if (
+              report.type === 'remote-inbound-rtp' &&
+              report.kind === 'video'
+            ) {
+              console.log('Remote Inbound RTP:', report);
+
+              packetsLost = report.packetsLost;
+            }
+          });
+
+          const loss = (packetsLost / packetsSent) * 100;
+          setPacketLoss(loss);
+          adjustBitrateAndResolution(bitrate, loss, roundTripTime);
+          // stats.forEach((report) => {
+          //   if (report.type === 'outbound-rtp') {
+          //   }
+          // });
+        } catch (error) {
+          console.error('Error fecthing videoproducer stats', error);
+        }
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [videoProducerRef.current]);
+
+  const adjustBitrateAndResolution = (bitrate, packetLoss, rtt) => {
+    const minBitrate = 500000;
+    165817;
+    const maxRTT = 200;
+    const maxPacketLoss = 5;
+
+    if (packetLoss > maxPacketLoss || rtt > maxRTT) {
+      console.log('Packet loss or RTT too high, reducing bitrate');
+      reduceBitrate(bitrate);
+    } else if (bitrate < minBitrate) {
+      switchToLowerResolution();
+    } else {
+      increaseBitrate(bitrate);
+    }
+  };
+
+  const switchToLowerResolution = () => {
+    // Switch to a lower resolution or different codec
+    console.log('Switching to lower resolution');
+    const sender = videoProducerRef.current._rtpSender;
+    if (sender) {
+      const params = sender.getParameters();
+      if (params.encodings && params.encodings[0]) {
+        if (!params.encodings[0].scaleResolutionDownBy) {
+          params.encodings[0].scaleResolutionDownBy = 1.5; // Start with 1.5x downscaling
+        } else {
+          params.encodings[0].scaleResolutionDownBy *= 1.5;
+        }
+
+        // Optionally reduce the bitrate to match lower resolution
+        params.encodings[0].maxBitrate = Math.max(
+          params.encodings[0].maxBitrate * 0.75,
+          300000,
+        ); // Reduce bitrate further
+
+        if (!params.encodings[0].maxFramerate) {
+          params.encodings[0].maxFramerate = 15; // Lower frame rate if needed
+        } else {
+          params.encodings[0].maxFramerate = Math.max(
+            params.encodings[0].maxFramerate - 5,
+            10,
+          ); // Gradually lower frame rate
+        }
+
+        sender
+          .setParameters(params)
+          .then(() => {
+            console.log(
+              'Resolution and bitrate adjusted for poor network conditions',
+            );
+          })
+          .catch((error) =>
+            console.error('Error adjusting resolution and bitrate:', error),
+          );
+      }
+    }
+  };
+
+  const reduceBitrate = (currentBitrate) => {
+    const sender = videoProducerRef.current._rtpSender;
+
+    if (sender) {
+      const params = sender.getParameters();
+      params.encodings[0].maxBitrate = Math.max(currentBitrate * 0.75, 500000);
+      sender.setParameters(params);
+      console.log('Reduced bitrate to:', params.encodings[0].maxBitrate);
+    }
+  };
+
+  const increaseBitrate = (currentBitrate) => {
+    const sender = videoProducerRef.current._rtpSender;
+
+    if (sender) {
+      const params = sender.getParameters();
+      params.encodings[0].maxBitrate = currentBitrate + 100000;
+      sender.setParameters(params);
+
+      // if (params.encodings[0].maxBitrate > 1500000) {
+      //   switchCodec('VP9');
+      //
+      // }
+      console.log(
+        'Increased bitrate to:',
+        params.encodings[0].maxBitrate,
+        'packetLoss:',
+        packetLoss,
+        'rtt:',
+        rtt,
+      );
+    }
+  };
+
+  // const switchCodec = async (newCodec) => {
+  //   console.log('Switching codec to:', newCodec);
+  //   try {
+  //     const transport = sendTransport;
+
+  //     if (videoProducerRef.current) {
+  //       await videoProducerRef.current.close();
+  //     }
+
+  //     const videoTrack = localStream.getVideoTracks()[0];
+
+  //     if (videoTrack.readyState === 'ended') {
+  //       console.error('Track has already ended, cannot reuse.');
+  //       return;
+  //     }
+
+  //     let codec;
+  //     if (newCodec === 'VP8') {
+  //       codec = device.rtpCapabilities.codecs.find(
+  //         (c) => c.mimeType === 'video/VP8',
+  //       );
+  //     } else if (newCodec === 'H264') {
+  //       codec = device.rtpCapabilities.codecs.find(
+  //         (c) => c.mimeType === 'video/H264',
+  //       );
+  //     } else if (newCodec === 'VP9') {
+  //       codec = device.rtpCapabilities.codecs.find(
+  //         (c) => c.mimeType === 'video/VP9',
+  //       );
+  //     } else {
+  //       console.error('Invalid codec:', newCodec);
+  //       return;
+  //     }
+
+  //     const newVideoProducer = await transport.produce({
+  //       track: videoTrack,
+  //       encodings: [
+  //         { scalabilityMode: 'S1T1', maxBitrate: 1000000 }, // Single encoding for SVC (VP9 doesn’t support simulcast)
+  //       ],
+  //       codecOptions: {
+  //         videoGoogleStartBitrate: 500,
+  //       },
+  //       codec,
+  //       stopTracks: false,
+  //     });
+  //     videoProducerRef.current = newVideoProducer;
+
+  //     console.log(`Switched codec to ${newCodec}`);
+  //   } catch (error) {
+  //     console.error('Failed to switch codec:', error);
+  //   }
+  // };
 
   const joinRoom = (enteredMeetingId) => {
     return new Promise((resolve, reject) => {
@@ -298,11 +501,11 @@ export const WebRTCProvider = ({ children }) => {
     console.log('Transport ready, starting to produce media...');
 
     const stream = await navigator.mediaDevices.getUserMedia({
-      // video: {
-      //   width: { ideal: 1280 },
-      //   height: { ideal: 720 },
-      //   frameRate: { ideal: 30 },
-      // },
+      video: {
+        width: { ideal: 640 },
+        height: { ideal: 360 },
+        frameRate: { ideal: 15, max: 30 },
+      },
       video: true,
       audio: true,
     });
@@ -312,20 +515,21 @@ export const WebRTCProvider = ({ children }) => {
     const audioTrack = stream.getAudioTracks()[0];
 
     try {
+      const capabilities = RTCRtpSender.getCapabilities('video');
+      console.log(capabilities, 'capabilities before video producer');
       const videoProducer = await newTransport.produce({
         track: videoTrack,
         encodings: [
-          { maxBitrate: 500000, scaleResolutionDownBy: 3 }, // Low resolution
-          { maxBitrate: 1000000, scaleResolutionDownBy: 2 }, // Medium resolution
-          { maxBitrate: 1500000 }, // High resolution
+          { scalabilityMode: 'S1T1', maxBitrate: 1000000 }, // Single encoding for SVC (VP9 doesn’t support simulcast)
         ],
-        scalabilityMode: 'L3T3',
-        dtx: true,
+
         codecOptions: {
-          videoGoogleStartBitrate: 1000,
+          videoGoogleStartBitrate: 500,
         },
       }); // Use the transport directly
-      const audioProducer = await newTransport.produce({ track: audioTrack }); // Use the transport directly
+      const audioProducer = await newTransport.produce({
+        track: audioTrack,
+      }); // Use the transport directly
 
       videoProducerRef.current = videoProducer;
       audioProducerRef.current = audioProducer;

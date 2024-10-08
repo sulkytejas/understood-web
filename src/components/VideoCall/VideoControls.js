@@ -24,6 +24,7 @@ import { ReactComponent as CurvedMenuBackground } from './assets/curved_menu.svg
 import { ReactComponent as CaptionIcon } from './assets/caption_icon.svg';
 import { ReactComponent as MessageIcon } from './assets/message.svg';
 import { ReactComponent as TranslationIcon } from './assets/translation_icon.svg';
+import { useSocket } from '../context/SocketContext';
 
 const CustomBottomNavigationAction = styled(BottomNavigationAction)({
   color: 'white',
@@ -63,6 +64,7 @@ const VideoControls = ({ callStarted, onCallToggle, translatedTexts }) => {
     (state) => state.translation.localTranslationLanguage,
   );
   const { t } = useTranslation();
+  const { socket } = useSocket();
 
   const langauges = [
     {
@@ -88,6 +90,7 @@ const VideoControls = ({ callStarted, onCallToggle, translatedTexts }) => {
   const handleLanguageChange = (lang) => {
     handleClose();
     dispatch(setLocalTranslationLanguage(lang));
+    socket.emit('setLanguagePreference', { languageCode: lang });
   };
 
   const handleClose = () => {

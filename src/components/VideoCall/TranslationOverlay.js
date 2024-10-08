@@ -18,19 +18,6 @@ const TranslationOverlay = ({
     };
   }, []);
 
-  useEffect(() => {
-    // Get raw text from other person
-    socket.off('speakerText');
-
-    socket.on('speakerText', (text, isFinal, id) => {
-      socket.emit('translateText', text, localTargetLanguage, isFinal, id);
-    });
-
-    return () => {
-      socket.off('speakerText');
-    };
-  }, [localTargetLanguage]);
-
   return (
     <Translation
       socket={socket} // Pass the socket object here

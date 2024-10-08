@@ -14,13 +14,13 @@ const useTranslation = () => {
 
   const meetingId = useSelector((state) => state.meeting.meetingId);
 
-  useEffect(() => {
-    if (socket) {
-      socket.on('speakerRawText', (text, isFinal, id, meetingId) => {
-        socket.broadcast.to(meetingId).emit('speakerText', text, isFinal, id);
-      });
-    }
-  }, [socket]);
+  // useEffect(() => {
+  //   if (socket) {
+  //     socket.on('speakerRawText', (text, isFinal, id, meetingId) => {
+  //       socket.broadcast.to(meetingId).emit('speakerText', text, isFinal, id);
+  //     });
+  //   }
+  // }, [socket]);
 
   const handleResult = (event) => {
     let finalTranscript = '';
@@ -37,30 +37,16 @@ const useTranslation = () => {
     const segmentId = segmentCounter.current;
 
     if (finalTranscript) {
-      // socket.emit(
-      //   'translateText',
-      //   finalTranscript,
-      //   targetLanguage,
-      //   true,
-      //   segmentId,
-      // );
+      socket.emit('translateText', finalTranscript, true, segmentId, meetingId);
+      segmentCounter.current++;
+    } else {
       socket.emit(
-        'speakerRawText',
-        finalTranscript,
-        true,
+        'translateText',
+        interimTranscript,
+        false,
         segmentId,
         meetingId,
       );
-      segmentCounter.current++;
-    } else {
-      // socket.emit(
-      //   'translateText',
-      //   interimTranscript,
-      //   targetLanguage,
-      //   false,
-      //   segmentId,
-      // );
-      socket.emit('speakerRawText', interimTranscript, false, segmentId);
     }
   };
 
