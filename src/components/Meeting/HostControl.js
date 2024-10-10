@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 import {
   TextField,
@@ -7,6 +7,7 @@ import {
   CircularProgress,
   InputAdornment,
   Box,
+  Tooltip,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -91,6 +92,16 @@ const HostControl = ({
   const [meetingId, setMeetingId] = useState('');
   const [loading, setLoading] = useState(false);
   const [username, setUsername] = useState(persistedUserName);
+  const [openTooltip, setOpenTooltip] = useState(true);
+
+  useEffect(() => {
+    // Set a timeout to close the tooltip after 3 seconds (3000ms)
+    const timer = setTimeout(() => {
+      setOpenTooltip(false);
+    }, 5000); // Adjust the time as needed
+
+    return () => clearTimeout(timer); // Clean up the timer on unmount
+  }, []);
 
   const createMeetingHandler = async () => {
     setLoading(true);
@@ -128,6 +139,8 @@ const HostControl = ({
     });
   };
 
+  const tooltipTitle = t('Change your spoken language and other settings');
+
   return (
     <div>
       <Box
@@ -140,13 +153,16 @@ const HostControl = ({
         }}
       >
         <p className="host-control-title">{t('Host Meeting')} </p>
-        <IconButton
-          aria-label="settings"
-          edge="end"
-          onClick={() => onSetOpenSettingMenu((prev) => !prev)}
-        >
-          <SettingsIcon sx={{ color: ' #DF4303' }} />
-        </IconButton>
+
+        <Tooltip title={tooltipTitle} open={openTooltip} placement="top" arrow>
+          <IconButton
+            aria-label="settings"
+            edge="end"
+            onClick={() => onSetOpenSettingMenu((prev) => !prev)}
+          >
+            <SettingsIcon sx={{ color: ' #DF4303' }} />
+          </IconButton>
+        </Tooltip>
       </Box>
 
       <CustomTextField

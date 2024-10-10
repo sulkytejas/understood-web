@@ -1,5 +1,5 @@
 /* eslint-disable */
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 
 import {
@@ -58,6 +58,8 @@ const CustomBottomNavigationAction = styled(BottomNavigationAction)({
 
 const VideoControls = ({ callStarted, onCallToggle, translatedTexts }) => {
   const [anchorEl, setAnchorEl] = useState(null);
+  const [timeInSeconds, setTimeInSeconds] = useState(30 * 60);
+
   const isMainMenuOpen = useSelector((state) => state.ui.callMenuOpen);
   const isSideMenuOpen = useSelector((state) => state.ui.callSideMenu);
   const userTranslationLanguage = useSelector(
@@ -65,6 +67,36 @@ const VideoControls = ({ callStarted, onCallToggle, translatedTexts }) => {
   );
   const { t } = useTranslation();
   const { socket } = useSocket();
+
+  // Function to format the time as HH:MM:SS
+  const formatTime = (seconds) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const remainingSeconds = seconds % 60;
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
+  };
+
+  useEffect(() => {
+    let timerInterval = null;
+    if (callStarted) {
+      timerInterval = setInterval(() => {
+        setTimeInSeconds((prevTime) => {
+          if (prevTime <= 0) {
+            clearInterval(timerInterval);
+            return 0;
+          }
+          return prevTime - 1;
+        });
+      }, 1000);
+    }
+
+    // Cleanup the interval when the component unmounts or connectionState changes
+    return () => {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+      }
+    };
+  }, [callStarted]);
 
   const langauges = [
     {
@@ -176,13 +208,13 @@ const VideoControls = ({ callStarted, onCallToggle, translatedTexts }) => {
           color="white"
           borderRadius="50px"
           padding="5px 10px"
-          bottom="100px"
+          bottom="140px"
           left="10px"
           position="absolute"
           border="1px solid #FF7722"
         >
           <Typography variant="body1" style={{ marginLeft: '8px' }}>
-            00:47:47
+            {formatTime(timeInSeconds)}
           </Typography>
         </Box>
       )}

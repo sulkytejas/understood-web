@@ -1,11 +1,14 @@
 import React from 'react';
-import { Box, Typography, Alert } from '@mui/material';
+import { Box, Alert, Typography } from '@mui/material';
 import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import LoadingSpinner from '../onBoarding/LoadingSpinner';
 
 const VideoPlayer = ({ localStream, remoteVideoRef, connectionState }) => {
   const isMainMenuOpen = useSelector((state) => state.ui.callMenuOpen);
+  const localTranslationLanguage = useSelector(
+    (state) => state.translation.localTranslationLanguage,
+  );
 
   const { t } = useTranslation();
   // Check if the srcObject is available or not
@@ -105,7 +108,7 @@ const VideoPlayer = ({ localStream, remoteVideoRef, connectionState }) => {
                 variant="body2"
                 sx={{ color: '#4EC7CF', fontWeight: 'bold', fontSize: '9px' }}
               >
-                • EN
+                {`• ${localTranslationLanguage || t('not set')}`}
               </Typography>
             </Box>
           )}

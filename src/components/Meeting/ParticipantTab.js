@@ -7,6 +7,7 @@ import {
   IconButton,
   FormHelperText,
   Typography,
+  Tooltip,
 } from '@mui/material';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import LinkIcon from '@mui/icons-material/Link';
@@ -88,6 +89,7 @@ const ParticipantTab = ({
   const [meetingId, setMeetingId] = useState(null);
   const [username, setUsername] = useState(persistedUserName);
   const [error, setError] = useState(null);
+  const [openTooltip, setOpenTooltip] = useState(true);
 
   const reduxmeetingId = useSelector((state) => state.meeting.meetingId);
   const { joinRoom } = useWebRTC();
@@ -95,6 +97,15 @@ const ParticipantTab = ({
   const dispatch = useDispatch();
   const { socket } = useSocket();
   const { t } = useTranslation();
+
+  useEffect(() => {
+    // Set a timeout to close the tooltip after 3 seconds (3000ms)
+    const timer = setTimeout(() => {
+      setOpenTooltip(false);
+    }, 5000); // Adjust the time as needed
+
+    return () => clearTimeout(timer); // Clean up the timer on unmount
+  }, []);
 
   useEffect(() => {
     if (reduxmeetingId) {
@@ -143,6 +154,8 @@ const ParticipantTab = ({
       });
   };
 
+  const tooltipTitle = t('Change your spoken language and other settings');
+
   return (
     <div>
       <Box
@@ -155,13 +168,15 @@ const ParticipantTab = ({
         }}
       >
         <p className="host-control-title"> Join Meeting </p>
-        <IconButton
-          aria-label="settings"
-          edge="end"
-          onClick={() => onSetOpenSettingMenu((prev) => !prev)}
-        >
-          <SettingsIcon sx={{ color: ' #DF4303' }} />
-        </IconButton>
+        <Tooltip title={tooltipTitle} open={openTooltip} placement="top" arrow>
+          <IconButton
+            aria-label="settings"
+            edge="end"
+            onClick={() => onSetOpenSettingMenu((prev) => !prev)}
+          >
+            <SettingsIcon sx={{ color: ' #DF4303' }} />
+          </IconButton>
+        </Tooltip>
       </Box>
 
       <CustomTextField

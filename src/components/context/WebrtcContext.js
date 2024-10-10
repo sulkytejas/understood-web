@@ -34,7 +34,7 @@ export const WebRTCProvider = ({ children }) => {
   const [packetLoss, setPacketLoss] = useState(null);
   const [rtt, setRtt] = useState(null);
   const [intentionalDisconnect, setIntentionalDisconnect] = useState(false);
-  const [connectionState, setConnectionState] = useState('connected');
+  const [connectionState, setConnectionState] = useState('');
 
   const videoProducerRef = useRef(null);
   const audioProducerRef = useRef(null);
@@ -520,6 +520,7 @@ export const WebRTCProvider = ({ children }) => {
             });
           }
           newStream.addTrack(consumer.track);
+          setCallStarted(true);
           return newStream;
         });
 
@@ -698,6 +699,7 @@ export const WebRTCProvider = ({ children }) => {
         joinRoom,
         startStreaming,
         connectionState,
+        callStarted,
       }}
     >
       {children}

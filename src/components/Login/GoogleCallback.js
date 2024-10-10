@@ -42,6 +42,7 @@ function GoogleCallback() {
                   email: userData?.email,
                   token: data?.sessionToken,
                   uid: userData?.at_hash,
+                  source: 'google',
                 }),
               });
 

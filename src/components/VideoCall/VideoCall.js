@@ -171,7 +171,6 @@ const VideoCall = () => {
         // remoteTrack={remoteStream}
         remoteVideoRef={remoteVideoRef}
         // remoteAudioRef={remoteAudioRef}
-        callStarted={callStarted}
         connectionState={connectionState}
       />
       <TranslationOverlay

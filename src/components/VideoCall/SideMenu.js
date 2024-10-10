@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import {
   Box,
@@ -10,6 +10,7 @@ import {
   Typography,
   Modal,
   MenuItem,
+  Tooltip,
 } from '@mui/material';
 
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -33,6 +34,7 @@ const SideMenu = () => {
   const isAudioPaused = useSelector((state) => state.videoPlayer.audioPause);
 
   const [openModal, setOpenModal] = useState(false);
+  const [openTooltip, setOpenTooltip] = useState(true);
 
   const { t } = useTranslation();
 
@@ -131,6 +133,17 @@ const SideMenu = () => {
   //   }
   // };
 
+  useEffect(() => {
+    // Set a timeout to close the tooltip after 3 seconds (3000ms)
+    const timer = setTimeout(() => {
+      setOpenTooltip(false);
+    }, 10000); // Adjust the time as needed
+
+    return () => clearTimeout(timer); // Clean up the timer on unmount
+  }, []);
+
+  const tooltipTitle = t('Control your video and audio settings.');
+
   return (
     <Box
       sx={{
@@ -140,46 +153,48 @@ const SideMenu = () => {
         right: 0,
       }}
     >
-      <SpeedDial
-        ariaLabel="SpeedDial basic example"
-        onClick={() => {
-          dispatch(setCallSideMenu(!isSideMenuOpen));
+      <Tooltip title={tooltipTitle} open={openTooltip} placement="top" arrow>
+        <SpeedDial
+          ariaLabel="SpeedDial basic example"
+          onClick={() => {
+            dispatch(setCallSideMenu(!isSideMenuOpen));
 
-          if (isMainMenuOpen) {
-            dispatch(setCallMenuOpen(false));
-          }
-        }}
-        sx={{
-          position: 'absolute',
-          bottom: 100,
-          right: 0,
-          '& .MuiFab-primary': {
-            backgroundColor: 'rgb(116 110 110 / 98%)', // Change background color
-            color: 'white', // Change icon color
-            width: '40px',
-            height: '40px',
-            '&:hover': {
-              backgroundColor: 'rgb(116 110 110 / 78%)', // Change background on hover
+            if (isMainMenuOpen) {
+              dispatch(setCallMenuOpen(false));
+            }
+          }}
+          sx={{
+            position: 'absolute',
+            bottom: 100,
+            right: 0,
+            '& .MuiFab-primary': {
+              backgroundColor: 'rgb(116 110 110 / 98%)', // Change background color
+              color: 'white', // Change icon color
+              width: '40px',
+              height: '40px',
+              '&:hover': {
+                backgroundColor: 'rgb(116 110 110 / 78%)', // Change background on hover
+              },
             },
-          },
-        }}
-        icon={
-          <SpeedDialIcon
-            icon={<ExpandMoreIcon />}
-            openIcon={<ExpandLessOutlinedIcon />}
-          />
-        }
-        direction="down"
-      >
-        {actions.map((action) => (
-          <SpeedDialAction
-            key={action.name}
-            icon={action.icon}
-            tooltipTitle={action.name}
-            onClick={() => action.clickEvent()}
-          />
-        ))}
-      </SpeedDial>
+          }}
+          icon={
+            <SpeedDialIcon
+              icon={<ExpandMoreIcon />}
+              openIcon={<ExpandLessOutlinedIcon />}
+            />
+          }
+          direction="down"
+        >
+          {actions.map((action) => (
+            <SpeedDialAction
+              key={action.name}
+              icon={action.icon}
+              tooltipTitle={action.name}
+              onClick={() => action.clickEvent()}
+            />
+          ))}
+        </SpeedDial>
+      </Tooltip>
 
       {/* Modal for Audio Output Selection */}
       <Modal open={openModal} onClose={handleCloseModal}>

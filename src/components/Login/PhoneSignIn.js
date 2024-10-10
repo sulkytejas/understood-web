@@ -249,6 +249,7 @@ const PhoneSignIn = forwardRef(
                   email: user?.email,
                   token: user?.accessToken,
                   uid: user?.uid,
+                  source: 'phone',
                 }),
               });
 
