@@ -5,6 +5,7 @@ import { useSelector } from 'react-redux';
 const useTranslation = () => {
   const recognitionRef = useRef(null);
   const isRecognitionActive = useRef(false);
+  const shouldRestartRecognition = useRef(true);
   const segmentCounter = useRef(0);
   const { socket } = useSocket();
 
@@ -67,8 +68,13 @@ const useTranslation = () => {
     };
 
     recognition.onend = () => {
-      if (isRecognitionActive.current) {
-        recognition.start();
+      isRecognitionActive.current = false;
+      if (shouldRestartRecognition.current) {
+        try {
+          recognition.start();
+        } catch (error) {
+          console.error('Failed to restart speech recognition:', error);
+        }
       }
     };
 
@@ -79,12 +85,15 @@ const useTranslation = () => {
         alert(
           'Microphone access is not allowed. Please enable the microphone permissions.',
         );
+        shouldRestartRecognition.current = false;
         recognition.stop();
       } else if (event.error === 'aborted' || event.error === 'network') {
-        recognition.stop();
-        if (isRecognitionActive.current) {
-          recognition.start();
-        }
+        // recognition.stop();
+        // if (isRecognitionActive.current) {
+        //   recognition.start();
+        // }
+
+        console.warn('Speech recognition aborted or network error.');
       }
     };
 
@@ -111,7 +120,8 @@ const useTranslation = () => {
     return () => {
       if (recognitionRef.current) {
         recognitionRef.current.stop();
-        isRecognitionActive.current = false;
+        shouldRestartRecognition.current = false;
+        // isRecognitionActive.current = false;
       }
     };
   }, []);

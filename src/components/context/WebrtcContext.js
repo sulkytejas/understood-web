@@ -33,9 +33,13 @@ export const WebRTCProvider = ({ children }) => {
   const [currentBitrate, setCurrentBitrate] = useState(null);
   const [packetLoss, setPacketLoss] = useState(null);
   const [rtt, setRtt] = useState(null);
+  const [intentionalDisconnect, setIntentionalDisconnect] = useState(false);
+  const [connectionState, setConnectionState] = useState('connected');
 
   const videoProducerRef = useRef(null);
   const audioProducerRef = useRef(null);
+  const consumers = useRef({});
+  const isReconnecting = useRef(false);
 
   const meetingId = useSelector((state) => state.meeting.meetingId);
   const isVideoPaused = useSelector((state) => state.videoPlayer.videoPause);
@@ -301,6 +305,74 @@ export const WebRTCProvider = ({ children }) => {
     });
   };
 
+  const attemptReconnect = async () => {
+    if (isReconnecting.current) {
+      return; // Prevent multiple reconnection attempts
+    }
+    try {
+      isReconnecting.current = true;
+      socket.emit('reconnecting', { meetingId, userId: socket.id });
+      console.log('Recreating producer transport...');
+
+      // Close existing transports if any
+      if (sendTransport) {
+        sendTransport.close();
+        setSendTransport(null);
+      }
+      if (recvTransport) {
+        recvTransport.close();
+        setRecvTransport(null);
+      }
+
+      // Close existing producers
+      if (videoProducerRef.current) {
+        await videoProducerRef.current.close();
+        videoProducerRef.current = null;
+      }
+      if (audioProducerRef.current) {
+        await audioProducerRef.current.close();
+        audioProducerRef.current = null;
+      }
+
+      // Close existing consumers
+      Object.values(consumers.current).forEach((consumer) => {
+        consumer.close();
+      });
+      consumers.current = {};
+
+      // Clear remote stream
+      setRemoteStream(null);
+
+      // await createProducerTransport();
+      console.log('Reconnecting to meeting...');
+
+      // Rejoin the meeting and start media production again
+      await joinRoom(meetingId);
+      await startStreaming();
+
+      console.log('Reconnection successful.');
+      socket.on('reconnected', ({ userId }) => {
+        console.log(`${userId} has reconnected to the meeting.`);
+      });
+    } catch (error) {
+      console.error('Error during reconnection:', error);
+      setTimeout(attemptReconnect, 3000); // Retry after 3 seconds
+    } finally {
+      isReconnecting.current = false;
+    }
+  };
+
+  const handleConnectionStateChange = (state) => {
+    console.log('connections state changed:', state);
+    setConnectionState(state);
+    if (state === 'disconnected' || state === 'failed') {
+      console.log('Connection lost, attempting to reconnect...');
+      if (!intentionalDisconnect) {
+        attemptReconnect();
+      }
+    }
+  };
+
   const createProducerTransport = async () => {
     return new Promise((resolve, reject) => {
       socket.emit(
@@ -357,9 +429,7 @@ export const WebRTCProvider = ({ children }) => {
               console.log('ICE gathering state changed:', state);
             });
 
-            transport.on('icestatechange', (state) => {
-              console.log('ICE state changed:', state);
-            });
+            transport.on('connectionstatechange', handleConnectionStateChange);
             setSendTransport(transport);
 
             resolve(transport);
@@ -402,9 +472,7 @@ export const WebRTCProvider = ({ children }) => {
               console.log('ICE gathering state changed:', state);
             });
 
-            transport.on('icestatechange', (state) => {
-              console.log('ICE state changed:', state);
-            });
+            transport.on('connectionstatechange', handleConnectionStateChange);
             setRecvTransport(transport);
 
             resolve(transport);
@@ -417,58 +485,128 @@ export const WebRTCProvider = ({ children }) => {
     });
   };
 
+  const handleProduce = async ({ producerId, kind }) => {
+    const newRecvTransport = await createConsumerTransport();
+
+    console.log('producer meeting id', producerId);
+    socket.emit(
+      'consume',
+      {
+        meetingId: meetingId,
+        transportId: newRecvTransport.id,
+        producerId,
+        kind,
+        rtpCapabilities: device.rtpCapabilities,
+      },
+      async ({ id, producerId, kind, rtpParameters }) => {
+        const consumer = await newRecvTransport.consume({
+          id,
+          producerId,
+          rtpParameters,
+          kind,
+        });
+
+        // Store the consumer
+        consumers.current[producerId] = consumer;
+
+        setRemoteStream((prevStream) => {
+          const newStream = new MediaStream();
+
+          if (prevStream) {
+            prevStream.getTracks().forEach((track) => {
+              if (track.kind !== kind) {
+                newStream.addTrack(track);
+              }
+            });
+          }
+          newStream.addTrack(consumer.track);
+          return newStream;
+        });
+
+        // const stream = new MediaStream();
+
+        // if (kind === 'video') {
+        //   stream.addTrack(consumer.track);
+        //   setRemoteStream(stream);
+        // }
+
+        console.log('Consuming media:', consumer);
+      },
+    );
+  };
+
   useEffect(() => {
     // Set up the listener for new producers
+    const handleNewProducer = async ({ producerId, kind }) => {
+      await handleProduce({ producerId, kind });
+    };
+
     if (socket && device) {
-      socket.on('new-producer', async ({ producerId, kind }) => {
-        const newRecvTransport = await createConsumerTransport();
-
-        console.log('producer meeting id', producerId);
-        socket.emit(
-          'consume',
-          {
-            meetingId: meetingId,
-            transportId: newRecvTransport.id,
-            producerId,
-            kind,
-            rtpCapabilities: device.rtpCapabilities,
-          },
-          async ({ id, producerId, kind, rtpParameters }) => {
-            const consumer = await newRecvTransport.consume({
-              id,
-              producerId,
-              rtpParameters,
-              kind,
-            });
-
-            setRemoteStream((prevStream) => {
-              const stream = prevStream || new MediaStream();
-              stream.addTrack(consumer.track); // Add the received track to the stream
-              return stream;
-            });
-
-            // const stream = new MediaStream();
-
-            // if (kind === 'video') {
-            //   stream.addTrack(consumer.track);
-            //   setRemoteStream(stream);
-            // }
-
-            console.log('Consuming media:', consumer);
-          },
-        );
-      });
+      socket.on('new-producer', handleNewProducer);
     }
 
     return () => {
       // Cleanup listener when the component unmounts
       if (socket) {
-        socket.off('new-producer');
+        socket.off('new-producer', handleNewProducer);
       }
     };
   }, [socket, device]);
 
+  useEffect(() => {
+    const handleProducerClosed = ({ producerId }) => {
+      const consumer = consumers.current[producerId];
+
+      if (consumer) {
+        consumer.close();
+        delete consumers.current[producerId];
+
+        setRemoteStream((prevStream) => {
+          if (prevStream) {
+            const newStream = new MediaStream(
+              prevStream
+                .getTracks()
+                .filter((track) => track.id !== consumer.track.id),
+            );
+
+            return newStream;
+          }
+
+          return prevStream;
+        });
+      }
+    };
+
+    if (socket) {
+      socket.on('producer-closed', handleProducerClosed);
+    }
+
+    return () => {
+      if (socket) {
+        socket.off('producer-closed', handleProducerClosed);
+      }
+    };
+  }, [socket]);
+
+  useEffect(() => {
+    const handleMeetingEnded = () => {
+      console.log('meeting-ended triggered');
+      handleDisconnectCall();
+    };
+
+    if (socket) {
+      socket.on('meeting-ended', handleMeetingEnded);
+    }
+
+    return () => {
+      if (socket) {
+        socket.off('meeting-ended', handleMeetingEnded);
+      }
+    };
+  }, [socket]);
+
   const handleDisconnectCall = () => {
+    setIntentionalDisconnect(true);
     const scoppedMeetingId = meetingId;
     if (socket) {
       socket.disconnect();
@@ -545,10 +683,10 @@ export const WebRTCProvider = ({ children }) => {
       setIsStreaming(false);
     }
 
-    socket.on('meeting-ended', () => {
-      console.log('meeting-ended triggered');
-      handleDisconnectCall();
-    });
+    // socket.on('meeting-ended', () => {
+    //   console.log('meeting-ended triggered');
+    //   handleDisconnectCall();
+    // });
   };
 
   return (
@@ -559,6 +697,7 @@ export const WebRTCProvider = ({ children }) => {
         handleDisconnectCall,
         joinRoom,
         startStreaming,
+        connectionState,
       }}
     >
       {children}

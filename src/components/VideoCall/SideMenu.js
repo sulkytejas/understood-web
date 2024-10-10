@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import {
   Box,
@@ -7,13 +7,20 @@ import {
   SpeedDial,
   SpeedDialAction,
   SpeedDialIcon,
+  Typography,
+  Modal,
+  MenuItem,
 } from '@mui/material';
+
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import VideocamOffOutlinedIcon from '@mui/icons-material/VideocamOffOutlined'; //
 import VideocamOutlinedIcon from '@mui/icons-material/VideocamOutlined';
 import MicOffOutlinedIcon from '@mui/icons-material/MicOffOutlined';
 import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined';
 import ExpandLessOutlinedIcon from '@mui/icons-material/ExpandLessOutlined';
+import BluetoothAudioIcon from '@mui/icons-material/BluetoothAudio';
+
+import { useTranslation } from 'react-i18next';
 
 import { setCallMenuOpen, setCallSideMenu } from '../../redux/uiSlice';
 import { setVideoPause, setAudioPause } from '../../redux/videoPlayerSlice';
@@ -24,6 +31,18 @@ const SideMenu = () => {
   const isSideMenuOpen = useSelector((state) => state.ui.callSideMenu);
   const isVideoPaused = useSelector((state) => state.videoPlayer.videoPause);
   const isAudioPaused = useSelector((state) => state.videoPlayer.audioPause);
+
+  const [openModal, setOpenModal] = useState(false);
+
+  const { t } = useTranslation();
+
+  // // Fetch available audio output devices
+  // useEffect(() => {
+  //   navigator.mediaDevices.enumerateDevices().then((devices) => {
+  //     const outputs = devices.filter((device) => device.kind === 'audiooutput');
+  //     setAudioOutputs(outputs);
+  //   });
+  // }, []);
 
   const actions = [
     {
@@ -83,7 +102,34 @@ const SideMenu = () => {
         dispatch(setAudioPause(!isAudioPaused));
       },
     },
+    {
+      icon: <BluetoothAudioIcon sx={{ color: '#4abbc9' }} />,
+      name: 'Audio Output',
+      clickEvent: () => setOpenModal(true),
+    },
   ];
+
+  const handleCloseModal = () => {
+    setOpenModal(false);
+  };
+
+  // // Handle the selection of an audio output device
+  // const handleAudioOutputChange = async (deviceId) => {
+  //   setSelectedOutput(deviceId);
+
+  //   const audioElement = document.getElementById('audio');
+  //   if (audioElement && typeof audioElement.sinkId !== 'undefined') {
+  //     try {
+  //       await audioElement.setSinkId(deviceId);
+  //       handleCloseModal();
+  //       console.log(`Audio output switched to: ${deviceId}`);
+  //     } catch (error) {
+  //       console.error('Error switching audio output:', error);
+  //     }
+  //   } else {
+  //     console.warn('Browser does not support audio output switching.');
+  //   }
+  // };
 
   return (
     <Box
@@ -134,6 +180,74 @@ const SideMenu = () => {
           />
         ))}
       </SpeedDial>
+
+      {/* Modal for Audio Output Selection */}
+      <Modal open={openModal} onClose={handleCloseModal}>
+        <Box
+          sx={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: 'auto', // Make the width adjust automatically
+            maxWidth: '90%', // Ensure it doesn't go beyond screen width
+            backgroundColor: 'white',
+            boxShadow: 24,
+            padding: '20px',
+            borderRadius: '8px',
+            textAlign: 'center',
+            overflow: 'hidden',
+          }}
+        >
+          <MenuItem
+            disabled
+            key="title_audio_output_menu"
+            sx={{
+              '&.Mui-disabled': {
+                opacity: 1,
+                padding: 0,
+                fontSize: 14,
+              },
+            }}
+          >
+            <Typography
+              sx={{
+                fontSize: 16,
+                color: '#000',
+                padding: '10px',
+                whiteSpace: 'normal', // Ensure text wraps properly
+                wordWrap: 'break-word', // Break long words if needed
+              }}
+            >
+              {t(
+                'Use your Phone control center to change audio output after connecting the call.',
+              )}
+            </Typography>
+          </MenuItem>
+
+          {/* {audioOutputs.map((device) => (
+            <MenuItem
+              key={device.deviceId}
+              value={device.deviceId}
+              onClick={() => handleAudioOutputChange(device.deviceId)}
+              sx={{
+                fontSize: '12px',
+              }}
+            >
+              {device.label || `Device ${device.deviceId}`}
+              {selectedOutput === device.deviceId && (
+                <Check
+                  sx={{
+                    height: '20px',
+                    width: '18px',
+                    marginLeft: '10px',
+                  }}
+                />
+              )}
+            </MenuItem>
+          ))} */}
+        </Box>
+      </Modal>
     </Box>
   );
 };

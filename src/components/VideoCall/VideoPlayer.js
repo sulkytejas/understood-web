@@ -2,12 +2,15 @@ import React from 'react';
 import { Box, Typography, Alert } from '@mui/material';
 import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
+import LoadingSpinner from '../onBoarding/LoadingSpinner';
 
-const VideoPlayer = ({ localStream, remoteVideoRef }) => {
+const VideoPlayer = ({ localStream, remoteVideoRef, connectionState }) => {
   const isMainMenuOpen = useSelector((state) => state.ui.callMenuOpen);
+
   const { t } = useTranslation();
   // Check if the srcObject is available or not
   const showAlert = !remoteVideoRef?.current?.srcObject;
+  const showConnectionAlert = connectionState !== 'connected';
 
   const circularRemoteVideo = {
     display: 'flex',
@@ -61,6 +64,7 @@ const VideoPlayer = ({ localStream, remoteVideoRef }) => {
         autoPlay
         playsInline
       />
+
       <div className="remote-video">
         <Box sx={isMainMenuOpen ? circularRemoteVideo : mainRemoteVideo}>
           {/* Circular Video */}
@@ -122,9 +126,42 @@ const VideoPlayer = ({ localStream, remoteVideoRef }) => {
             backgroundColor: 'rgba(0, 0, 0, 0.5)', // Optional dark overlay
           }}
         >
-          <Alert severity="warning">
+          <Alert severity="info">
             {t('Waiting for the participant to join...')}
           </Alert>
+        </Box>
+      )}
+
+      {showConnectionAlert && (
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)', // Optional dark overlay
+          }}
+        >
+          <Box sx={{ marginBottom: '20px', display: 'inline-block' }}>
+            <LoadingSpinner />
+            <Box
+              component="span"
+              sx={{
+                color: 'white',
+                position: 'absolute',
+                top: '58%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                textAlign: 'center',
+              }}
+            >
+              {t('Attempting to reconnect...')}
+            </Box>
+          </Box>
         </Box>
       )}
     </div>

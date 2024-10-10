@@ -25,6 +25,7 @@ const VideoCall = () => {
     localStream,
     remoteStream,
     callStarted,
+    connectionState,
   } = useWebRTC();
 
   const { socket } = useSocket();
@@ -171,6 +172,7 @@ const VideoCall = () => {
         remoteVideoRef={remoteVideoRef}
         // remoteAudioRef={remoteAudioRef}
         callStarted={callStarted}
+        connectionState={connectionState}
       />
       <TranslationOverlay
         detectedLanguage={detectedLanguage}
