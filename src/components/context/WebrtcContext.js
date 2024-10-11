@@ -659,7 +659,7 @@ export const WebRTCProvider = ({ children }) => {
       const videoProducer = await newTransport.produce({
         track: videoTrack,
         encodings: [
-          { scalabilityMode: 'S1T1', maxBitrate: 1000000 }, // Single encoding for SVC (VP9 doesn’t support simulcast)
+          { scalabilityMode: 'L1T1', maxBitrate: 1000000 }, // Single encoding for SVC (VP9 doesn’t support simulcast)
         ],
 
         codecOptions: {
