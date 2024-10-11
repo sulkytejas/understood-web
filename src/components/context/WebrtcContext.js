@@ -381,7 +381,10 @@ export const WebRTCProvider = ({ children }) => {
         async (transportOptions) => {
           try {
             const transport = device.createSendTransport(transportOptions);
-
+            console.log(
+              'DTLS Connect event triggered for transport ID:',
+              transport.id,
+            );
             console.log('Transport Producer created:', transport);
 
             transport.on('connect', async ({ dtlsParameters }, callback) => {
@@ -401,6 +404,12 @@ export const WebRTCProvider = ({ children }) => {
             transport.on(
               'produce',
               async ({ kind, rtpParameters }, callback) => {
+                console.log(
+                  'Produce event triggered for transport ID:',
+                  transport.id,
+                  'kind:',
+                  kind,
+                );
                 // Handle produce event
                 const { producerId } = await socket.emit(
                   'produce',
@@ -426,10 +435,31 @@ export const WebRTCProvider = ({ children }) => {
 
             // Debug ICE states
             transport.on('icegatheringstatechange', (state) => {
-              console.log('ICE gathering state changed:', state);
+              console.log(
+                'ICE gathering state changed to:',
+                state,
+                'for transport ID:',
+                transport.id,
+              );
             });
 
-            transport.on('connectionstatechange', handleConnectionStateChange);
+            // Handle ICE state changes (important for connection debugging)
+            transport.on('connectionstatechange', (state) => {
+              console.log(
+                'Connection state changed to:',
+                state,
+                'for transport ID:',
+                transport.id,
+              );
+              if (state === 'failed') {
+                console.error(
+                  'Connection failed for transport ID:',
+                  transport.id,
+                );
+              }
+            });
+
+            // transport.on('connectionstatechange', handleConnectionStateChange);
             setSendTransport(transport);
 
             resolve(transport);
