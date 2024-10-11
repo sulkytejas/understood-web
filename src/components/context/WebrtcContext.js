@@ -388,7 +388,10 @@ export const WebRTCProvider = ({ children }) => {
             console.log('Transport Producer created:', transport);
 
             transport.on('connect', async ({ dtlsParameters }, callback) => {
-              console.log('Connect event triggered');
+              console.log(
+                'Received DTLS parameters (Server-Side):',
+                dtlsParameters,
+              );
 
               await socket.emit(
                 'connect-producer-transport',
@@ -485,8 +488,8 @@ export const WebRTCProvider = ({ children }) => {
 
             transport.on('connect', async ({ dtlsParameters }, callback) => {
               console.log(
-                'DTLS Connect event triggered for consumer transport ID:',
-                transport.id,
+                'Consumer Received DTLS parameters (Server-Side):',
+                dtlsParameters,
               );
 
               await socket.emit(
