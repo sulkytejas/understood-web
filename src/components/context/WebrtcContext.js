@@ -481,10 +481,13 @@ export const WebRTCProvider = ({ children }) => {
           try {
             const transport = device.createRecvTransport(transportOptions);
 
-            console.log('Transport created:', transport);
+            console.log('consumer Transport created:', transport);
 
             transport.on('connect', async ({ dtlsParameters }, callback) => {
-              console.log('Connect event triggered');
+              console.log(
+                'DTLS Connect event triggered for consumer transport ID:',
+                transport.id,
+              );
 
               await socket.emit(
                 'connect-consumer-transport',
@@ -499,10 +502,31 @@ export const WebRTCProvider = ({ children }) => {
 
             // Debug ICE states
             transport.on('icegatheringstatechange', (state) => {
-              console.log('ICE gathering state changed:', state);
+              console.log(
+                'ICE gathering state changed to:',
+                state,
+                'for consumer transport ID:',
+                transport.id,
+              );
             });
 
-            transport.on('connectionstatechange', handleConnectionStateChange);
+            // Handle ICE state changes (important for connection debugging)
+            transport.on('connectionstatechange', (state) => {
+              console.log(
+                'Connection state changed to:',
+                state,
+                'for consumer transport ID:',
+                transport.id,
+              );
+              if (state === 'failed') {
+                console.error(
+                  'Connection failed for consumer transport ID:',
+                  transport.id,
+                );
+              }
+            });
+
+            // transport.on('connectionstatechange', handleConnectionStateChange);
             setRecvTransport(transport);
 
             resolve(transport);
