@@ -13,6 +13,8 @@ const useTranslation = () => {
     (state) => state.translation.localSpokenLanguage,
   );
 
+  console.log('localSpokenLanguage', localSpokenLanguage);
+
   const meetingId = useSelector((state) => state.meeting.meetingId);
 
   // useEffect(() => {
@@ -34,7 +36,7 @@ const useTranslation = () => {
         interimTranscript += event.results[i][0].transcript;
       }
     }
-
+    console.log('Raw transcript:', finalTranscript || interimTranscript);
     const segmentId = segmentCounter.current;
 
     if (finalTranscript) {
