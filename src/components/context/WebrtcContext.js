@@ -34,7 +34,7 @@ export const WebRTCProvider = ({ children }) => {
   const [packetLoss, setPacketLoss] = useState(null);
   const [rtt, setRtt] = useState(null);
   const [intentionalDisconnect, setIntentionalDisconnect] = useState(false);
-  const [connectionState, setConnectionState] = useState('');
+  const [connectionState, setConnectionState] = useState('connected');
 
   const videoProducerRef = useRef(null);
   const audioProducerRef = useRef(null);
