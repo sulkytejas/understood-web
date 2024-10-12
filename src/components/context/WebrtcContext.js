@@ -363,9 +363,15 @@ export const WebRTCProvider = ({ children }) => {
   };
 
   const handleConnectionStateChange = (state) => {
-    console.log('connections state changed:', state);
+    console.log(
+      'Connection state changed to:',
+      state,
+      'for transport ID:',
+      transport.id,
+    );
     setConnectionState(state);
     if (state === 'disconnected' || state === 'failed') {
+      console.log('Connection failed for transport ID:', transport.id);
       console.log('Connection lost, attempting to reconnect...');
       if (!intentionalDisconnect) {
         attemptReconnect();
@@ -446,23 +452,7 @@ export const WebRTCProvider = ({ children }) => {
               );
             });
 
-            // Handle ICE state changes (important for connection debugging)
-            transport.on('connectionstatechange', (state) => {
-              console.log(
-                'Connection state changed to:',
-                state,
-                'for transport ID:',
-                transport.id,
-              );
-              if (state === 'failed') {
-                console.error(
-                  'Connection failed for transport ID:',
-                  transport.id,
-                );
-              }
-            });
-
-            // transport.on('connectionstatechange', handleConnectionStateChange);
+            transport.on('connectionstatechange', handleConnectionStateChange);
             setSendTransport(transport);
 
             resolve(transport);
@@ -513,23 +503,7 @@ export const WebRTCProvider = ({ children }) => {
               );
             });
 
-            // Handle ICE state changes (important for connection debugging)
-            transport.on('connectionstatechange', (state) => {
-              console.log(
-                'Connection state changed to:',
-                state,
-                'for consumer transport ID:',
-                transport.id,
-              );
-              if (state === 'failed') {
-                console.error(
-                  'Connection failed for consumer transport ID:',
-                  transport.id,
-                );
-              }
-            });
-
-            // transport.on('connectionstatechange', handleConnectionStateChange);
+            transport.on('connectionstatechange', handleConnectionStateChange);
             setRecvTransport(transport);
 
             resolve(transport);
