@@ -17,7 +17,7 @@ import i18n from '../../i18n';
 import { useTranslation } from 'react-i18next';
 
 const countries = [
-  { code: 'IN', languageCode: 'hi-Hi', name: 'Hindi', locale: 'hi' },
+  { code: 'IN', languageCode: 'hi-IN', name: 'Hindi', locale: 'hi' },
   { code: 'US', languageCode: 'en-US', name: 'English', locale: 'en' },
   { code: 'RU', languageCode: 'ru-RU', name: 'Russian', locale: 'ru' },
   // Add more countries as needed

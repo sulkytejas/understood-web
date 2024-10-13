@@ -19,7 +19,7 @@ function AccountSeetingDialog(props) {
   );
 
   const countries = [
-    { code: 'IN', languageCode: 'hi-Hi', name: t('Hindi') },
+    { code: 'IN', languageCode: 'hi-IN', name: t('Hindi') },
     { code: 'US', languageCode: 'en-US', name: t('English') },
     { code: 'RU', languageCode: 'ru-RU', name: t('Russian') },
     // Add more countries as needed

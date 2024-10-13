@@ -12,6 +12,7 @@ const useTranslation = () => {
   const localSpokenLanguage = useSelector(
     (state) => state.translation.localSpokenLanguage,
   );
+  const isAudioPaused = useSelector((state) => state.videoPlayer.audioPause);
 
   console.log('localSpokenLanguage', localSpokenLanguage);
 
@@ -103,6 +104,15 @@ const useTranslation = () => {
   };
 
   useEffect(() => {
+    if (isAudioPaused) {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+        shouldRestartRecognition.current = false;
+        isRecognitionActive.current = false;
+      }
+      return;
+    }
+
     initializeRecognition();
 
     navigator.mediaDevices
@@ -126,7 +136,7 @@ const useTranslation = () => {
         // isRecognitionActive.current = false;
       }
     };
-  }, []);
+  }, [isAudioPaused]);
 
   return {};
 };
