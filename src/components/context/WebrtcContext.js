@@ -45,6 +45,10 @@ export const WebRTCProvider = ({ children }) => {
   const isVideoPaused = useSelector((state) => state.videoPlayer.videoPause);
   const isAudioPaused = useSelector((state) => state.videoPlayer.audioPause);
 
+  const userSpokenLanguage = useSelector(
+    (state) => state.translation.localSpokenLanguage,
+  );
+
   useEffect(() => {
     console.log('Device state after update:', device);
   }, [device]);
@@ -427,6 +431,7 @@ export const WebRTCProvider = ({ children }) => {
                     rtpParameters,
                     transportId: transport.id,
                     meetingId: meetingId,
+                    userSpokenLanguage: userSpokenLanguage,
                   },
                   ({ producerId, error }) => {
                     if (error) {

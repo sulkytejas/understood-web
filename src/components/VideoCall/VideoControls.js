@@ -56,7 +56,12 @@ const CustomBottomNavigationAction = styled(BottomNavigationAction)({
   },
 });
 
-const VideoControls = ({ callStarted, onCallToggle, translatedTexts }) => {
+const VideoControls = ({
+  callStarted,
+  onCallToggle,
+  translatedTexts,
+  setTranslatedTexts,
+}) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [timeInSeconds, setTimeInSeconds] = useState(30 * 60);
 
@@ -67,6 +72,8 @@ const VideoControls = ({ callStarted, onCallToggle, translatedTexts }) => {
   );
   const { t } = useTranslation();
   const { socket } = useSocket();
+
+  const translationTextBoxRef = useRef(null);
 
   // Function to format the time as HH:MM:SS
   const formatTime = (seconds) => {
@@ -128,6 +135,20 @@ const VideoControls = ({ callStarted, onCallToggle, translatedTexts }) => {
   const handleClose = () => {
     setAnchorEl(null);
   };
+
+  const checkOverFlow = () => {
+    const container = translationTextBoxRef.current;
+
+    if (container) {
+      if (container.scrollHeight > container.clientHeight) {
+        setTranslatedTexts([]);
+      }
+    }
+  };
+
+  useEffect(() => {
+    checkOverFlow();
+  }, [translatedTexts]);
 
   return (
     <div className="video-chat-controls" ref={drawerContainerRef}>
@@ -237,15 +258,24 @@ const VideoControls = ({ callStarted, onCallToggle, translatedTexts }) => {
             : 'moveDown 0.2s ease-in-out forwards',
         }}
       >
-        {!userTranslationLanguage &&
-          t('Please select the language for translation')}
-        {userTranslationLanguage && translatedTexts.length > 0 && (
-          <TranslatedTextView translatedTexts={translatedTexts} />
-        )}
+        <Box
+          ref={translationTextBoxRef}
+          sx={{
+            padding: '10px',
+            height: '75px',
+            overflow: 'hidden',
+          }}
+        >
+          {!userTranslationLanguage &&
+            t('Please select the language for translation')}
+          {userTranslationLanguage && translatedTexts.length > 0 && (
+            <TranslatedTextView translatedTexts={translatedTexts} />
+          )}
 
-        {userTranslationLanguage &&
-          !translatedTexts.length &&
-          t('Translated text will appear here')}
+          {userTranslationLanguage &&
+            !translatedTexts.length &&
+            t('Translated text will appear here')}
+        </Box>
       </Box>
 
       <Box

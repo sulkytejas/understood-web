@@ -178,12 +178,14 @@ const VideoCall = () => {
         localTargetLanguage={localTranslationLanguage}
         setTranslatedTexts={setTranslatedTexts}
         socket={socket}
+        callStarted={callStarted}
       />
 
       <VideoControls
         callStarted={callStarted}
         onCallToggle={handleClick}
         translatedTexts={translatedTexts}
+        setTranslatedTexts={setTranslatedTexts}
       />
     </div>
   );
