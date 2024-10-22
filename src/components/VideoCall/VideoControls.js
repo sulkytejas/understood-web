@@ -147,7 +147,7 @@ const VideoControls = ({
   const handleLanguageChange = (lang) => {
     handleClose();
     dispatch(setLocalTranslationLanguage(lang));
-    localStorage.setItem('translationLanguagePreference', languageCode);
+    localStorage.setItem('translationLanguagePreference', lang);
     socket.emit('setLanguagePreference', { languageCode: lang });
   };
 
