@@ -348,6 +348,26 @@ a {
   }
 }
 
+@keyframes moveUpTimer {
+  from {
+    transform: translateY(-0px);
+  }
+  to {
+    transform: translateY(
+      -20px
+    ); /* Adjust this value based on the height of the menu */
+  }
+}
+
+@keyframes moveDownTimer {
+  from {
+    transform: translateY(-20px); /* Same value as above */
+  }
+  to {
+    transform: translateY(-0px);
+  }
+}
+
 .fade-enter {
   opacity: 0;
 }

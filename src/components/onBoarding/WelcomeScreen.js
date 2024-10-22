@@ -82,6 +82,7 @@ const WelcomeScreen = () => {
     console.log('clicked', languageCode);
     dispatch(setLocalSpokenLanguage(languageCode));
     localStorage.setItem('spokenLanguage', languageCode);
+    localStorage.setItem('translationLanguagePreference', languageCode);
     localStorage.setItem('locale', locale);
     navigate('/login');
   };

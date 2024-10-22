@@ -15,6 +15,7 @@ const TranslationOverlay = ({
 
   useEffect(() => {
     const handleTranslatedText = ({ text, isFinal }) => {
+      console.log(' handleTranslatedText', isFinal);
       addOrUpdateTranslatedText(text, isFinal);
     };
 

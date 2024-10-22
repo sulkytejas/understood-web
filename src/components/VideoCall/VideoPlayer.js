@@ -3,6 +3,8 @@ import { Box, Alert, Typography } from '@mui/material';
 import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import LoadingSpinner from '../onBoarding/LoadingSpinner';
+import useListTracker from '../hooks/useListTracker';
+import ListOverlay from './ListOverlay';
 
 const VideoPlayer = ({ localStream, remoteVideoRef, connectionState }) => {
   const isMainMenuOpen = useSelector((state) => state.ui.callMenuOpen);
@@ -10,6 +12,7 @@ const VideoPlayer = ({ localStream, remoteVideoRef, connectionState }) => {
     (state) => state.translation.localTranslationLanguage,
   );
 
+  const { listItems, showList, title } = useListTracker();
   const { t } = useTranslation();
   // Check if the srcObject is available or not
   const showAlert = !remoteVideoRef?.current?.srcObject;
@@ -67,6 +70,10 @@ const VideoPlayer = ({ localStream, remoteVideoRef, connectionState }) => {
         autoPlay
         playsInline
       />
+
+      {showList && (
+        <ListOverlay listItems={listItems} showList={showList} title={title} />
+      )}
 
       <div className="remote-video">
         <Box sx={isMainMenuOpen ? circularRemoteVideo : mainRemoteVideo}>

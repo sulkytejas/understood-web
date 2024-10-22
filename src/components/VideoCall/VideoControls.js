@@ -63,7 +63,8 @@ const VideoControls = ({
   setTranslatedTexts,
 }) => {
   const [anchorEl, setAnchorEl] = useState(null);
-  const [timeInSeconds, setTimeInSeconds] = useState(30 * 60);
+  const [timeInSeconds, setTimeInSeconds] = useState(15 * 60);
+  const [isMeetingEndingSoon, setIsMeetingEndingSoon] = useState(false);
 
   const isMainMenuOpen = useSelector((state) => state.ui.callMenuOpen);
   const isSideMenuOpen = useSelector((state) => state.ui.callSideMenu);
@@ -105,20 +106,37 @@ const VideoControls = ({
     };
   }, [callStarted]);
 
+  useEffect(() => {
+    const handleMeetingEndingSoon = ({ message }) => {
+      if (message === 'meetingEndingSoon') {
+        setIsMeetingEndingSoon(true);
+      }
+    };
+    if (socket) {
+      socket.on('meetingWarning', handleMeetingEndingSoon);
+    }
+
+    return () => {
+      if (socket) {
+        socket.off('meetingWarning', handleMeetingEndingSoon);
+      }
+    };
+  }, [socket]);
+
   const langauges = [
     {
       language: t('Hindi'),
-      languageCode: 'hi',
+      languageCode: 'hi-IN',
       avatar: 'अ',
     },
     {
       language: t('Russian'),
-      languageCode: 'ru',
+      languageCode: 'ru-RU',
       avatar: 'Б',
     },
     {
       language: t('English'),
-      languageCode: 'en',
+      languageCode: 'en-US',
       avatar: 'C',
     },
   ];
@@ -129,6 +147,7 @@ const VideoControls = ({
   const handleLanguageChange = (lang) => {
     handleClose();
     dispatch(setLocalTranslationLanguage(lang));
+    localStorage.setItem('translationLanguagePreference', languageCode);
     socket.emit('setLanguagePreference', { languageCode: lang });
   };
 
@@ -229,13 +248,20 @@ const VideoControls = ({
           color="white"
           borderRadius="50px"
           padding="5px 10px"
-          bottom="140px"
+          bottom={isMainMenuOpen ? '240px' : '140px'}
           left="10px"
           position="absolute"
           border="1px solid #FF7722"
+          sx={{
+            animation: isMainMenuOpen
+              ? 'moveUpTimer 0.5s ease-in-out forwards'
+              : 'moveDownTimer 0.5s ease-in-out forwards',
+          }}
         >
           <Typography variant="body1" style={{ marginLeft: '8px' }}>
-            {formatTime(timeInSeconds)}
+            {isMeetingEndingSoon
+              ? 'Meeting will end soon'
+              : formatTime(timeInSeconds)}
           </Typography>
         </Box>
       )}
@@ -268,12 +294,12 @@ const VideoControls = ({
         >
           {!userTranslationLanguage &&
             t('Please select the language for translation')}
-          {userTranslationLanguage && translatedTexts.length > 0 && (
+          {userTranslationLanguage && translatedTexts?.text?.length > 0 && (
             <TranslatedTextView translatedTexts={translatedTexts} />
           )}
 
           {userTranslationLanguage &&
-            !translatedTexts.length &&
+            !translatedTexts?.text.length &&
             t('Translated text will appear here')}
         </Box>
       </Box>

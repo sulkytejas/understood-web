@@ -6,6 +6,7 @@ import {
   Button,
   CircularProgress,
   InputAdornment,
+  FormHelperText,
   Box,
   Tooltip,
 } from '@mui/material';
@@ -93,6 +94,7 @@ const HostControl = ({
   const [loading, setLoading] = useState(false);
   const [username, setUsername] = useState(persistedUserName);
   const [openTooltip, setOpenTooltip] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     // Set a timeout to close the tooltip after 3 seconds (3000ms)
@@ -113,7 +115,13 @@ const HostControl = ({
           phoneNumber,
           email,
         },
-        ({ meetingId, hostSocketId }) => {
+        ({ meetingId, hostSocketId, error }) => {
+          if (error) {
+            setError(error);
+            setLoading(false);
+            return;
+          }
+
           console.log('Meeting created with ID:', meetingId);
           setMeetingId(meetingId);
           dispatch(joinMeeting(meetingId));
@@ -121,13 +129,17 @@ const HostControl = ({
           dispatch(setIsHost(true));
           dispatch(setUserName(username));
           setLoading(false);
+          setActiveTab(1);
         },
       );
 
       if (username !== persistedUserName) {
         socket.emit('updateUsername', { username, phoneNumber, email });
       }
-      setActiveTab(1);
+
+      // if (!error) {
+      //   setActiveTab(1);
+      // }
     } else {
       console.error('Socket not initialized');
     }
@@ -206,6 +218,7 @@ const HostControl = ({
           ),
         }}
       />
+      {error && <FormHelperText error>{error}</FormHelperText>}
       <Button
         variant="contained"
         color="primary"

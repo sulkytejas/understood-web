@@ -1,7 +1,7 @@
 /* eslint-disable */
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 // import useWebRTC from '../hooks/useWebRTC';
-import TranslationOverlay from './TranslationOverlay';
+// import TranslationOverlay from './TranslationOverlay';
 import VideoControls from './VideoControls';
 
 import VideoPlayer from './VideoPlayer';
@@ -11,7 +11,7 @@ import { useSelector } from 'react-redux';
 
 const VideoCall = () => {
   const [detectedLanguage, setDetectedLanguage] = useState(null);
-  const [translatedTexts, setTranslatedTexts] = useState([]);
+  const [translatedTexts, setTranslatedTexts] = useState({ text: '' });
 
   const remoteVideoRef = useRef(null);
 
@@ -173,13 +173,13 @@ const VideoCall = () => {
         // remoteAudioRef={remoteAudioRef}
         connectionState={connectionState}
       />
-      <TranslationOverlay
+      {/* <TranslationOverlay
         detectedLanguage={detectedLanguage}
         localTargetLanguage={localTranslationLanguage}
         setTranslatedTexts={setTranslatedTexts}
         socket={socket}
         callStarted={callStarted}
-      />
+      /> */}
 
       <VideoControls
         callStarted={callStarted}

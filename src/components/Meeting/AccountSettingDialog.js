@@ -31,6 +31,7 @@ function AccountSeetingDialog(props) {
 
   const handleListItemClick = (value) => {
     onClose(value);
+    localStorage.setItem('spokenLanguage', value);
   };
 
   return (
