@@ -4,6 +4,7 @@ import { styled } from '@mui/system';
 import { useSelector, useDispatch } from 'react-redux';
 import { useSocket } from '../context/SocketContext';
 import { useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
 
 import HostControl from './HostControl';
 import UserAvatar from './UserAvatar';
@@ -24,6 +25,15 @@ const CustomTabs = styled(Tabs)({
     padding: '0 5px', // Add padding to the scroller
   },
 });
+
+const pageVariants = {
+  initial: { opacity: 0 },
+  in: { opacity: 1 },
+  out: { opacity: 0 },
+};
+const pageTransition = {
+  duration: 0.3,
+};
 
 const CustomTab = styled(Tab)({
   backgroundColor: '#F1F0F0',
@@ -110,52 +120,60 @@ const CreateMeetingPage = () => {
   }
 
   return (
-    <Box
-      sx={{
-        margin: '16px',
-      }}
+    <motion.div
+      initial="initial"
+      animate="in"
+      exit="out"
+      variants={pageVariants}
+      transition={pageTransition}
     >
-      <StyledLogoBox>
-        <LogoIcon style={{ width: 40, height: 40 }} />
-        {/* Adjust size as needed */}
-      </StyledLogoBox>
-
-      <CustomTabs
-        value={activeTab}
-        onChange={(e, newValue) => setActiveTab(newValue)}
-        indicatorColor="primary"
-        textColor="primary"
-        variant="fullWidth"
+      <Box
+        sx={{
+          margin: '16px',
+        }}
       >
-        <CustomTab label={t('Host Meeting')} />
-        <CustomTab label={t('Join Meeting')} />
-      </CustomTabs>
-      <div className="create-meeting-content">
-        <UserAvatar />
-      </div>
+        <StyledLogoBox>
+          <LogoIcon style={{ width: 40, height: 40 }} />
+          {/* Adjust size as needed */}
+        </StyledLogoBox>
 
-      {activeTab === 0 ? (
-        <HostControl
-          onSetOpenSettingMenu={setOpenSettingMenu}
-          persistedUserName={persistedUserName}
-          phoneNumber={phoneNumber}
-          email={email}
-          setActiveTab={setActiveTab}
-        />
-      ) : (
-        <ParticipantTab
-          onSetOpenSettingMenu={setOpenSettingMenu}
-          persistedUserName={persistedUserName}
-          phoneNumber={phoneNumber}
-          email={email}
-        />
-      )}
+        <CustomTabs
+          value={activeTab}
+          onChange={(e, newValue) => setActiveTab(newValue)}
+          indicatorColor="primary"
+          textColor="primary"
+          variant="fullWidth"
+        >
+          <CustomTab label={t('Host Meeting')} />
+          <CustomTab label={t('Join Meeting')} />
+        </CustomTabs>
+        <div className="create-meeting-content">
+          <UserAvatar />
+        </div>
 
-      <AccountSeetingDialog
-        open={openSettingMenu}
-        onClose={handleSettingClose}
-      />
-    </Box>
+        {activeTab === 0 ? (
+          <HostControl
+            onSetOpenSettingMenu={setOpenSettingMenu}
+            persistedUserName={persistedUserName}
+            phoneNumber={phoneNumber}
+            email={email}
+            setActiveTab={setActiveTab}
+          />
+        ) : (
+          <ParticipantTab
+            onSetOpenSettingMenu={setOpenSettingMenu}
+            persistedUserName={persistedUserName}
+            phoneNumber={phoneNumber}
+            email={email}
+          />
+        )}
+
+        <AccountSeetingDialog
+          open={openSettingMenu}
+          onClose={handleSettingClose}
+        />
+      </Box>
+    </motion.div>
   );
 };
 

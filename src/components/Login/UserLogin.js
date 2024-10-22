@@ -5,6 +5,7 @@ import PhoneSignIn from './PhoneSignIn';
 import { styled } from '@mui/material/styles';
 import { ReactComponent as LogoIcon } from '../assets/understood_logo.svg';
 import { useTranslation } from 'react-i18next';
+import { motion } from 'framer-motion';
 
 const BackgroundLogo = styled(Box)(() => ({
   position: 'absolute ',
@@ -21,6 +22,15 @@ const BackgroundLogo = styled(Box)(() => ({
     left: '-46%', // Shift the SVG to the left to show only the left half
   },
 }));
+
+const pageVariants = {
+  initial: { opacity: 0 },
+  in: { opacity: 1 },
+  out: { opacity: 0 },
+};
+const pageTransition = {
+  duration: 0.3,
+};
 
 const UserLogin = () => {
   const [loginMethod, setLoginMethod] = useState(null);
@@ -40,80 +50,88 @@ const UserLogin = () => {
   };
 
   return (
-    <Box
-      sx={{
-        margin: '16px',
-      }}
+    <motion.div
+      initial="initial"
+      animate="in"
+      exit="out"
+      variants={pageVariants}
+      transition={pageTransition}
     >
-      {/* Background logo */}
-      <BackgroundLogo>
-        <LogoIcon />
-      </BackgroundLogo>
-
-      {!isPhoneNumberSubmitted && (
-        <div>
-          <Typography
-            sx={{
-              fontWeight: 500,
-              fontSize: '32px',
-              lineHeight: '48px',
-              marginTop: '90px',
-              color: '#DF4303',
-            }}
-          >
-            {t('Welcome Back, Globe-Trotter!')}
-          </Typography>
-          <Typography
-            sx={{
-              fontWeight: 500,
-              fontSize: '15px',
-              lineHeight: '22px',
-              color: '#595959',
-            }}
-          >
-            {t('Let’s get you talking—no passports needed.')}
-          </Typography>
-        </div>
-      )}
-      {loginMethod !== 'googleLogin' && (
-        <PhoneSignIn
-          onLogin={setLoginMethod}
-          onSetIsPhoneNumberSubmitted={setIsPhoneNumberSubmitted}
-          ref={phoneLoginRef}
-        />
-      )}
-
-      {!loginMethod && (
-        <Typography
-          sx={{
-            textAlign: 'center',
-            color: '#595959',
-            margin: '40px 0',
-          }}
-        >
-          {t(' or')}
-        </Typography>
-      )}
-
-      {loginMethod !== 'phoneLogin' && (
-        <GoogleAuthentication onLogin={setLoginMethod} />
-      )}
-
-      <Button
-        variant="contained"
-        color="primary"
-        fullWidth
-        className="create-invite-button"
-        onClick={handleButtonClick}
+      <Box
         sx={{
-          marginTop: !isPhoneNumberSubmitted ? '126px' : '330px',
-          color: '#fff',
-          fontSize: '18px',
+          margin: '16px',
         }}
       >
-        {isPhoneNumberSubmitted ? t('Verify & Hop Back In!') : t('Send OTP')}
-      </Button>
-    </Box>
+        {/* Background logo */}
+        <BackgroundLogo>
+          <LogoIcon />
+        </BackgroundLogo>
+
+        {!isPhoneNumberSubmitted && (
+          <div>
+            <Typography
+              sx={{
+                fontWeight: 500,
+                fontSize: '32px',
+                lineHeight: '48px',
+                marginTop: '90px',
+                color: '#DF4303',
+              }}
+            >
+              {t('Welcome Back, Globe-Trotter!')}
+            </Typography>
+            <Typography
+              sx={{
+                fontWeight: 500,
+                fontSize: '15px',
+                lineHeight: '22px',
+                color: '#595959',
+              }}
+            >
+              {t('Let’s get you talking—no passports needed.')}
+            </Typography>
+          </div>
+        )}
+        {loginMethod !== 'googleLogin' && (
+          <PhoneSignIn
+            onLogin={setLoginMethod}
+            onSetIsPhoneNumberSubmitted={setIsPhoneNumberSubmitted}
+            ref={phoneLoginRef}
+          />
+        )}
+
+        {!loginMethod && (
+          <Typography
+            sx={{
+              textAlign: 'center',
+              color: '#595959',
+              margin: '40px 0',
+            }}
+          >
+            {t(' or')}
+          </Typography>
+        )}
+
+        {loginMethod !== 'phoneLogin' && (
+          <GoogleAuthentication onLogin={setLoginMethod} />
+        )}
+
+        <Button
+          variant="contained"
+          color="primary"
+          fullWidth
+          className="create-invite-button"
+          onClick={handleButtonClick}
+          sx={{
+            marginTop: !isPhoneNumberSubmitted ? '126px' : '330px',
+            color: '#fff',
+            fontSize: '18px',
+          }}
+        >
+          {isPhoneNumberSubmitted ? t('Verify & Hop Back In!') : t('Send OTP')}
+        </Button>
+      </Box>
+    </motion.div>
   );
 };
 

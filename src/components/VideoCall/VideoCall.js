@@ -8,6 +8,16 @@ import VideoPlayer from './VideoPlayer';
 import { useSocket } from '../context/SocketContext';
 import { useWebRTC } from '../context/WebrtcContext';
 import { useSelector } from 'react-redux';
+import { motion } from 'framer-motion';
+
+const pageVariants = {
+  initial: { opacity: 0 },
+  in: { opacity: 1 },
+  out: { opacity: 0 },
+};
+const pageTransition = {
+  duration: 0.3,
+};
 
 const VideoCall = () => {
   const [detectedLanguage, setDetectedLanguage] = useState(null);
@@ -165,15 +175,22 @@ const VideoCall = () => {
   // }, [localVideoRef.current?.srcObject, callStarted, socket]);
 
   return (
-    <div className="video-chat">
-      <VideoPlayer
-        localStream={localStream}
-        // remoteTrack={remoteStream}
-        remoteVideoRef={remoteVideoRef}
-        // remoteAudioRef={remoteAudioRef}
-        connectionState={connectionState}
-      />
-      {/* <TranslationOverlay
+    <motion.div
+      initial="initial"
+      animate="in"
+      exit="out"
+      variants={pageVariants}
+      transition={pageTransition}
+    >
+      <div className="video-chat">
+        <VideoPlayer
+          localStream={localStream}
+          // remoteTrack={remoteStream}
+          remoteVideoRef={remoteVideoRef}
+          // remoteAudioRef={remoteAudioRef}
+          connectionState={connectionState}
+        />
+        {/* <TranslationOverlay
         detectedLanguage={detectedLanguage}
         localTargetLanguage={localTranslationLanguage}
         setTranslatedTexts={setTranslatedTexts}
@@ -181,13 +198,14 @@ const VideoCall = () => {
         callStarted={callStarted}
       /> */}
 
-      <VideoControls
-        callStarted={callStarted}
-        onCallToggle={handleClick}
-        translatedTexts={translatedTexts}
-        setTranslatedTexts={setTranslatedTexts}
-      />
-    </div>
+        <VideoControls
+          callStarted={callStarted}
+          onCallToggle={handleClick}
+          translatedTexts={translatedTexts}
+          setTranslatedTexts={setTranslatedTexts}
+        />
+      </div>
+    </motion.div>
   );
 };
 

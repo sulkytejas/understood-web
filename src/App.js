@@ -2,6 +2,7 @@
 
 import './App.css';
 import { React, useState, useEffect } from 'react';
+import { AnimatePresence } from 'framer-motion';
 import { Box, useMediaQuery } from '@mui/material';
 import Bowser from 'bowser';
 import { SocketProvider } from './components/context/SocketContext';
@@ -124,44 +125,57 @@ function App() {
     >
       <SocketProvider>
         <WebRTCProvider>
-          <Routes location={location}>
-            <Route
-              path="/"
-              element={
-                !spokenLanguageStorage ? (
-                  <WelcomeScreen />
-                ) : (
-                  <Navigate to="/login" />
-                )
-              }
-            />
-            <Route
-              path="/login"
-              element={
-                !userData?.username ? <UserLogin /> : <Navigate to="/meeting" />
-              }
-            />
-            <Route path="/googleCallback" element={<GoogleCallback />} />
-            <Route
-              path="/meeting"
-              element={
-                <ProtectedRoute>
-                  <CreateMeetingPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/videocall/:meetingId"
-              element={
-                <ProtectedRoute>
-                  {meetingId ? <VideoCall /> : <Navigate to="/meetingEnded" />}
-                </ProtectedRoute>
-              }
-            />
-            <Route path="/meetingEnded" element={<MeetingEnded />} />
-            <Route path="/privacyPolicy" element={<PrivacyPolicy />} />
-            <Route path="/termsAndConditions" element={<TermsAndCondition />} />
-          </Routes>
+          <AnimatePresence mode="wait">
+            <Routes location={location}>
+              <Route
+                path="/"
+                element={
+                  !spokenLanguageStorage ? (
+                    <WelcomeScreen />
+                  ) : (
+                    <Navigate to="/login" />
+                  )
+                }
+              />
+              <Route
+                path="/login"
+                element={
+                  !userData?.username ? (
+                    <UserLogin />
+                  ) : (
+                    <Navigate to="/meeting" />
+                  )
+                }
+              />
+              <Route path="/googleCallback" element={<GoogleCallback />} />
+              <Route
+                path="/meeting"
+                element={
+                  <ProtectedRoute>
+                    <CreateMeetingPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/videocall/:meetingId"
+                element={
+                  <ProtectedRoute>
+                    {meetingId ? (
+                      <VideoCall />
+                    ) : (
+                      <Navigate to="/meetingEnded" />
+                    )}
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="/meetingEnded" element={<MeetingEnded />} />
+              <Route path="/privacyPolicy" element={<PrivacyPolicy />} />
+              <Route
+                path="/termsAndConditions"
+                element={<TermsAndCondition />}
+              />
+            </Routes>
+          </AnimatePresence>
         </WebRTCProvider>
       </SocketProvider>
     </Box>
