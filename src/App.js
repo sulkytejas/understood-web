@@ -25,6 +25,7 @@ import WelcomeScreen from './components/onBoarding/WelcomeScreen';
 import LoadingSpinner from './components/onBoarding/LoadingSpinner';
 import { setEmail, setUserName, setUserPhoneNumber } from './redux/userSlice';
 import { setLocalSpokenLanguage } from './redux/translationSlice';
+import { setBrowserName } from './redux/uiSlice';
 
 function App() {
   const location = useLocation();
@@ -40,7 +41,9 @@ function App() {
     const browser = Bowser.getParser(window.navigator.userAgent);
     const browserName = browser.getBrowserName();
 
-    console.log(browser, browserName);
+    dispatch(setBrowserName(browserName));
+
+    console.log('Browser name:', browserName);
 
     if (browserName !== 'Chrome') {
       setIsChrome(false);

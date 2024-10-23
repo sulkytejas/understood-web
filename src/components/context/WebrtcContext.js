@@ -44,6 +44,7 @@ export const WebRTCProvider = ({ children }) => {
   const meetingId = useSelector((state) => state.meeting.meetingId);
   const isVideoPaused = useSelector((state) => state.videoPlayer.videoPause);
   const isAudioPaused = useSelector((state) => state.videoPlayer.audioPause);
+  const browserName = useSelector((state) => state.ui.browserName);
 
   const userSpokenLanguage = useSelector(
     (state) => state.translation.localSpokenLanguage,
@@ -128,22 +129,120 @@ export const WebRTCProvider = ({ children }) => {
     return () => clearInterval(interval);
   }, [videoProducerRef.current]);
 
-  const adjustBitrateAndResolution = (bitrate, packetLoss, rtt) => {
-    const minBitrate = 500000;
-    165817;
-    const maxRTT = 200;
-    const maxPacketLoss = 5;
+  // const adjustBitrateAndResolution = (bitrate, packetLoss, rtt) => {
+  //   const minBitrate = 500000;
 
+  //   const maxRTT = 200;
+  //   const maxPacketLoss = 5;
+
+  //   if (packetLoss > maxPacketLoss || rtt > maxRTT) {
+  //     console.log('Packet loss or RTT too high, reducing bitrate');
+  //     reduceBitrate(bitrate);
+  //   } else if (bitrate < minBitrate) {
+  //     switchToLowerResolution();
+  //   } else {
+  //     increaseBitrate(bitrate);
+  //   }
+  // };
+
+  const adjustBitrateAndResolution = (bitrate, packetLoss, rtt) => {
+    const maxRTT = 250; // Adjust threshold as needed
+    const maxPacketLoss = 5; // In percentage
+
+    const sender =
+      videoProducerRef.current &&
+      videoProducerRef.current.track &&
+      videoProducerRef.current.track.readyState === 'live'
+        ? videoProducerRef.current._rtpSender
+        : null;
+
+    if (!sender) {
+      console.error('Sender not available');
+      return;
+    }
+
+    const params = sender.getParameters();
+    if (!params.encodings || !params.encodings.length) {
+      console.error('No encodings available');
+      return;
+    }
+
+    let needUpdate = false;
+
+    if ((params.encodings[0].priority = 'low')) {
+      params.encodings[0].priority = 'high'; // Set media processing priority
+      needUpdate = true;
+    }
+
+    if ((params.encodings[0].networkPriority = 'low')) {
+      params.encodings[0].networkPriority = 'high'; // Set media processing priority
+      needUpdate = true;
+    }
+
+    // Adjust spatial layer (resolution)
     if (packetLoss > maxPacketLoss || rtt > maxRTT) {
-      console.log('Packet loss or RTT too high, reducing bitrate');
-      reduceBitrate(bitrate);
-    } else if (bitrate < minBitrate) {
-      switchToLowerResolution();
+      console.log('Poor network conditions detected, reducing resolution');
+
+      const currentScale = params.encodings[0].scaleResolutionDownBy || 1;
+      if (currentScale < 4) {
+        params.encodings[0].scaleResolutionDownBy = currentScale * 2;
+        needUpdate = true;
+      }
     } else {
-      increaseBitrate(bitrate);
+      console.log('Good network conditions detected, increasing resolution');
+
+      const currentScale = params.encodings[0].scaleResolutionDownBy || 1;
+      if (currentScale > 1) {
+        params.encodings[0].scaleResolutionDownBy = currentScale / 2;
+        needUpdate = true;
+      }
+    }
+
+    // Adjust temporal layer (frame rate)
+    if (packetLoss > maxPacketLoss || rtt > maxRTT) {
+      console.log('Poor network conditions detected, reducing frame rate');
+
+      const currentFramerate = params.encodings[0].maxFramerate || 30;
+      if (currentFramerate > 10) {
+        params.encodings[0].maxFramerate = currentFramerate - 5;
+        needUpdate = true;
+      }
+    } else {
+      console.log('Good network conditions detected, increasing frame rate');
+
+      const currentFramerate = params.encodings[0].maxFramerate || 30;
+      if (currentFramerate < 30) {
+        params.encodings[0].maxFramerate = currentFramerate + 5;
+        needUpdate = true;
+      }
+    }
+
+    // Adjust bitrate
+    if (packetLoss > maxPacketLoss || rtt > maxRTT) {
+      console.log('Reducing bitrate due to poor network conditions');
+
+      const currentBitrate = params.encodings[0].maxBitrate || 1500000;
+      params.encodings[0].maxBitrate = Math.max(currentBitrate * 0.75, 300000); // Reduce bitrate
+      needUpdate = true;
+    } else {
+      console.log('Increasing bitrate due to good network conditions');
+
+      const currentBitrate = params.encodings[0].maxBitrate || 300000;
+      params.encodings[0].maxBitrate = Math.min(currentBitrate * 1.25, 2500000); // Increase bitrate
+      needUpdate = true;
+    }
+
+    if (needUpdate) {
+      sender
+        .setParameters(params)
+        .then(() => {
+          console.log('Updated encoding parameters:', params.encodings[0]);
+        })
+        .catch((error) => {
+          console.error('Error updating encoding parameters:', error);
+        });
     }
   };
-
   const switchToLowerResolution = () => {
     // Switch to a lower resolution or different codec
     console.log('Switching to lower resolution');
@@ -154,7 +253,10 @@ export const WebRTCProvider = ({ children }) => {
         if (!params.encodings[0].scaleResolutionDownBy) {
           params.encodings[0].scaleResolutionDownBy = 1.5; // Start with 1.5x downscaling
         } else {
-          params.encodings[0].scaleResolutionDownBy *= 1.5;
+          params.encodings[0].scaleResolutionDownBy = Math.min(
+            params.encodings[0].scaleResolutionDownBy * 1.5,
+            4,
+          );
         }
 
         // Optionally reduce the bitrate to match lower resolution
@@ -202,7 +304,20 @@ export const WebRTCProvider = ({ children }) => {
 
     if (sender) {
       const params = sender.getParameters();
-      params.encodings[0].maxBitrate = currentBitrate + 100000;
+      // params.encodings[0].maxBitrate = currentBitrate + 100000;
+
+      params.encodings[0].maxBitrate = Math.min(
+        params.encodings[0].maxBitrate * 1.25,
+        2500000,
+      );
+      params.encodings[0].scaleResolutionDownBy = Math.max(
+        params.encodings[0].scaleResolutionDownBy / 1.5,
+        1,
+      );
+      params.encodings[0].maxFramerate = Math.min(
+        params.encodings[0].maxFramerate + 5,
+        30,
+      );
       sender.setParameters(params);
 
       // if (params.encodings[0].maxBitrate > 1500000) {
@@ -675,15 +790,70 @@ export const WebRTCProvider = ({ children }) => {
     const newTransport = await createProducerTransport();
     console.log('Transport ready, starting to produce media...');
 
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: {
-        width: { ideal: 640 },
-        height: { ideal: 360 },
-        frameRate: { ideal: 15, max: 30 },
+    let videoProducerOptions = {
+      encodings: [
+        { scalabilityMode: 'L3T3', maxBitrate: 1000000 }, // Single encoding for SVC (VP9 doesn’t support simulcast)
+      ],
+      codecOptions: {
+        videoGoogleStartBitrate: 500,
       },
-      video: true,
+    };
+
+    const vp9Codec = device.rtpCapabilities.codecs.find(
+      (codec) => codec.mimeType.toLowerCase() === 'video/vp9',
+    );
+
+    const vp8Codec = device.rtpCapabilities.codecs.find(
+      (codec) => codec.mimeType.toLowerCase() === 'video/vp8',
+    );
+
+    if (vp9Codec) {
+      videoProducerOptions = {
+        encodings: [
+          {
+            scalabilityMode: 'L3T3',
+            maxBitrate: 1500000,
+          },
+        ],
+        codecOptions: {
+          videoGoogleStartBitrate: 1000,
+        },
+        codec: vp9Codec,
+      };
+    } else if (vp8Codec) {
+      videoProducerOptions = {
+        encodings: [
+          {
+            scalabilityMode: 'L1T3',
+            maxBitrate: 800000,
+            scaleResolutionDownBy: 1,
+          },
+          { maxBitrate: 500000, scaleResolutionDownBy: 2 },
+        ],
+        codecOptions: {
+          videoGoogleStartBitrate: 500,
+        },
+        codec: vp8Codec,
+      };
+    } else {
+      console.error('No VP9 or VP8 codec found');
+      return;
+    }
+
+    const constraints = {
+      video: {
+        width: { min: 640, ideal: 1920 }, // Minimum width of 640px, ideal up to 1920px
+        height: { min: 480, ideal: 1080 }, // Minimum height of 480px, ideal up to 1080px
+        frameRate: { ideal: 30, max: 60 }, // Aim for smooth video (30fps, max 60fps)
+      },
       audio: true,
-    });
+    };
+
+    if (browserName == 'Safari') {
+      constraints.video = true;
+    }
+
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
     setLocalStream(stream);
 
     const videoTrack = stream.getVideoTracks()[0];
@@ -694,13 +864,7 @@ export const WebRTCProvider = ({ children }) => {
       console.log(capabilities, 'capabilities before video producer');
       const videoProducer = await newTransport.produce({
         track: videoTrack,
-        encodings: [
-          { scalabilityMode: 'L1T1', maxBitrate: 1000000 }, // Single encoding for SVC (VP9 doesn’t support simulcast)
-        ],
-
-        codecOptions: {
-          videoGoogleStartBitrate: 500,
-        },
+        ...videoProducerOptions,
       }); // Use the transport directly
       const audioProducer = await newTransport.produce({
         track: audioTrack,
