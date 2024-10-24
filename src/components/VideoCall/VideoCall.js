@@ -1,7 +1,7 @@
 /* eslint-disable */
 import React, { useEffect, useState, useMemo, useRef } from 'react';
-// import useWebRTC from '../hooks/useWebRTC';
-// import TranslationOverlay from './TranslationOverlay';
+
+import TranslationOverlay from './TranslationOverlay';
 import VideoControls from './VideoControls';
 
 import VideoPlayer from './VideoPlayer';
@@ -24,6 +24,7 @@ const VideoCall = () => {
   const [translatedTexts, setTranslatedTexts] = useState({ text: '' });
 
   const remoteVideoRef = useRef(null);
+  const videoContainerRef = useRef(null);
 
   const localTranslationLanguage = useSelector(
     (state) => state.translation.localTranslationLanguage,
@@ -182,21 +183,22 @@ const VideoCall = () => {
       variants={pageVariants}
       transition={pageTransition}
     >
-      <div className="video-chat">
+      <div className="video-chat" ref={videoContainerRef}>
         <VideoPlayer
           localStream={localStream}
-          // remoteTrack={remoteStream}
+          remoteTrack={remoteStream}
           remoteVideoRef={remoteVideoRef}
+          videoContainerRef={videoContainerRef}
           // remoteAudioRef={remoteAudioRef}
           connectionState={connectionState}
         />
-        {/* <TranslationOverlay
-        detectedLanguage={detectedLanguage}
-        localTargetLanguage={localTranslationLanguage}
-        setTranslatedTexts={setTranslatedTexts}
-        socket={socket}
-        callStarted={callStarted}
-      /> */}
+        <TranslationOverlay
+          detectedLanguage={detectedLanguage}
+          localTargetLanguage={localTranslationLanguage}
+          setTranslatedTexts={setTranslatedTexts}
+          socket={socket}
+          callStarted={callStarted}
+        />
 
         <VideoControls
           callStarted={callStarted}

@@ -1,4 +1,3 @@
-import React from 'react';
 import { Box, Alert, Typography } from '@mui/material';
 import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
@@ -6,7 +5,15 @@ import LoadingSpinner from '../onBoarding/LoadingSpinner';
 import useListTracker from '../hooks/useListTracker';
 import ListOverlay from './ListOverlay';
 
-const VideoPlayer = ({ localStream, remoteVideoRef, connectionState }) => {
+import { trackFace } from '../utils/tensorFlowUtils';
+
+const VideoPlayer = ({
+  localStream,
+  remoteVideoRef,
+  connectionState,
+  remoteTrack,
+  videoContainerRef,
+}) => {
   const isMainMenuOpen = useSelector((state) => state.ui.callMenuOpen);
   const localTranslationLanguage = useSelector(
     (state) => state.translation.localTranslationLanguage,
@@ -17,6 +24,22 @@ const VideoPlayer = ({ localStream, remoteVideoRef, connectionState }) => {
   // Check if the srcObject is available or not
   const showAlert = !remoteVideoRef?.current?.srcObject;
   const showConnectionAlert = connectionState !== 'connected';
+
+  const handleRemoteTrackProcessing = async () => {
+    console.log('remoteTrack', remoteTrack);
+    console.log(
+      'stream settings',
+      localStream.getVideoTracks()[0].getSettings().width,
+      localStream.getVideoTracks()[0].getSettings().height,
+    );
+    if (remoteTrack && remoteVideoRef.current && videoContainerRef.current) {
+      await trackFace(
+        remoteVideoRef.current,
+        videoContainerRef.current,
+        remoteTrack,
+      );
+    }
+  };
 
   const circularRemoteVideo = {
     display: 'flex',
@@ -69,6 +92,7 @@ const VideoPlayer = ({ localStream, remoteVideoRef, connectionState }) => {
         ref={remoteVideoRef}
         autoPlay
         playsInline
+        onLoadedMetadata={handleRemoteTrackProcessing}
       />
 
       {showList && (

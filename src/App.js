@@ -20,7 +20,7 @@ import ProtectedRoute from './components/onBoarding/ProtectedRoute';
 import PrivacyPolicy from './components/onBoarding/PrivacyPolicy';
 import UnsupportedBrowser from './components/onBoarding/Unsupported';
 import TermsAndCondition from './components/onBoarding/TermsAndCondition';
-
+import { initializeTensorFlow } from './components/utils/tensorFlowUtils';
 import WelcomeScreen from './components/onBoarding/WelcomeScreen';
 import LoadingSpinner from './components/onBoarding/LoadingSpinner';
 import { setEmail, setUserName, setUserPhoneNumber } from './redux/userSlice';
@@ -48,6 +48,10 @@ function App() {
     if (browserName !== 'Chrome') {
       setIsChrome(false);
     }
+  }, []);
+
+  useEffect(() => {
+    initializeTensorFlow();
   }, []);
 
   useEffect(() => {
