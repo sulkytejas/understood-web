@@ -1,6 +1,7 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "Understood",
+  "name": "Understood",
+  "id": "https://www.myunderstood.com",
   "icons": [
     {
       "src": "favicon.ico",
@@ -8,18 +9,41 @@
       "type": "image/x-icon"
     },
     {
-      "src": "logo192.png",
+      "src": "understood_192x192.png",
       "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src": "logo512.png",
+      "src": "understood_512x512.png",
       "type": "image/png",
       "sizes": "512x512"
     }
   ],
-  "start_url": ".",
+  "screenshots": [
+    {
+      "src": "/screenshots/screenshot1.png",
+      "sizes": "480x932",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "/screenshots/screenshot2.png",
+      "sizes": "870x562",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ],
+  "start_url": "https://www.myunderstood.com",
   "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "display_override": ["window-controls-overlay", "standalone"],
+  "protocol_handlers": [
+    {
+      "protocol": "web+understood",
+      "url": "https://www.myunderstood.com/login?redirect=%s"
+    }
+  ],
+  "theme_color": "#4abcc9",
+  "background_color": "#ffffff",
+  "description": "Connection has no language",
+  "orientation": "portrait"
 }

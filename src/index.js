@@ -10,8 +10,7 @@ import theme from './theme';
 import { BrowserRouter } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 
-const CLIENT_ID =
-  '771148754740-uheeqabk9qbfudu53apqs9maegcrnbne.apps.googleusercontent.com';
+const CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID;
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
@@ -27,6 +26,23 @@ root.render(
   </Provider>,
   // </React.StrictMode>,
 );
+
+// src/index.js
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register('/service-worker.js')
+      .then((registration) => {
+        console.log(
+          'ServiceWorker registration successful with scope: ',
+          registration.scope,
+        );
+      })
+      .catch((error) => {
+        console.log('ServiceWorker registration failed: ', error);
+      });
+  });
+}
 
 // If you want to start measuring performance in your app, pass a function
 // to log results (for example: reportWebVitals(console.log))
