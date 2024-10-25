@@ -199,9 +199,160 @@ const detectFace = async (video, model) => {
 // };
 let lastFaceCenterX = null;
 let lastFaceCenterY = null;
-let faceOutOfFrame = false;
+// // let faceOutOfFrame = false;
 
 // Adjust video position to keep the face centered
+// const adjustVideoPosition = (
+//   videoElement,
+//   faceCenterX,
+//   faceCenterY,
+//   videoWidth,
+//   videoHeight,
+//   containerWidth,
+//   containerHeight,
+//   streamWidth,
+//   streamHeight,
+// ) => {
+//   if (
+//     videoWidth <= 0 ||
+//     videoHeight <= 0 ||
+//     containerWidth <= 0 ||
+//     containerHeight <= 0
+//   ) {
+//     console.error(
+//       'Invalid dimensions: Video or container dimensions must be greater than zero.',
+//     );
+//     return;
+//   }
+
+//   if (faceOutOfFrame) {
+//     if (
+//       faceCenterX >= 0 &&
+//       faceCenterX <= streamWidth &&
+//       faceCenterY >= 0 &&
+//       faceCenterY <= streamHeight
+//     ) {
+//       console.log('Face is back in frame, resetting tracking.');
+//       faceOutOfFrame = false; // Reset the out-of-frame flag
+//       lastFaceCenterX = null; // Reset previous face position
+//       lastFaceCenterY = null;
+//     } else {
+//       console.log('Face still out of frame, skipping update.');
+//       return; // Skip updates until face returns
+//     }
+//   }
+
+//   // Calculate how much we need to scale (avoid division by zero)
+//   const scaleX = containerWidth / streamWidth; // How much to scale in X axis
+//   const scaleY = containerHeight / streamHeight; // How much to scale in Y axis
+//   const scale = Math.max(scaleX, scaleY); // Use the smaller scale to maintain aspect ratio
+
+//   // const { scaledFaceCenterX, scaledFaceCenterY } = scaleFaceCoordinates(
+//   //   faceCenterX,
+//   //   faceCenterY,
+//   //   scale,
+//   // );
+
+//   const scaledStreamWidth = streamWidth * scale;
+//   const scaledStreamHeight = streamHeight * scale;
+
+//   // Step 3: Scale the face center coordinates (in the scaled video)
+//   const scaledFaceCenterX = faceCenterX * scale;
+//   const scaledFaceCenterY = faceCenterY * scale;
+
+//   // Step 4: Check if the face has moved out of the container bounds
+//   if (
+//     scaledFaceCenterX < 0 ||
+//     scaledFaceCenterX > scaledStreamWidth ||
+//     scaledFaceCenterY < 0 ||
+//     scaledFaceCenterY > scaledStreamHeight
+//   ) {
+//     faceOutOfFrame = true;
+//     console.log('Face is out of frame.');
+//     return; // Stop updating if face is out of frame
+//   } else {
+//     faceOutOfFrame = false;
+//   }
+
+//   const threshold = 65; // Minimum movement to trigger updates
+//   if (
+//     lastFaceCenterX !== null &&
+//     lastFaceCenterY !== null &&
+//     Math.abs(scaledFaceCenterX - lastFaceCenterX) < threshold &&
+//     Math.abs(scaledFaceCenterY - lastFaceCenterY) < threshold
+//   ) {
+//     return; // Skip update if movement is too small
+//   }
+
+//   // Update last known face position
+//   lastFaceCenterX = scaledFaceCenterX;
+//   lastFaceCenterY = scaledFaceCenterY;
+
+//   // Calculate the cropped area
+//   // const cropWidth = containerWidth; // We want to crop to the container size
+//   // const cropHeight = containerHeight;
+
+//   // const cropX = Math.max(
+//   //   0,
+//   //   Math.min(
+//   //     scaledFaceCenterX - cropWidth / 2,
+//   //     streamWidth * scale - cropWidth,
+//   //   ),
+//   // );
+//   // const cropY = Math.max(
+//   //   0,
+//   //   Math.min(
+//   //     scaledFaceCenterY - cropHeight / 2,
+//   //     streamHeight * scale - cropHeight,
+//   //   ),
+//   // );
+
+//   // const centerX = containerWidth / 2; // Center of the container in X
+//   // const centerY = containerHeight / 2;
+
+//   const cropWidth = containerWidth; // Crop to the container's width
+//   const cropHeight = containerHeight; // Crop to the container's height
+
+//   // Crop from the center of the face
+//   const cropX = Math.max(
+//     0,
+//     Math.min(scaledFaceCenterX - cropWidth / 2, scaledStreamWidth - cropWidth),
+//   );
+//   const cropY = Math.max(
+//     0,
+//     Math.min(
+//       scaledFaceCenterY - cropHeight / 2,
+//       scaledStreamHeight - cropHeight,
+//     ),
+//   );
+
+//   // console.log(
+//   //   'Transforms:',
+//   //   transformX,
+//   //   transformY,
+//   //   'scale:',
+//   //   scale,
+//   //   'scaledFaceCenter:',
+//   //   scaledFaceCenterX,
+//   //   scaledFaceCenterY,
+//   //   'center:',
+//   //   centerX,
+//   //   centerY,
+//   // );
+
+//   videoElement.style.width = `${scaledStreamWidth}px`;
+//   videoElement.style.height = `${scaledStreamHeight}px`;
+//   videoElement.style.transition = 'transform 0.4s ease';
+//   // Apply the cropping and scaling using CSS transformations
+//   // Step 5: Apply the translation first
+//   videoElement.style.transform = `translate(${-cropX}px, ${-cropY}px)`;
+
+//   // Step 6: Apply the scaling separately after translation
+//   // videoElement.style.transform += ` scale(${scale})`;
+
+//   videoElement.style.transformOrigin = 'top left'; // Ensure transformations are relative to the top-left corner
+// };
+
 const adjustVideoPosition = (
   videoElement,
   faceCenterX,
@@ -212,6 +363,7 @@ const adjustVideoPosition = (
   containerHeight,
   streamWidth,
   streamHeight,
+  menuHeight = 0, // Default to 0 if no menu is open
 ) => {
   if (
     videoWidth <= 0 ||
@@ -225,132 +377,69 @@ const adjustVideoPosition = (
     return;
   }
 
-  if (faceOutOfFrame) {
-    if (
-      faceCenterX >= 0 &&
-      faceCenterX <= streamWidth &&
-      faceCenterY >= 0 &&
-      faceCenterY <= streamHeight
-    ) {
-      console.log('Face is back in frame, resetting tracking.');
-      faceOutOfFrame = false; // Reset the out-of-frame flag
-      lastFaceCenterX = null; // Reset previous face position
-      lastFaceCenterY = null;
-    } else {
-      console.log('Face still out of frame, skipping update.');
-      return; // Skip updates until face returns
-    }
+  // Adjust container height to account for menu
+  const adjustedContainerHeight = containerHeight - menuHeight;
+
+  // Calculate scale to fill the container completely
+  const scaleX = containerWidth / streamWidth;
+  const scaleY = adjustedContainerHeight / streamHeight;
+  const scale = Math.max(scaleX, scaleY); // Use Math.max to fill container
+
+  const scaledVideoWidth = streamWidth * scale;
+  const scaledVideoHeight = streamHeight * scale;
+
+  // Calculate offsets (these can be negative due to overflow)
+  const offsetX = (containerWidth - scaledVideoWidth) / 2;
+  const offsetY = (adjustedContainerHeight - scaledVideoHeight) / 2;
+
+  // Scale face coordinates to the scaled video dimensions
+  const scaledFaceCenterX = faceCenterX * scale + offsetX;
+  const scaledFaceCenterY = faceCenterY * scale + offsetY;
+
+  // Update last known face position (we'll implement threshold below)
+  if (lastFaceCenterX === null || lastFaceCenterY === null) {
+    lastFaceCenterX = scaledFaceCenterX;
+    lastFaceCenterY = scaledFaceCenterY;
   }
 
-  // Calculate how much we need to scale (avoid division by zero)
-  const scaleX = containerWidth / streamWidth; // How much to scale in X axis
-  const scaleY = containerHeight / streamHeight; // How much to scale in Y axis
-  const scale = Math.max(scaleX, scaleY); // Use the smaller scale to maintain aspect ratio
+  // Implement movement threshold to prevent jitter
+  const movementThreshold = 50; // Adjust as needed
+  const deltaX = scaledFaceCenterX - lastFaceCenterX;
+  const deltaY = scaledFaceCenterY - lastFaceCenterY;
+  const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
-  // const { scaledFaceCenterX, scaledFaceCenterY } = scaleFaceCoordinates(
-  //   faceCenterX,
-  //   faceCenterY,
-  //   scale,
-  // );
-
-  const scaledStreamWidth = streamWidth * scale;
-  const scaledStreamHeight = streamHeight * scale;
-
-  // Step 3: Scale the face center coordinates (in the scaled video)
-  const scaledFaceCenterX = faceCenterX * scale;
-  const scaledFaceCenterY = faceCenterY * scale;
-
-  // Step 4: Check if the face has moved out of the container bounds
-  if (
-    scaledFaceCenterX < 0 ||
-    scaledFaceCenterX > scaledStreamWidth ||
-    scaledFaceCenterY < 0 ||
-    scaledFaceCenterY > scaledStreamHeight
-  ) {
-    faceOutOfFrame = true;
-    console.log('Face is out of frame.');
-    return; // Stop updating if face is out of frame
-  } else {
-    faceOutOfFrame = false;
-  }
-
-  const threshold = 65; // Minimum movement to trigger updates
-  if (
-    lastFaceCenterX !== null &&
-    lastFaceCenterY !== null &&
-    Math.abs(scaledFaceCenterX - lastFaceCenterX) < threshold &&
-    Math.abs(scaledFaceCenterY - lastFaceCenterY) < threshold
-  ) {
-    return; // Skip update if movement is too small
+  if (distance < movementThreshold) {
+    // Movement is too small, skip update
+    return;
   }
 
   // Update last known face position
   lastFaceCenterX = scaledFaceCenterX;
   lastFaceCenterY = scaledFaceCenterY;
 
-  // Calculate the cropped area
-  // const cropWidth = containerWidth; // We want to crop to the container size
-  // const cropHeight = containerHeight;
+  // Position the video element
+  videoElement.style.width = `${scaledVideoWidth}px`;
+  videoElement.style.height = `${scaledVideoHeight}px`;
+  videoElement.style.position = 'absolute';
+  videoElement.style.left = `${offsetX}px`;
+  videoElement.style.top = `${offsetY - menuHeight}px`; // Adjust for menu
 
-  // const cropX = Math.max(
-  //   0,
-  //   Math.min(
-  //     scaledFaceCenterX - cropWidth / 2,
-  //     streamWidth * scale - cropWidth,
-  //   ),
-  // );
-  // const cropY = Math.max(
-  //   0,
-  //   Math.min(
-  //     scaledFaceCenterY - cropHeight / 2,
-  //     streamHeight * scale - cropHeight,
-  //   ),
-  // );
+  // Calculate desired translations to center the face
+  let translateX = containerWidth / 2 - scaledFaceCenterX;
+  let translateY = adjustedContainerHeight / 2 - scaledFaceCenterY;
 
-  // const centerX = containerWidth / 2; // Center of the container in X
-  // const centerY = containerHeight / 2;
+  // Clamp translations to prevent empty spaces
+  const maxTranslateX = -offsetX;
+  const minTranslateX = containerWidth - scaledVideoWidth - offsetX;
+  const maxTranslateY = -offsetY;
+  const minTranslateY = adjustedContainerHeight - scaledVideoHeight - offsetY;
 
-  const cropWidth = containerWidth; // Crop to the container's width
-  const cropHeight = containerHeight; // Crop to the container's height
+  translateX = Math.min(Math.max(translateX, minTranslateX), maxTranslateX);
+  translateY = Math.min(Math.max(translateY, minTranslateY), maxTranslateY);
 
-  // Crop from the center of the face
-  const cropX = Math.max(
-    0,
-    Math.min(scaledFaceCenterX - cropWidth / 2, scaledStreamWidth - cropWidth),
-  );
-  const cropY = Math.max(
-    0,
-    Math.min(
-      scaledFaceCenterY - cropHeight / 2,
-      scaledStreamHeight - cropHeight,
-    ),
-  );
-
-  // console.log(
-  //   'Transforms:',
-  //   transformX,
-  //   transformY,
-  //   'scale:',
-  //   scale,
-  //   'scaledFaceCenter:',
-  //   scaledFaceCenterX,
-  //   scaledFaceCenterY,
-  //   'center:',
-  //   centerX,
-  //   centerY,
-  // );
-
-  videoElement.style.width = `${scaledStreamWidth}px`;
-  videoElement.style.height = `${scaledStreamHeight}px`;
-  videoElement.style.transition = 'transform 0.4s ease';
-  // Apply the cropping and scaling using CSS transformations
-  // Step 5: Apply the translation first
-  videoElement.style.transform = `translate(${-cropX}px, ${-cropY}px)`;
-
-  // Step 6: Apply the scaling separately after translation
-  // videoElement.style.transform += ` scale(${scale})`;
-
-  videoElement.style.transformOrigin = 'top left'; // Ensure transformations are relative to the top-left corner
+  videoElement.style.transition = 'transform 0.5s ease, top 0.5s ease';
+  videoElement.style.transform = `translate(${translateX}px, ${translateY}px)`;
+  videoElement.style.transformOrigin = 'top left';
 };
 
 async function trackFace(videoElement, container, stream) {
@@ -369,21 +458,34 @@ async function trackFace(videoElement, container, stream) {
     container.videoHeight,
   );
 
+  let frameCounter = 0;
+  const processEveryNthFrame = 3;
   const renderFrame = async () => {
-    const face = await detectFace(videoElement, model);
+    frameCounter++;
+    if (frameCounter % processEveryNthFrame === 0) {
+      const face = await detectFace(videoElement, model);
 
-    if (face) {
-      adjustVideoPosition(
-        videoElement,
-        face.faceCenterX,
-        face.faceCenterY,
-        videoElement.videoWidth,
-        videoElement.videoHeight,
-        container.clientWidth,
-        container.clientHeight,
-        streamWidth,
-        streamHeight,
-      );
+      const translationMenu = document.getElementById('translationTextBox');
+      const elementRect = translationMenu?.getBoundingClientRect();
+      const containerRect = container?.getBoundingClientRect();
+
+      const translationTextBoxHeight =
+        containerRect?.bottom < elementRect?.bottom ? 0 : 100;
+
+      if (face) {
+        adjustVideoPosition(
+          videoElement,
+          face.faceCenterX,
+          face.faceCenterY,
+          videoElement.videoWidth,
+          videoElement.videoHeight,
+          container.clientWidth,
+          container.clientHeight,
+          streamWidth,
+          streamHeight,
+          translationTextBoxHeight,
+        );
+      }
     }
     requestAnimationFrame(renderFrame);
   };

@@ -267,6 +267,7 @@ const VideoControls = ({
       )}
 
       <Box
+        id="translationTextBox"
         sx={{
           position: 'fixed',
           color: '#25293B',
