@@ -1,6 +1,8 @@
 import { Box, Typography } from '@mui/material';
 
-const TranslatedTextView = ({ translatedTexts }) => {
+const TranslatedTextView = ({
+  translatedTexts = { text: '', isFinal: false },
+}) => {
   console.log(translatedTexts.text, 'translatedTexts');
   const isFinal = translatedTexts.isFinal;
 
@@ -23,7 +25,7 @@ const TranslatedTextView = ({ translatedTexts }) => {
         }}
         key="1"
       >
-        {translatedTexts.text}
+        {translatedTexts.text || ''}
       </Typography>
     </Box>
   );

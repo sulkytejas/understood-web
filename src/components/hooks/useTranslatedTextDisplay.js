@@ -1,7 +1,15 @@
 import { useRef, useCallback, useEffect, useState } from 'react';
 import { diff_match_patch } from 'diff-match-patch'; // Import diff-match-patch for text comparison
+import he from 'he';
+import throttle from 'lodash.throttle';
 
 const dmp = new diff_match_patch();
+
+const decodeText = (text) => {
+  if (!text) return '';
+  const decodedText = he.decode(text); // Decodes any HTML entities
+  return decodedText;
+};
 
 const useTranslatedTextDisplay = (setTranslatedText) => {
   const removeTextTimeoutRef = useRef(null);
@@ -13,6 +21,11 @@ const useTranslatedTextDisplay = (setTranslatedText) => {
     setDisplayedText(''); // Reset displayed text
   }, [setTranslatedText]);
 
+  const throttledUpdate = throttle(
+    (textObj) => setTranslatedText(textObj),
+    200,
+  );
+
   const addOrUpdateTranslatedText = useCallback(
     (newText, isFinal, typingSpeed = 200) => {
       const lowerNewText = newText.toLowerCase().trim();
@@ -22,8 +35,8 @@ const useTranslatedTextDisplay = (setTranslatedText) => {
       if (isFinal) {
         lastFinalTextRef.current = lowerNewText;
         setDisplayedText(newText);
-        setTranslatedText({
-          text: newText, // Display final text instantly
+        throttledUpdate({
+          text: decodeText(newText), // Display final text instantly
           isFinal,
         });
         return;
@@ -67,15 +80,15 @@ const useTranslatedTextDisplay = (setTranslatedText) => {
         const words = typingText.split(' ');
         words.forEach((word, i) => {
           setTimeout(() => {
-            setTranslatedText((currentText) => {
+            throttledUpdate((currentText) => {
               const updatedText = `${processedText}${processedText ? ' ' : ''}${currentText.text}${currentText.text ? ' ' : ''}${word}`;
-              return { text: updatedText, isFinal };
+              return { text: decodeText(updatedText), isFinal };
             });
           }, typingSpeed * i);
         });
       } else {
         // If no typing is needed, simply set the translated text
-        setTranslatedText({ text: processedText, isFinal });
+        throttledUpdate({ text: decodeText(processedText), isFinal });
       }
 
       //   if (!isFinal){
@@ -87,11 +100,11 @@ const useTranslatedTextDisplay = (setTranslatedText) => {
       clearTimeout(removeTextTimeoutRef.current);
       removeTextTimeoutRef.current = setTimeout(() => {
         if (isFinal) {
-          setTranslatedText({ text: '', isFinal: true }); // Clear the text
+          throttledUpdate({ text: '', isFinal: true }); // Clear the text
         }
       }, 3000);
     },
-    [setTranslatedText, displayedText, clearText],
+    [throttledUpdate, displayedText, clearText],
   );
 
   // Cleanup on unmount
