@@ -86,7 +86,7 @@ const MeetingEnded = () => {
 
         if (response.ok) {
           console.log('Rating submitted successfully');
-          navigate('/', { state: { fromMeetingEnded: true } });
+          navigate('/login', { state: { fromMeetingEnded: true } });
           window.location.reload();
         } else {
           console.error('Failed to submit rating');
@@ -95,7 +95,7 @@ const MeetingEnded = () => {
         console.error('Error submitting rating:', error);
       }
     } else {
-      navigate('/', { state: { fromMeetingEnded: true } });
+      navigate('/login', { state: { fromMeetingEnded: true } });
       window.location.reload();
     }
   };
