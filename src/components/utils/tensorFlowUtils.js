@@ -421,7 +421,7 @@ const adjustVideoPosition = (
   videoElement.style.width = `${scaledVideoWidth}px`;
   videoElement.style.height = `${scaledVideoHeight}px`;
   videoElement.style.position = 'absolute';
-  videoElement.style.left = `0px`;
+  // videoElement.style.left = `${offsetX}px`;
   videoElement.style.top = `${offsetY - menuHeight}px`; // Adjust for menu
 
   // Calculate desired translations to center the face
@@ -437,8 +437,10 @@ const adjustVideoPosition = (
   translateX = Math.min(Math.max(translateX, minTranslateX), maxTranslateX);
   translateY = Math.min(Math.max(translateY, minTranslateY), maxTranslateY);
 
+  const finalTranslateX = offsetX + translateX;
+  console.log(offsetX, translateX, temp);
   videoElement.style.transition = 'transform 0.5s ease, top 0.5s ease';
-  videoElement.style.transform = `translate(${translateX + offsetX}px, ${translateY}px)`;
+  videoElement.style.transform = `translate(${finalTranslateX}px, ${translateY}px)`;
   videoElement.style.transformOrigin = 'top left';
 };
 
