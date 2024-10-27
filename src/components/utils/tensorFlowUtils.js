@@ -438,7 +438,7 @@ const adjustVideoPosition = (
   translateY = Math.min(Math.max(translateY, minTranslateY), maxTranslateY);
 
   const finalTranslateX = offsetX + translateX;
-  console.log(offsetX, translateX, temp);
+  console.log(offsetX, translateX, finalTranslateX);
   videoElement.style.transition = 'transform 0.5s ease, top 0.5s ease';
   videoElement.style.transform = `translate(${finalTranslateX}px, ${translateY}px)`;
   videoElement.style.transformOrigin = 'top left';
