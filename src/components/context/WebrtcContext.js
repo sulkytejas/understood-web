@@ -743,7 +743,7 @@ export const WebRTCProvider = ({ children }) => {
   useEffect(() => {
     const handleMeetingEnded = () => {
       console.log('meeting-ended triggered');
-      handleDisconnectCall();
+      handleDisconnectCall(meetingId);
     };
 
     if (socket) {
@@ -755,11 +755,14 @@ export const WebRTCProvider = ({ children }) => {
         socket.off('meeting-ended', handleMeetingEnded);
       }
     };
-  }, [socket]);
+  }, [socket, meetingId]);
 
-  const handleDisconnectCall = () => {
+  const handleDisconnectCall = (scoppedMeetingId) => {
+    if (!scoppedMeetingId) {
+      scoppedMeetingId = meetingId;
+    }
     setIntentionalDisconnect(true);
-    const scoppedMeetingId = meetingId;
+
     if (socket) {
       socket.disconnect();
     }

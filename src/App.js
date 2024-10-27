@@ -91,11 +91,12 @@ function App() {
 
         console.error('Error checking authentication:', error);
       } finally {
+        console.log('Setting loading to false...');
         setLoading(false);
       }
     };
     checkAuth();
-  }, [dispatch, location]);
+  }, [dispatch]);
 
   // if (!isChrome) {
   //   return <UnsupportedBrowser variant="browser" />;
@@ -106,7 +107,7 @@ function App() {
   }
 
   if (loading) {
-    console.log('Loading state is true, rendering spinner...');
+    console.log('Loading spinner on app page');
     return <LoadingSpinner />; // Render a loading indicator while waiting for user data
   }
 
@@ -166,13 +167,13 @@ function App() {
               <Route
                 path="/videocall/:meetingId"
                 element={
-                  <ProtectedRoute>
-                    {meetingId ? (
+                  meetingId ? (
+                    <ProtectedRoute>
                       <VideoCall />
-                    ) : (
-                      <Navigate to="/meetingEnded" />
-                    )}
-                  </ProtectedRoute>
+                    </ProtectedRoute>
+                  ) : (
+                    <Navigate to="/meetingEnded" />
+                  )
                 }
               />
               <Route path="/meetingEnded" element={<MeetingEnded />} />

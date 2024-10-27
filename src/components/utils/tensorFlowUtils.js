@@ -442,10 +442,12 @@ const adjustVideoPosition = (
   videoElement.style.transformOrigin = 'top left';
 };
 
-async function trackFace(videoElement, container, stream) {
+async function trackFace(videoElement, container, stream, animationFrameRef) {
   if (!model) {
     await initializeTensorFlow();
   }
+
+  let isTracking = true;
 
   const streamWidth = stream.getVideoTracks()[0].getSettings().width; // Actual video width (e.g., 640px)
   const streamHeight = stream.getVideoTracks()[0].getSettings().height;
@@ -461,6 +463,7 @@ async function trackFace(videoElement, container, stream) {
   let frameCounter = 0;
   const processEveryNthFrame = 3;
   const renderFrame = async () => {
+    if (!isTracking) return;
     frameCounter++;
     if (frameCounter % processEveryNthFrame === 0) {
       const face = await detectFace(videoElement, model);
@@ -487,13 +490,27 @@ async function trackFace(videoElement, container, stream) {
         );
       }
     }
-    requestAnimationFrame(renderFrame);
+    animationFrameRef.current = requestAnimationFrame(renderFrame);
   };
 
   renderFrame();
+
+  const stopTrack = () => {
+    isTracking = false;
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+  };
+
+  return { stopTrack };
 }
 
-async function avatarFaceProcessing(video, canvas, setIsSmiling) {
+async function avatarFaceProcessing(
+  video,
+  canvas,
+  setIsSmiling,
+  animationFrameRef,
+) {
   const context = canvas.getContext('2d');
 
   if (!video || !context) {
@@ -504,11 +521,12 @@ async function avatarFaceProcessing(video, canvas, setIsSmiling) {
   if (!model) {
     await initializeTensorFlow();
   }
-
+  let isTracking = true;
   let frameCount = 0;
   let smileHistory = [];
 
   const processFaceDetection = async () => {
+    if (!isTracking) return;
     if (video.readyState === 4) {
       if (frameCount % 5 === 0) {
         const predictions = await model.estimateFaces(video, false);
@@ -615,9 +633,18 @@ async function avatarFaceProcessing(video, canvas, setIsSmiling) {
       }
     }
     frameCount++;
-    requestAnimationFrame(processFaceDetection);
+    animationFrameRef.current = requestAnimationFrame(processFaceDetection);
   };
   processFaceDetection();
+
+  const stopTrack = () => {
+    isTracking = false;
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+  };
+
+  return { stopTrack };
 }
 
 export {

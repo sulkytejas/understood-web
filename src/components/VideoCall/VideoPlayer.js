@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { Box, Alert, Typography } from '@mui/material';
 import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
@@ -24,6 +25,8 @@ const VideoPlayer = ({
   // Check if the srcObject is available or not
   const showAlert = !remoteVideoRef?.current?.srcObject;
   const showConnectionAlert = connectionState !== 'connected';
+  const animationFrameRef = useRef(null);
+  const stopTrackRef = useRef(null);
 
   const handleRemoteTrackProcessing = async () => {
     console.log('remoteTrack', remoteTrack);
@@ -33,13 +36,25 @@ const VideoPlayer = ({
       localStream.getVideoTracks()[0].getSettings().height,
     );
     if (remoteTrack && remoteVideoRef.current && videoContainerRef.current) {
-      await trackFace(
+      const { stopTrack } = await trackFace(
         remoteVideoRef.current,
         videoContainerRef.current,
         remoteTrack,
+        animationFrameRef,
       );
+
+      stopTrackRef.current = stopTrack;
     }
   };
+
+  useEffect(() => {
+    // Cleanup function to run when component unmounts
+    return () => {
+      if (stopTrackRef.current) {
+        stopTrackRef.current(); // Stop face detection when component unmounts
+      }
+    };
+  }, []);
 
   const circularRemoteVideo = {
     display: 'flex',

@@ -5,6 +5,8 @@ import { avatarFaceProcessing } from '../utils/tensorFlowUtils';
 const UserAvatar = () => {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+  const stopTrackRef = useRef(null);
+  const animationFrameRef = useRef(null);
   const [isSmiling, setIsSmiling] = useState(false);
 
   useEffect(() => {
@@ -30,13 +32,24 @@ const UserAvatar = () => {
   }, []);
 
   const handleFaceProcessing = async () => {
-    await avatarFaceProcessing(
+    const { stopTrack } = await avatarFaceProcessing(
       videoRef.current,
       canvasRef.current,
       setIsSmiling,
+      animationFrameRef,
     );
+    stopTrackRef.current = stopTrack;
   };
-  console.log(isSmiling, 'isSmiling');
+
+  useEffect(() => {
+    // Cleanup function to run when component unmounts
+    return () => {
+      if (stopTrackRef.current) {
+        stopTrackRef.current(); // Stop face detection when component unmounts
+      }
+    };
+  }, []);
+
   return (
     <Box
       sx={{

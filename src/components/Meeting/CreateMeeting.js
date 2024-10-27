@@ -97,25 +97,25 @@ const CreateMeetingPage = () => {
     if (socket && isSocketConnected) {
       if (urlMeetingId) {
         dispatch(joinMeeting(urlMeetingId));
-
-        setLoading(false);
       } else {
         socket.emit(
           'getActiveMeetings',
           { phoneNumber, email },
           ({ meetingId }) => {
+            console.log('Meeting old ID:', meetingId);
+
             if (meetingId) {
               dispatch(joinMeeting(meetingId));
             }
-
-            setLoading(false);
           },
         );
       }
+      setLoading(false);
     }
-  }, [socket, isSocketConnected, phoneNumber, email, dispatch]);
+  }, [socket, isSocketConnected, dispatch]);
 
   if (loading) {
+    console.log('Loading spinner on create meeting page');
     return <LoadingSpinner />;
   }
 
