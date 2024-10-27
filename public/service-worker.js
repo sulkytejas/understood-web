@@ -20,18 +20,18 @@ if (workbox) {
     }),
   );
 
-  // Cache requests to storage.googleapis.com
-  workbox.routing.registerRoute(
-    ({ url }) => url.origin === 'https://storage.googleapis.com',
-    new workbox.strategies.CacheFirst({
-      cacheName: 'gcs-model-cache',
-      plugins: [
-        new workbox.expiration.ExpirationPlugin({
-          maxAgeSeconds: 7 * 24 * 60 * 60, // Cache for one week
-        }),
-      ],
-    }),
-  );
+  //   // Cache requests to storage.googleapis.com
+  //   workbox.routing.registerRoute(
+  //     ({ url }) => url.origin === 'https://storage.googleapis.com',
+  //     new workbox.strategies.CacheFirst({
+  //       cacheName: 'gcs-model-cache',
+  //       plugins: [
+  //         new workbox.expiration.ExpirationPlugin({
+  //           maxAgeSeconds: 7 * 24 * 60 * 60, // Cache for one week
+  //         }),
+  //       ],
+  //     }),
+  //   );
 
   // Configure Service Worker for Offline Support
   workbox.routing.registerRoute(
