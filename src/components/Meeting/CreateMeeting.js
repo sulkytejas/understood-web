@@ -7,7 +7,7 @@ import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
 import HostControl from './HostControl';
-// import UserAvatar from './UserAvatar';
+import UserAvatar from './UserAvatar';
 import ParticipantTab from './ParticipantTab';
 import AccountSeetingDialog from './AccountSettingDialog';
 import { ReactComponent as LogoIcon } from '../assets/understood_logo.svg';
@@ -147,9 +147,9 @@ const CreateMeetingPage = () => {
           <CustomTab label={t('Host Meeting')} />
           <CustomTab label={t('Join Meeting')} />
         </CustomTabs>
-        {/* <div className="create-meeting-content">
+        <div className="create-meeting-content">
           <UserAvatar />
-        </div> */}
+        </div>
 
         {activeTab === 0 ? (
           <HostControl

@@ -1,153 +1,70 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Box } from '@mui/material';
+import { avatarFaceProcessing } from '../utils/tensorFlowUtils';
 
-let faceapi;
 const UserAvatar = () => {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
-  const [isModelLoaded, setIsModelLoaded] = useState(false);
+  const [isSmiling, setIsSmiling] = useState(false);
 
   useEffect(() => {
-    const loadModels = async () => {
-      const MODEL_URL = '/models';
-      faceapi = await import('face-api.js');
-      await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
-      setIsModelLoaded(true);
-    };
-
-    loadModels();
+    navigator.mediaDevices
+      .getUserMedia({ video: true })
+      .then((stream) => {
+        let video = videoRef.current;
+        if (video) {
+          video.srcObject = stream;
+          video
+            .play()
+            .then(() => {
+              console.log('Video is playing');
+            })
+            .catch((err) => {
+              console.error('Error starting video playback:', err);
+            });
+        }
+      })
+      .catch((err) => {
+        console.error('Error accessing webcam: ', err);
+      });
   }, []);
 
-  useEffect(() => {
-    if (isModelLoaded) {
-      navigator.mediaDevices
-        .getUserMedia({ video: true })
-        .then((stream) => {
-          let video = videoRef.current;
-          if (video) {
-            video.srcObject = stream;
-            video.onloadedmetadata = () => {
-              console.log(
-                `Video dimensions: ${video.videoWidth}x${video.videoHeight}`,
-              );
-              canvasRef.current.width = 200;
-              canvasRef.current.height = 200;
-              handleVideoPlay();
-            };
-            video
-              .play()
-              .then(() => {
-                console.log('Video is playing');
-              })
-              .catch((err) => {
-                console.error('Error starting video playback:', err);
-              });
-          }
-        })
-        .catch((err) => {
-          console.error('Error accessing webcam: ', err);
-        });
-    }
-  }, [isModelLoaded]);
-
-  let previousBox = null;
-  let smoothingFactor = 0.2; // Lower value gives more smoothing, adjust as needed
-
-  const handleVideoPlay = () => {
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-
-    if (video && canvas) {
-      const displaySize = {
-        width: video.videoWidth,
-        height: video.videoHeight,
-      };
-      faceapi.matchDimensions(canvas, displaySize);
-
-      const processVideo = async () => {
-        if (canvas.width > 0 && canvas.height > 0) {
-          const detections = await faceapi.detectAllFaces(
-            video,
-            new faceapi.TinyFaceDetectorOptions(),
-          );
-
-          const resizedDetections = faceapi.resizeResults(
-            detections,
-            displaySize,
-          );
-
-          canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
-
-          if (resizedDetections.length > 0) {
-            const detectedBox = resizedDetections[0].box;
-
-            let smoothedBox;
-
-            if (previousBox) {
-              // Apply exponential smoothing
-              smoothedBox = {
-                x:
-                  smoothingFactor * detectedBox.x +
-                  (1 - smoothingFactor) * previousBox.x,
-                y:
-                  smoothingFactor * detectedBox.y +
-                  (1 - smoothingFactor) * previousBox.y,
-                width:
-                  smoothingFactor * detectedBox.width +
-                  (1 - smoothingFactor) * previousBox.width,
-                height:
-                  smoothingFactor * detectedBox.height +
-                  (1 - smoothingFactor) * previousBox.height,
-              };
-            } else {
-              smoothedBox = detectedBox; // Initialize the smoothed box
-            }
-
-            previousBox = smoothedBox; // Update the previous box to the smoothed box
-
-            const { x, y, width, height } = smoothedBox;
-            const zoomFactor = 1.5; // Adjust this factor to zoom in more or less
-
-            // Calculate the coordinates for cropping
-            const cropX = Math.max(0, x - (width * (zoomFactor - 1)) / 2);
-            const cropY = Math.max(0, y - (height * (zoomFactor - 1)) / 2);
-            const cropWidth = Math.min(video.videoWidth, width * zoomFactor);
-            const cropHeight = Math.min(video.videoHeight, height * zoomFactor);
-
-            // Draw the zoomed and cropped video on the canvas
-            canvas.getContext('2d').drawImage(
-              video,
-              cropX, // source x
-              cropY, // source y
-              cropWidth, // source width
-              cropHeight, // source height
-              0, // destination x
-              0, // destination y
-              canvas.width, // destination width
-              canvas.height, // destination height
-            );
-          }
-        }
-
-        requestAnimationFrame(processVideo);
-      };
-
-      processVideo();
-    }
+  const handleFaceProcessing = async () => {
+    await avatarFaceProcessing(
+      videoRef.current,
+      canvasRef.current,
+      setIsSmiling,
+    );
   };
-
+  console.log(isSmiling, 'isSmiling');
   return (
     <Box
       sx={{
         position: 'relative',
-        width: 120,
-        height: 120,
+        width: 130, // Slightly larger than the avatar for glowing effect
+        height: 130,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
         borderRadius: '50%',
-        overflow: 'hidden',
-        backgroundColor: '#fff',
-        mb: 3,
-        padding: '2px',
-        boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.25)',
+        background: isSmiling
+          ? 'conic-gradient(from 0deg, #df4303, #df4303 15%, #4abbc9 30%, transparent 45%, #df4303 60%, #4abbc9 75%, transparent 90%)'
+          : 'none',
+        backgroundSize: '200% 200%',
+        // animation: 'waveGlow 9s linear infinite', // Animate the background position
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: -5,
+          left: -5,
+          right: -5,
+          bottom: -5,
+          borderRadius: '50%',
+          background: 'inherit',
+          padding: '8px', // Controls thickness of the glow
+          filter: 'blur(8px)',
+          zIndex: -1,
+        },
       }}
     >
       <Box
@@ -157,13 +74,19 @@ const UserAvatar = () => {
           height: 120,
           borderRadius: '50%',
           overflow: 'hidden',
-          backgroundColor: '#e0e0e0',
-          mb: 3,
+          backgroundColor: '#fff',
+          boxShadow: isSmiling
+            ? `0 0 8px rgba(0, 255, 0, 0.6), 
+                    0 0 16px rgba(0, 255, 0, 0.6), 
+                    0 0 24px rgba(0, 255, 0, 0.6),
+                    0 0 32px rgba(0, 255, 0, 0.6)`
+            : 'none',
+          animation: isSmiling ? 'pulseGlow 2s infinite' : 'none',
         }}
       >
         <video
           ref={videoRef}
-          // onPlay={handleVideoPlay}
+          onLoadedMetadata={handleFaceProcessing}
           style={{
             width: '100%',
             height: '100%',

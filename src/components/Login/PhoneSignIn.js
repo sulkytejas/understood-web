@@ -17,7 +17,10 @@ import {
   MenuItem,
   Select,
   Box,
+  IconButton,
 } from '@mui/material';
+
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { AsYouType } from 'libphonenumber-js';
 import { useDispatch } from 'react-redux';
 import { useTranslation } from 'react-i18next';
@@ -96,6 +99,7 @@ const PhoneSignIn = forwardRef(
     const [country, setCountry] = useState(countries[0]);
     const [userData, setUserData] = useState(null);
     const { t } = useTranslation();
+    const [isOtpInvalid, setIsOtpInvalid] = useState(false);
 
     useEffect(() => {
       const loadRecaptchaScript = () => {
@@ -281,6 +285,7 @@ const PhoneSignIn = forwardRef(
             }
           })
           .catch((error) => {
+            setIsOtpInvalid(true);
             // User couldn't sign in (bad verification code?)
             console.error('Error during OTP verification', error);
           });
@@ -291,6 +296,12 @@ const PhoneSignIn = forwardRef(
       sendOTP,
       verifyOTP,
     }));
+
+    const backButtonHandler = () => {
+      setConfirmationResult(null);
+      onLogin('phoneLogin');
+      onSetIsPhoneNumberSubmitted(false);
+    };
 
     return (
       <Box
@@ -374,7 +385,22 @@ const PhoneSignIn = forwardRef(
         > */}
         {/* <Screen> */}
         {!!confirmationResult && (
-          <OtpVerification onSetOtp={setOtp} phoneNumber={phoneNumber} />
+          <div>
+            <IconButton
+              color="primary"
+              aria-label="back button"
+              component="span"
+              onClick={backButtonHandler}
+            >
+              <ArrowBackIcon />
+            </IconButton>
+
+            <OtpVerification
+              onSetOtp={setOtp}
+              isOtpInvalid={isOtpInvalid}
+              phoneNumber={phoneNumber}
+            />
+          </div>
         )}
 
         {/* </Screen> */}

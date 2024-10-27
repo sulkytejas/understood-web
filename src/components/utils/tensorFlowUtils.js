@@ -493,9 +493,137 @@ async function trackFace(videoElement, container, stream) {
   renderFrame();
 }
 
+async function avatarFaceProcessing(video, canvas, setIsSmiling) {
+  const context = canvas.getContext('2d');
+
+  if (!video || !context) {
+    console.error('Video element and canvas are required');
+    return;
+  }
+
+  if (!model) {
+    await initializeTensorFlow();
+  }
+
+  let frameCount = 0;
+  let smileHistory = [];
+
+  const processFaceDetection = async () => {
+    if (video.readyState === 4) {
+      if (frameCount % 5 === 0) {
+        const predictions = await model.estimateFaces(video, false);
+
+        if (predictions.length > 0) {
+          const { topLeft, bottomRight, landmarks } = predictions[0];
+
+          // Smile Detection
+          const leftMouthCorner = landmarks[4];
+          const rightMouthCorner = landmarks[5];
+          const topLip = landmarks[2];
+          const bottomLip = landmarks[3];
+
+          const mouthWidth = Math.hypot(
+            rightMouthCorner[0] - leftMouthCorner[0],
+            rightMouthCorner[1] - leftMouthCorner[1],
+          );
+          const mouthHeight = Math.hypot(
+            topLip[0] - bottomLip[0],
+            topLip[1] - bottomLip[1],
+          );
+
+          // Adjusted smile detection criteria
+          const smileRatio = mouthWidth / mouthHeight;
+          const minMouthHeight = 10; // Minimum height to reduce false positives
+
+          // Update smile history with the current ratio
+          if (mouthHeight > minMouthHeight) {
+            smileHistory.push(smileRatio);
+            if (smileHistory.length > 5) smileHistory.shift(); // Keep the last 5 ratios
+          }
+
+          // Calculate average smile ratio from recent frames
+          const avgSmileRatio =
+            smileHistory.reduce((sum, ratio) => sum + ratio, 0) /
+            smileHistory.length;
+
+          // Threshold for smile detection based on average smile ratio
+          const isSmiling = avgSmileRatio > 2; // Slightly higher threshold
+
+          setIsSmiling(isSmiling); // Pass the smile state to main component
+
+          // Drawing Logic (same as before)
+          const topPaddingFactor = 2;
+          const sidePaddingFactor = 1.4;
+          const bottomPaddingFactor = 1.1;
+
+          const centerX = (topLeft[0] + bottomRight[0]) / 2;
+          const centerY = (topLeft[1] + bottomRight[1]) / 2;
+
+          const originalWidth = bottomRight[0] - topLeft[0];
+          const originalHeight = bottomRight[1] - topLeft[1];
+
+          const paddedWidth = originalWidth * sidePaddingFactor;
+          const paddedHeight =
+            originalHeight * ((topPaddingFactor + bottomPaddingFactor) / 2);
+
+          const x = centerX - paddedWidth / 2;
+          const y = centerY - originalHeight * (topPaddingFactor / 2);
+
+          context.clearRect(0, 0, canvas.width, canvas.height);
+
+          const faceImage = document.createElement('canvas');
+          faceImage.width = paddedWidth;
+          faceImage.height = paddedHeight;
+          const faceContext = faceImage.getContext('2d');
+
+          faceContext.drawImage(
+            video,
+            x,
+            y,
+            paddedWidth,
+            paddedHeight,
+            0,
+            0,
+            paddedWidth,
+            paddedHeight,
+          );
+
+          context.save();
+          context.beginPath();
+          context.arc(
+            canvas.width / 2,
+            canvas.height / 2,
+            canvas.width / 2,
+            0,
+            Math.PI * 2,
+          );
+          context.clip();
+
+          context.drawImage(
+            faceImage,
+            0,
+            0,
+            faceImage.width,
+            faceImage.height,
+            0,
+            0,
+            canvas.width,
+            canvas.height,
+          );
+          context.restore();
+        }
+      }
+    }
+    frameCount++;
+    requestAnimationFrame(processFaceDetection);
+  };
+  processFaceDetection();
+}
+
 export {
   generateProcessedStream,
   processFrame,
   initializeTensorFlow,
   trackFace,
+  avatarFaceProcessing,
 };
