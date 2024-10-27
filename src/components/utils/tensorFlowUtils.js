@@ -379,14 +379,15 @@ const adjustVideoPosition = (
 
   // Adjust container height to account for menu
   const adjustedContainerHeight = containerHeight - menuHeight;
+  const dpr = window.devicePixelRatio || 1;
 
   // Calculate scale to fill the container completely
-  const scaleX = containerWidth / streamWidth;
-  const scaleY = adjustedContainerHeight / streamHeight;
+  const scaleX = (containerWidth * dpr) / streamWidth;
+  const scaleY = (adjustedContainerHeight * dpr) / streamHeight;
   const scale = Math.max(scaleX, scaleY); // Use Math.max to fill container
 
-  const scaledVideoWidth = streamWidth * scale;
-  const scaledVideoHeight = streamHeight * scale;
+  const scaledVideoWidth = (streamWidth * scale) / dpr;
+  const scaledVideoHeight = (streamHeight * scale) / dpr;
 
   // Calculate offsets (these can be negative due to overflow)
   const offsetX = (containerWidth - scaledVideoWidth) / 2;
