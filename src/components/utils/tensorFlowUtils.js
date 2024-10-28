@@ -578,11 +578,14 @@ async function avatarFaceProcessing(
           const devicePixelRatio = window.devicePixelRatio || 1;
           const displayWidth = 120; // Match the CSS width
           const displayHeight = 120;
-
+          console.log(
+            'Display Width:',
+            displayWidth,
+            displayHeight,
+            devicePixelRatio,
+          );
           canvas.width = displayWidth * devicePixelRatio;
           canvas.height = displayHeight * devicePixelRatio;
-
-          context.scale(devicePixelRatio, devicePixelRatio);
 
           const centerX = (topLeft[0] + bottomRight[0]) / 2;
           const centerY = (topLeft[1] + bottomRight[1]) / 2;
