@@ -12,6 +12,7 @@ import {
   Menu,
   MenuItem,
   Avatar,
+  Snackbar,
 } from '@mui/material';
 import { MoreVert, Check } from '@mui/icons-material';
 import CallEndIcon from '@mui/icons-material/CallEnd';
@@ -25,6 +26,7 @@ import { ReactComponent as CaptionIcon } from './assets/caption_icon.svg';
 import { ReactComponent as MessageIcon } from './assets/message.svg';
 import { ReactComponent as TranslationIcon } from './assets/translation_icon.svg';
 import { useSocket } from '../context/SocketContext';
+import { set } from 'lodash';
 
 const CustomBottomNavigationAction = styled(BottomNavigationAction)({
   color: 'white',
@@ -65,6 +67,7 @@ const VideoControls = ({
   const [anchorEl, setAnchorEl] = useState(null);
   const [timeInSeconds, setTimeInSeconds] = useState(15 * 60);
   const [isMeetingEndingSoon, setIsMeetingEndingSoon] = useState(false);
+  const [openSnackbar, setOpenSnackbar] = useState(false);
 
   const isMainMenuOpen = useSelector((state) => state.ui.callMenuOpen);
   const isSideMenuOpen = useSelector((state) => state.ui.callSideMenu);
@@ -153,6 +156,10 @@ const VideoControls = ({
 
   const handleClose = () => {
     setAnchorEl(null);
+  };
+
+  const handleCloseSnackbar = () => {
+    setOpenSnackbar(false);
   };
 
   const checkOverFlow = () => {
@@ -387,9 +394,24 @@ const VideoControls = ({
           <CustomBottomNavigationAction
             icon={<MessageIcon sx={{ fontSize: 36, marginLeft: 3 }} />}
             sx={{ color: 'white' }}
+            onClick={() => {
+              setOpenSnackbar(true);
+            }}
           />
+
           <CustomBottomNavigationAction
             icon={<MoreVert sx={{ fontSize: 36 }} />}
+            onClick={() => {
+              setOpenSnackbar(true);
+            }}
+          />
+          <Snackbar
+            anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+            open={openSnackbar}
+            onClose={handleCloseSnackbar}
+            message="Feature available early 2025"
+            key={'bottom' + 'center'}
+            autoHideDuration={500}
           />
         </BottomNavigation>
         <CurvedMenuBackground

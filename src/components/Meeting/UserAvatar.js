@@ -101,11 +101,10 @@ const UserAvatar = () => {
           ref={videoRef}
           onLoadedMetadata={handleFaceProcessing}
           style={{
-            width: '120 px',
-            height: '120 px',
+            width: '100%',
+            height: '100%',
             objectFit: 'cover',
             borderRadius: '50%',
-            position: 'absolute',
           }}
           playsInline
         />
@@ -115,8 +114,8 @@ const UserAvatar = () => {
             position: 'absolute',
             top: 0,
             left: 0,
-            width: '120 px',
-            height: '120 px',
+            width: '100%',
+            height: '100%',
           }}
         />
       </Box>

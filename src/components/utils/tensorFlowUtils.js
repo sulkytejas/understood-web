@@ -530,7 +530,7 @@ async function avatarFaceProcessing(
   const processFaceDetection = async () => {
     if (!isTracking) return;
     if (video.readyState === 4) {
-      if (frameCount % 5 === 0) {
+      if (frameCount % 2 === 0) {
         const predictions = await model.estimateFaces(video, false);
 
         if (predictions.length > 0) {
@@ -550,6 +550,9 @@ async function avatarFaceProcessing(
             topLip[0] - bottomLip[0],
             topLip[1] - bottomLip[1],
           );
+
+          canvas.width = 120;
+          canvas.height = 120;
 
           // Adjusted smile detection criteria
           const smileRatio = mouthWidth / mouthHeight;
@@ -571,75 +574,46 @@ async function avatarFaceProcessing(
 
           setIsSmiling(isSmiling); // Pass the smile state to main component
 
-          // Drawing Logic
-          const topPaddingFactor = 2;
-          const sidePaddingFactor = 1.4;
-          const bottomPaddingFactor = 1.1;
-          const devicePixelRatio = window.devicePixelRatio || 1;
-          const displayWidth = 120; // Match the CSS width
-          const displayHeight = 120;
-          console.log(
-            'Display Width:',
-            displayWidth,
-            displayHeight,
-            devicePixelRatio,
-          );
-          canvas.width = displayWidth * devicePixelRatio;
-          canvas.height = displayHeight * devicePixelRatio;
+          // Drawing Logic (same as before)
+          // const topPaddingFactor = 2;
+          // const sidePaddingFactor = 1.4;
+          // const bottomPaddingFactor = 1.1;
+
+          const faceWidth = bottomRight[0] - topLeft[0];
+          const faceHeight = bottomRight[1] - topLeft[1];
+          const faceSize = Math.max(faceWidth, faceHeight);
+
+          const paddingFactor = 1.5; // Adjust as needed
+          const paddedFaceSize = faceSize * paddingFactor;
 
           const centerX = (topLeft[0] + bottomRight[0]) / 2;
           const centerY = (topLeft[1] + bottomRight[1]) / 2;
+          const x = centerX - paddedFaceSize / 2;
+          const y = centerY - paddedFaceSize / 2;
 
-          const originalWidth = bottomRight[0] - topLeft[0];
-          const originalHeight = bottomRight[1] - topLeft[1];
-
-          const paddedWidth = originalWidth * sidePaddingFactor;
-          const paddedHeight =
-            originalHeight * ((topPaddingFactor + bottomPaddingFactor) / 2);
-
-          const x = centerX - paddedWidth / 2;
-          const y = centerY - originalHeight * (topPaddingFactor / 2);
-
-          context.clearRect(0, 0, displayWidth, displayHeight);
-
-          const faceImage = document.createElement('canvas');
-          faceImage.width = paddedWidth;
-          faceImage.height = paddedHeight;
-          const faceContext = faceImage.getContext('2d');
-
-          faceContext.drawImage(
-            video,
-            x,
-            y,
-            paddedWidth,
-            paddedHeight,
-            0,
-            0,
-            paddedWidth,
-            paddedHeight,
-          );
+          context.clearRect(0, 0, canvas.width, canvas.height);
 
           context.save();
           context.beginPath();
           context.arc(
-            displayWidth / 2, // Use displayWidth instead of canvas.width
-            displayHeight / 2, // Use displayHeight instead of canvas.height
-            displayWidth / 2,
+            canvas.width / 2,
+            canvas.height / 2,
+            canvas.width / 2,
             0,
             Math.PI * 2,
           );
           context.clip();
 
           context.drawImage(
-            faceImage,
+            video,
+            x,
+            y,
+            paddedFaceSize,
+            paddedFaceSize,
             0,
             0,
-            faceImage.width,
-            faceImage.height,
-            0,
-            0,
-            displayWidth,
-            displayHeight,
+            canvas.width,
+            canvas.height,
           );
           context.restore();
         }
