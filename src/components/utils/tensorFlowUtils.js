@@ -575,9 +575,14 @@ async function avatarFaceProcessing(
           const topPaddingFactor = 2;
           const sidePaddingFactor = 1.4;
           const bottomPaddingFactor = 1.1;
+          const devicePixelRatio = window.devicePixelRatio || 1;
+          const displayWidth = 120; // Match the CSS width
+          const displayHeight = 120;
 
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
+          canvas.width = displayWidth * devicePixelRatio;
+          canvas.height = displayHeight * devicePixelRatio;
+
+          context.scale(devicePixelRatio, devicePixelRatio);
 
           const centerX = (topLeft[0] + bottomRight[0]) / 2;
           const centerY = (topLeft[1] + bottomRight[1]) / 2;
@@ -592,7 +597,7 @@ async function avatarFaceProcessing(
           const x = centerX - paddedWidth / 2;
           const y = centerY - originalHeight * (topPaddingFactor / 2);
 
-          context.clearRect(0, 0, canvas.width, canvas.height);
+          context.clearRect(0, 0, displayWidth, displayHeight);
 
           const faceImage = document.createElement('canvas');
           faceImage.width = paddedWidth;
@@ -614,9 +619,9 @@ async function avatarFaceProcessing(
           context.save();
           context.beginPath();
           context.arc(
-            canvas.width / 2,
-            canvas.height / 2,
-            canvas.width / 2,
+            displayWidth / 2, // Use displayWidth instead of canvas.width
+            displayHeight / 2, // Use displayHeight instead of canvas.height
+            displayWidth / 2,
             0,
             Math.PI * 2,
           );
@@ -630,8 +635,8 @@ async function avatarFaceProcessing(
             faceImage.height,
             0,
             0,
-            canvas.width,
-            canvas.height,
+            displayWidth,
+            displayHeight,
           );
           context.restore();
         }
