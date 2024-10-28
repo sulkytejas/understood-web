@@ -571,10 +571,13 @@ async function avatarFaceProcessing(
 
           setIsSmiling(isSmiling); // Pass the smile state to main component
 
-          // Drawing Logic (same as before)
+          // Drawing Logic
           const topPaddingFactor = 2;
           const sidePaddingFactor = 1.4;
           const bottomPaddingFactor = 1.1;
+
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
 
           const centerX = (topLeft[0] + bottomRight[0]) / 2;
           const centerY = (topLeft[1] + bottomRight[1]) / 2;
