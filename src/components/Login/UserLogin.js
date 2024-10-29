@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { Box, Typography, Button } from '@mui/material';
 import GoogleAuthentication from './GoogleAuthentication';
 import PhoneSignIn from './PhoneSignIn';
+import SignUpModal from './SignUpModal';
 import { styled } from '@mui/material/styles';
 import { ReactComponent as LogoIcon } from '../assets/understood_logo.svg';
 import { useTranslation } from 'react-i18next';
@@ -36,6 +37,7 @@ const UserLogin = () => {
   const [loginMethod, setLoginMethod] = useState(null);
   const { t } = useTranslation();
   const [isPhoneNumberSubmitted, setIsPhoneNumberSubmitted] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const phoneLoginRef = useRef(null);
 
   const handleButtonClick = (e) => {
@@ -47,6 +49,10 @@ const UserLogin = () => {
         phoneLoginRef.current.verifyOTP();
       }
     }
+  };
+
+  const handleModalClose = () => {
+    setIsModalOpen(false);
   };
 
   return (
@@ -123,13 +129,32 @@ const UserLogin = () => {
           className="create-invite-button"
           onClick={handleButtonClick}
           sx={{
-            marginTop: !isPhoneNumberSubmitted ? '126px' : '330px',
+            marginTop: !isPhoneNumberSubmitted ? '100px' : '330px',
             color: '#fff',
             fontSize: '18px',
           }}
         >
           {isPhoneNumberSubmitted ? t('Verify & Hop Back In!') : t('Send OTP')}
         </Button>
+        <Typography
+          sx={{
+            color: '#595959',
+            fontWeight: 500,
+            fontSize: '15px',
+            lineHeight: '22px',
+            textAlign: 'center',
+          }}
+        >
+          {t('Don’t have an account?')}
+          <Button
+            variant="text"
+            sx={{ color: '#DF4303' }}
+            onClick={() => setIsModalOpen(true)}
+          >
+            {t('Sign Up')}
+          </Button>
+        </Typography>
+        <SignUpModal open={isModalOpen} handleClose={handleModalClose} />
       </Box>
     </motion.div>
   );

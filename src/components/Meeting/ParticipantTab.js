@@ -154,7 +154,7 @@ const ParticipantTab = ({
       });
   };
 
-  const tooltipTitle = t('Change your spoken language and other settings');
+  const tooltipTitle = t('Language and settings');
 
   return (
     <div>

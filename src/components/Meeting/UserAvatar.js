@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Box } from '@mui/material';
+import { Box, Avatar } from '@mui/material';
 import { avatarFaceProcessing } from '../utils/tensorFlowUtils';
+import PersonIcon from '@mui/icons-material/Person';
 
 const UserAvatar = () => {
   const videoRef = useRef(null);
@@ -8,6 +9,7 @@ const UserAvatar = () => {
   const stopTrackRef = useRef(null);
   const animationFrameRef = useRef(null);
   const [isSmiling, setIsSmiling] = useState(false);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
 
   useEffect(() => {
     navigator.mediaDevices
@@ -16,9 +18,11 @@ const UserAvatar = () => {
         let video = videoRef.current;
         if (video) {
           video.srcObject = stream;
+
           video
             .play()
             .then(() => {
+              setIsVideoPlaying(true);
               console.log('Video is playing');
             })
             .catch((err) => {
@@ -97,27 +101,43 @@ const UserAvatar = () => {
           animation: isSmiling ? 'pulseGlow 2s infinite' : 'none',
         }}
       >
-        <video
-          ref={videoRef}
-          onLoadedMetadata={handleFaceProcessing}
-          style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            borderRadius: '50%',
-          }}
-          playsInline
-        />
-        <canvas
-          ref={canvasRef}
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-          }}
-        />
+        <>
+          <video
+            ref={videoRef}
+            onLoadedMetadata={handleFaceProcessing}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              borderRadius: '50%',
+            }}
+            playsInline
+          />
+          <canvas
+            ref={canvasRef}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+            }}
+          />
+        </>
+        {!isVideoPlaying && (
+          <Avatar
+            sx={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: 120,
+              height: 120,
+              bgcolor: '#A0A0A0',
+            }}
+          >
+            <PersonIcon sx={{ fontSize: 50 }} />
+          </Avatar>
+        )}
       </Box>
     </Box>
   );

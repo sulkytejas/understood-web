@@ -2,7 +2,7 @@
 
 import './App.css';
 import { React, useState, useEffect } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Box, useMediaQuery } from '@mui/material';
 import Bowser from 'bowser';
 import { SocketProvider } from './components/context/SocketContext';
@@ -111,20 +111,26 @@ function App() {
     return <LoadingSpinner />; // Render a loading indicator while waiting for user data
   }
 
+  const pageVariants = {
+    initial: { opacity: 0 },
+    in: { opacity: 1 },
+    out: { opacity: 0 },
+  };
+  const pageTransition = {
+    duration: 0.3,
+  };
+
   return (
     <Box
       sx={{
         width: '100%',
         maxWidth: '100vw',
+        height: '100vh',
+        overflow: 'hidden',
         margin: '0 auto',
         boxSizing: 'border-box',
-        '@media (min-width:430px)': {
-          padding: '0px',
-          maxWidth: '430px', // Adjust this value according to the desired width for iPhone 15 Pro Max
-        },
-        '@media (max-width: 390px) and (max-width: 400px)': {
-          padding: '0px',
-          maxWidth: '390px', // Adjust this value according to the desired width for iPhone 15 Pro Max
+        '@media (min-width: 390px) and (max-width: 430px)': {
+          maxWidth: '430px', // Adjust for iPhone 15 Pro Max
         },
         '@media (min-width:768px)': {
           maxWidth: '768px', // For tablets and larger devices
@@ -139,7 +145,15 @@ function App() {
                 path="/"
                 element={
                   !spokenLanguageStorage ? (
-                    <WelcomeScreen />
+                    <motion.div
+                      initial="initial"
+                      animate="in"
+                      exit="out"
+                      variants={pageVariants}
+                      transition={pageTransition}
+                    >
+                      <WelcomeScreen />
+                    </motion.div>
                   ) : (
                     <Navigate to="/login" />
                   )
@@ -176,7 +190,20 @@ function App() {
                   )
                 }
               />
-              <Route path="/meetingEnded" element={<MeetingEnded />} />
+              <Route
+                path="/meetingEnded"
+                element={
+                  <motion.div
+                    initial="initial"
+                    animate="in"
+                    exit="out"
+                    variants={pageVariants}
+                    transition={pageTransition}
+                  >
+                    <MeetingEnded />
+                  </motion.div>
+                }
+              />
               <Route path="/privacyPolicy" element={<PrivacyPolicy />} />
               <Route
                 path="/termsAndConditions"

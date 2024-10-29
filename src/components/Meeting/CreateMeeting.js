@@ -13,7 +13,11 @@ import AccountSeetingDialog from './AccountSettingDialog';
 import { ReactComponent as LogoIcon } from '../assets/understood_logo.svg';
 
 import { setLocalSpokenLanguage } from '../../redux/translationSlice';
-import { joinMeeting } from '../../redux/meetingSlice';
+import {
+  joinMeeting,
+  setHostSocketId,
+  setIsHost,
+} from '../../redux/meetingSlice';
 import LoadingSpinner from '../onBoarding/LoadingSpinner';
 import { useTranslation } from 'react-i18next';
 
@@ -101,11 +105,16 @@ const CreateMeetingPage = () => {
         socket.emit(
           'getActiveMeetings',
           { phoneNumber, email },
-          ({ meetingId }) => {
+          ({ meetingId, hostSocketId }) => {
             console.log('Meeting old ID:', meetingId);
 
             if (meetingId) {
               dispatch(joinMeeting(meetingId));
+            }
+
+            if (hostSocketId) {
+              dispatch(setHostSocketId(hostSocketId));
+              dispatch(setIsHost(true));
             }
           },
         );

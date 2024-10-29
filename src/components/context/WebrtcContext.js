@@ -335,59 +335,6 @@ export const WebRTCProvider = ({ children }) => {
     }
   };
 
-  // const switchCodec = async (newCodec) => {
-  //   console.log('Switching codec to:', newCodec);
-  //   try {
-  //     const transport = sendTransport;
-
-  //     if (videoProducerRef.current) {
-  //       await videoProducerRef.current.close();
-  //     }
-
-  //     const videoTrack = localStream.getVideoTracks()[0];
-
-  //     if (videoTrack.readyState === 'ended') {
-  //       console.error('Track has already ended, cannot reuse.');
-  //       return;
-  //     }
-
-  //     let codec;
-  //     if (newCodec === 'VP8') {
-  //       codec = device.rtpCapabilities.codecs.find(
-  //         (c) => c.mimeType === 'video/VP8',
-  //       );
-  //     } else if (newCodec === 'H264') {
-  //       codec = device.rtpCapabilities.codecs.find(
-  //         (c) => c.mimeType === 'video/H264',
-  //       );
-  //     } else if (newCodec === 'VP9') {
-  //       codec = device.rtpCapabilities.codecs.find(
-  //         (c) => c.mimeType === 'video/VP9',
-  //       );
-  //     } else {
-  //       console.error('Invalid codec:', newCodec);
-  //       return;
-  //     }
-
-  //     const newVideoProducer = await transport.produce({
-  //       track: videoTrack,
-  //       encodings: [
-  //         { scalabilityMode: 'S1T1', maxBitrate: 1000000 }, // Single encoding for SVC (VP9 doesn’t support simulcast)
-  //       ],
-  //       codecOptions: {
-  //         videoGoogleStartBitrate: 500,
-  //       },
-  //       codec,
-  //       stopTracks: false,
-  //     });
-  //     videoProducerRef.current = newVideoProducer;
-
-  //     console.log(`Switched codec to ${newCodec}`);
-  //   } catch (error) {
-  //     console.error('Failed to switch codec:', error);
-  //   }
-  // };
-
   const joinRoom = (enteredMeetingId) => {
     return new Promise((resolve, reject) => {
       socket.emit(
@@ -492,6 +439,7 @@ export const WebRTCProvider = ({ children }) => {
     if (state === 'disconnected' || state === 'failed') {
       console.log('Connection failed for transport ID:', transport.id);
       console.log('Connection lost, attempting to reconnect...');
+      setRemoteStream(null);
       if (!intentionalDisconnect) {
         attemptReconnect();
       }
@@ -706,6 +654,25 @@ export const WebRTCProvider = ({ children }) => {
   }, [socket, device]);
 
   useEffect(() => {
+    // Set up the listener for new producers
+    const handleParcipantLeft = async ({ participantID }) => {
+      console.log('participant left', participantID);
+      setRemoteStream(null);
+    };
+
+    if (socket) {
+      socket.on('participant-disconnected', handleParcipantLeft);
+    }
+
+    return () => {
+      // Cleanup listener when the component unmounts
+      if (socket) {
+        socket.off('participant-disconnected', handleParcipantLeft);
+      }
+    };
+  }, [socket]);
+
+  useEffect(() => {
     const handleProducerClosed = ({ producerId }) => {
       const consumer = consumers.current[producerId];
 
@@ -720,6 +687,11 @@ export const WebRTCProvider = ({ children }) => {
                 .getTracks()
                 .filter((track) => track.id !== consumer.track.id),
             );
+
+            // If the new stream has no tracks, set remoteStream to null
+            if (newStream.getTracks().length === 0) {
+              return null;
+            }
 
             return newStream;
           }
@@ -886,11 +858,6 @@ export const WebRTCProvider = ({ children }) => {
     } finally {
       setIsStreaming(false);
     }
-
-    // socket.on('meeting-ended', () => {
-    //   console.log('meeting-ended triggered');
-    //   handleDisconnectCall();
-    // });
   };
 
   return (
