@@ -347,7 +347,6 @@ export const WebRTCProvider = ({ children }) => {
           hostSocketId,
           error,
         }) => {
-          console.log(enteredMeetingId);
           if (success) {
             const newDevice = new Device();
 

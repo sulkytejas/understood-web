@@ -8,6 +8,7 @@ import {
   FormHelperText,
   Typography,
   Tooltip,
+  Snackbar,
 } from '@mui/material';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import LinkIcon from '@mui/icons-material/Link';
@@ -25,6 +26,7 @@ import {
   joinMeeting,
   setHostSocketId,
   setIsHost,
+  setMeetingPhrase,
 } from '../../redux/meetingSlice';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -87,11 +89,16 @@ const ParticipantTab = ({
 }) => {
   // const socket = useSocket();
   const [meetingId, setMeetingId] = useState(null);
+  const [meetingPhraseLocal, setMeetingPhraseLocal] = useState(null);
   const [username, setUsername] = useState(persistedUserName);
   const [error, setError] = useState(null);
   const [openTooltip, setOpenTooltip] = useState(true);
+  const [copiedToClipboard, setCopiedToClipboard] = useState(false);
 
   const reduxmeetingId = useSelector((state) => state.meeting.meetingId);
+  const reduxmeetingPhrase = useSelector(
+    (state) => state.meeting.meetingPhrase,
+  );
   const { joinRoom } = useWebRTC();
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -113,25 +120,70 @@ const ParticipantTab = ({
     }
   }, [reduxmeetingId]);
 
+  useEffect(() => {
+    if (reduxmeetingPhrase) {
+      setMeetingPhraseLocal(reduxmeetingPhrase);
+    }
+  }, [reduxmeetingPhrase]);
+
+  const handleCloseSnackbar = () => {
+    setCopiedToClipboard(false);
+  };
+
   const onClickHandler = async () => {
-    try {
-      const { joined, hostSocketId, isHost } = await joinRoom(meetingId);
-      console.log('clicked', joined, hostSocketId, isHost);
+    if (meetingPhraseLocal && !meetingId) {
+      socket.emit(
+        'getMeetingForPhrase',
+        meetingPhraseLocal,
+        async ({ meetingID }) => {
+          console.log('meetingID from phrase', meetingID);
 
-      if (joined) {
-        dispatch(joinMeeting(meetingId));
-        dispatch(setHostSocketId(hostSocketId));
-        dispatch(setIsHost(isHost));
+          if (!meetingID) {
+            setError('Meeting not found');
+            return;
+          }
+          try {
+            const { joined, hostSocketId, isHost } = await joinRoom(meetingID);
+            console.log('clicked', joined, hostSocketId, isHost);
 
-        if (username !== persistedUserName) {
-          socket.emit('updateUsername', { username, phoneNumber, email });
+            if (joined) {
+              dispatch(joinMeeting(meetingID));
+              dispatch(setHostSocketId(hostSocketId));
+              dispatch(setIsHost(isHost));
+              dispatch(setMeetingPhrase(meetingPhraseLocal));
+
+              if (username !== persistedUserName) {
+                socket.emit('updateUsername', { username, phoneNumber, email });
+              }
+
+              navigate(`/videocall/${meetingID}`);
+            }
+          } catch (e) {
+            console.log(e, 'err err');
+            setError(e?.error);
+          }
+        },
+      );
+    } else {
+      try {
+        const { joined, hostSocketId, isHost } = await joinRoom(meetingId);
+        console.log('clicked', joined, hostSocketId, isHost);
+
+        if (joined) {
+          dispatch(joinMeeting(meetingId));
+          dispatch(setHostSocketId(hostSocketId));
+          dispatch(setIsHost(isHost));
+
+          if (username !== persistedUserName) {
+            socket.emit('updateUsername', { username, phoneNumber, email });
+          }
+
+          navigate(`/videocall/${meetingId}`);
         }
-
-        navigate(`/videocall/${meetingId}`);
+      } catch (e) {
+        console.log(e, 'err err');
+        setError(e?.error);
       }
-    } catch (e) {
-      console.log(e, 'err err');
-      setError(e?.error);
     }
   };
 
@@ -143,6 +195,7 @@ const ParticipantTab = ({
   const handleCopyClick = () => {
     navigator.clipboard.writeText(meetingId).then(() => {
       console.log('Text copied to clipboard!');
+      setCopiedToClipboard(true);
     });
   };
 
@@ -201,8 +254,8 @@ const ParticipantTab = ({
         variant="outlined"
         fullWidth
         margin="normal"
-        value={meetingId || ''}
-        onChange={(e) => setMeetingId(e.target.value)}
+        value={meetingPhraseLocal || ''}
+        onChange={(e) => setMeetingPhraseLocal(e.target.value)}
         InputProps={{
           startAdornment: (
             <InputAdornment position="start">
@@ -213,12 +266,23 @@ const ParticipantTab = ({
           ),
           endAdornment: (
             <InputAdornment position="end">
-              <IconButton disabled={!meetingId} onClick={handleCopyClick}>
+              <IconButton
+                disabled={!meetingPhraseLocal}
+                onClick={handleCopyClick}
+              >
                 <CopyIcon color="action" />
               </IconButton>
             </InputAdornment>
           ),
         }}
+      />
+      <Snackbar
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        open={copiedToClipboard}
+        onClose={handleCloseSnackbar}
+        message={`Successfully Copied`}
+        key={'bottom' + 'center'}
+        autoHideDuration={800}
       />
       {error && <FormHelperText error>{error}</FormHelperText>}
 
@@ -268,7 +332,7 @@ const ParticipantTab = ({
         fullWidth
         className="create-invite-button"
         onClick={onClickHandler}
-        disabled={!meetingId}
+        disabled={!meetingPhraseLocal}
         sx={{ marginTop: '45px', color: '#fff', fontSize: '18px' }}
       >
         Join

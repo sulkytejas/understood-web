@@ -17,6 +17,7 @@ import {
   joinMeeting,
   setHostSocketId,
   setIsHost,
+  setMeetingPhrase,
 } from '../../redux/meetingSlice';
 import LoadingSpinner from '../onBoarding/LoadingSpinner';
 import { useTranslation } from 'react-i18next';
@@ -77,6 +78,9 @@ const CreateMeetingPage = () => {
   const meetingId = useSelector((state) => state.meeting.meetingId);
   const persistedUserName = useSelector((state) => state.user.username);
   const phoneNumber = useSelector((state) => state.user.phoneNumber);
+  const localSpokenLanguage = useSelector(
+    (state) => state.translation.localSpokenLanguage,
+  );
   const email = useSelector((state) => state.user.email);
   const [openSettingMenu, setOpenSettingMenu] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -104,12 +108,16 @@ const CreateMeetingPage = () => {
       } else {
         socket.emit(
           'getActiveMeetings',
-          { phoneNumber, email },
-          ({ meetingId, hostSocketId }) => {
+          { phoneNumber, email, userSpokenLanguage: localSpokenLanguage },
+          ({ meetingId, hostSocketId, meetingPhrase }) => {
             console.log('Meeting old ID:', meetingId);
 
             if (meetingId) {
               dispatch(joinMeeting(meetingId));
+            }
+
+            if (meetingPhrase) {
+              dispatch(setMeetingPhrase(meetingPhrase));
             }
 
             if (hostSocketId) {

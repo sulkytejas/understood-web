@@ -17,12 +17,13 @@ import {
   Settings as SettingsIcon,
 } from '@mui/icons-material';
 import { styled } from '@mui/system';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { useSocket } from '../context/SocketContext';
 import {
   joinMeeting,
   setHostSocketId,
   setIsHost,
+  setMeetingPhrase,
 } from '../../redux/meetingSlice';
 import { useTranslation } from 'react-i18next';
 
@@ -88,6 +89,12 @@ const HostControl = ({
   const dispatch = useDispatch();
   const { socket } = useSocket();
   const { t } = useTranslation();
+  const userSpokenLanguage = useSelector(
+    (state) => state.translation.localSpokenLanguage,
+  );
+  const meetingPhraseRedux = useSelector(
+    (state) => state.meeting.meetingPhrase,
+  );
   // const navigate = useNavigate();
 
   const [meetingId, setMeetingId] = useState('');
@@ -114,8 +121,9 @@ const HostControl = ({
         {
           phoneNumber,
           email,
+          userSpokenLanguage,
         },
-        ({ meetingId, hostSocketId, error }) => {
+        ({ meetingId, hostSocketId, error, meetingPhrase }) => {
           if (error) {
             setError(error);
             setLoading(false);
@@ -128,6 +136,7 @@ const HostControl = ({
           dispatch(setHostSocketId(hostSocketId));
           dispatch(setIsHost(true));
           dispatch(setUserName(username));
+          dispatch(setMeetingPhrase(meetingPhrase));
           setLoading(false);
           setActiveTab(1);
         },
@@ -200,7 +209,7 @@ const HostControl = ({
         variant="outlined"
         fullWidth
         margin="normal"
-        value={meetingId}
+        value={meetingPhraseRedux}
         InputProps={{
           startAdornment: (
             <InputAdornment position="start">
