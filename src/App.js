@@ -98,10 +98,6 @@ function App() {
     checkAuth();
   }, [dispatch]);
 
-  // if (!isChrome) {
-  //   return <UnsupportedBrowser variant="browser" />;
-  // }
-
   if (!isDeviceSupported) {
     return <UnsupportedBrowser variant="device" />;
   }
