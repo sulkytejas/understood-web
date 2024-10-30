@@ -193,7 +193,7 @@ const ParticipantTab = ({
   };
 
   const handleCopyClick = () => {
-    navigator.clipboard.writeText(meetingId).then(() => {
+    navigator.clipboard.writeText(meetingPhraseLocal).then(() => {
       console.log('Text copied to clipboard!');
       setCopiedToClipboard(true);
     });

@@ -49,12 +49,19 @@ const VideoPlayer = ({
 
   useEffect(() => {
     // Cleanup function to run when component unmounts
+
     return () => {
       if (stopTrackRef.current) {
         stopTrackRef.current(); // Stop face detection when component unmounts
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (!remoteTrack && animationFrameRef.current && stopTrackRef.current) {
+      stopTrackRef.current();
+    }
+  }, [remoteTrack, animationFrameRef, stopTrackRef]);
 
   const circularRemoteVideo = {
     display: 'flex',
