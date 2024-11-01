@@ -136,7 +136,7 @@ const UserLogin = () => {
         >
           {isPhoneNumberSubmitted ? t('Verify & Hop Back In!') : t('Send OTP')}
         </Button>
-        {isPhoneNumberSubmitted && (
+        {!isPhoneNumberSubmitted && (
           <Typography
             sx={{
               color: '#595959',
