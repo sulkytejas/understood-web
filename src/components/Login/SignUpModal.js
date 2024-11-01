@@ -12,7 +12,7 @@ const SignUpModal = ({ open, handleClose }) => {
   const { t } = useTranslation();
   const { socket } = useSocket();
 
-  const handleSubmit = () => {
+  const handleNotifyCTAClick = () => {
     // Emit the contact information to the server
     socket.emit('submitContact', { phone, email });
 
@@ -118,7 +118,7 @@ const SignUpModal = ({ open, handleClose }) => {
               <Button
                 variant="contained"
                 fullWidth
-                onClick={handleSubmit}
+                onClick={handleNotifyCTAClick}
                 sx={{ mt: 2, color: '#fff' }}
               >
                 {t('Notify Me')}

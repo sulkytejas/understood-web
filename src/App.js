@@ -1,7 +1,7 @@
 /* eslint-disable */
 
 import './App.css';
-import { React, useState, useEffect } from 'react';
+import { React, useState, useEffect, useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Box, useMediaQuery } from '@mui/material';
 import Bowser from 'bowser';
@@ -60,6 +60,17 @@ function App() {
       setSpokenLanguageStorage(spokenLanguage);
       dispatch(setLocalSpokenLanguage(spokenLanguage));
     }
+  }, []);
+
+  const isLocaleAndSpokenSet = useMemo(() => {
+    const sl = localStorage.getItem('spokenLanguage');
+    const ll = localStorage.getItem('locale');
+
+    if (sl && ll) {
+      return true;
+    }
+
+    return false;
   }, []);
 
   useEffect(() => {
@@ -140,7 +151,7 @@ function App() {
               <Route
                 path="/"
                 element={
-                  !spokenLanguageStorage ? (
+                  !isLocaleAndSpokenSet ? (
                     <motion.div
                       initial="initial"
                       animate="in"
