@@ -530,7 +530,7 @@ async function avatarFaceProcessing(
   const processFaceDetection = async () => {
     if (!isTracking) return;
     if (video.readyState === 4) {
-      if (frameCount % 2 === 0) {
+      if (frameCount % 3 === 0) {
         const predictions = await model.estimateFaces(video, false);
 
         if (predictions.length > 0) {
@@ -550,9 +550,6 @@ async function avatarFaceProcessing(
             topLip[0] - bottomLip[0],
             topLip[1] - bottomLip[1],
           );
-
-          canvas.width = 120;
-          canvas.height = 120;
 
           // Adjusted smile detection criteria
           const smileRatio = mouthWidth / mouthHeight;
@@ -579,17 +576,31 @@ async function avatarFaceProcessing(
           // const sidePaddingFactor = 1.4;
           // const bottomPaddingFactor = 1.1;
 
+          if (canvas.width !== 120 || canvas.height !== 120) {
+            canvas.width = 120;
+            canvas.height = 120;
+          }
+
+          const videoWidth = video.videoWidth;
+          const videoHeight = video.videoHeight;
+
           const faceWidth = bottomRight[0] - topLeft[0];
           const faceHeight = bottomRight[1] - topLeft[1];
           const faceSize = Math.max(faceWidth, faceHeight);
 
           const paddingFactor = 1.5; // Adjust as needed
-          const paddedFaceSize = faceSize * paddingFactor;
+          let paddedFaceSize = faceSize * paddingFactor;
+          const maxPaddedFaceSize = Math.min(videoWidth, videoHeight);
+          paddedFaceSize = Math.min(paddedFaceSize, maxPaddedFaceSize);
 
           const centerX = (topLeft[0] + bottomRight[0]) / 2;
           const centerY = (topLeft[1] + bottomRight[1]) / 2;
-          const x = centerX - paddedFaceSize / 2;
-          const y = centerY - paddedFaceSize / 2;
+          let x = centerX - paddedFaceSize / 2;
+          let y = centerY - paddedFaceSize / 2;
+
+          // Clamp x and y to the video's boundaries
+          x = Math.max(0, Math.min(x, videoWidth - paddedFaceSize));
+          y = Math.max(0, Math.min(y, videoHeight - paddedFaceSize));
 
           context.clearRect(0, 0, canvas.width, canvas.height);
 
