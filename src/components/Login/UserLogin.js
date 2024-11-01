@@ -136,24 +136,27 @@ const UserLogin = () => {
         >
           {isPhoneNumberSubmitted ? t('Verify & Hop Back In!') : t('Send OTP')}
         </Button>
-        <Typography
-          sx={{
-            color: '#595959',
-            fontWeight: 500,
-            fontSize: '15px',
-            lineHeight: '22px',
-            textAlign: 'center',
-          }}
-        >
-          {t('Don’t have an account?')}
-          <Button
-            variant="text"
-            sx={{ color: '#DF4303' }}
-            onClick={() => setIsModalOpen(true)}
+        {isPhoneNumberSubmitted && (
+          <Typography
+            sx={{
+              color: '#595959',
+              fontWeight: 500,
+              fontSize: '15px',
+              lineHeight: '22px',
+              textAlign: 'center',
+            }}
           >
-            {t('Sign Up')}
-          </Button>
-        </Typography>
+            {t('Don’t have an account?')}
+            <Button
+              variant="text"
+              sx={{ color: '#DF4303' }}
+              onClick={() => setIsModalOpen(true)}
+            >
+              {t('Sign Up')}
+            </Button>
+          </Typography>
+        )}
+
         <SignUpModal open={isModalOpen} handleClose={handleModalClose} />
       </Box>
     </motion.div>

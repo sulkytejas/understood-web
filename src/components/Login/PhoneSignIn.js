@@ -306,7 +306,7 @@ const PhoneSignIn = forwardRef(
     return (
       <Box
         sx={{
-          marginTop: !confirmationResult ? '160px' : '72px',
+          marginTop: !confirmationResult ? '90px' : '72px',
         }}
       >
         {/* <ScreenContainer>
