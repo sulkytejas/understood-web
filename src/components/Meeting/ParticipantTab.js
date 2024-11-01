@@ -47,7 +47,7 @@ const CustomTextField = styled(TextField)({
       height: '48px', // Set a fixed height for the input
       boxSizing: 'border-box', // Ensure padding is included in the height
       lineHeight: '22px', // Align text vertically
-      fontSize: '12px', // Font size for the input
+      fontSize: '16px', // Font size for the input
       color: '#000000',
       '&.Mui-disabled': {
         color: '#707070',
