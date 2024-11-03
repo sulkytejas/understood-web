@@ -133,7 +133,7 @@ function App() {
         width: '100%',
         maxWidth: '100vw',
         height: '100vh',
-        overflow: 'hidden',
+        // overflow: 'hidden',
         margin: '0 auto',
         boxSizing: 'border-box',
         '@media (min-width: 390px) and (max-width: 430px)': {
