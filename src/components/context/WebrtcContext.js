@@ -171,12 +171,12 @@ export const WebRTCProvider = ({ children }) => {
 
     let needUpdate = false;
 
-    if ((params.encodings[0].priority = 'low')) {
+    if (params.encodings[0].priority === 'low') {
       params.encodings[0].priority = 'high'; // Set media processing priority
       needUpdate = true;
     }
 
-    if ((params.encodings[0].networkPriority = 'low')) {
+    if (params.encodings[0].networkPriority === 'low') {
       params.encodings[0].networkPriority = 'high'; // Set media processing priority
       needUpdate = true;
     }
@@ -224,7 +224,7 @@ export const WebRTCProvider = ({ children }) => {
       console.log('Reducing bitrate due to poor network conditions');
 
       const currentBitrate = params.encodings[0].maxBitrate || 1000000;
-      params.encodings[0].maxBitrate = Math.max(currentBitrate * 0.75, 300000); // Reduce bitrate
+      params.encodings[0].maxBitrate = Math.max(currentBitrate * 0.75, 100000); // Reduce bitrate
       needUpdate = true;
     } else {
       console.log('Increasing bitrate due to good network conditions');
@@ -768,10 +768,10 @@ export const WebRTCProvider = ({ children }) => {
 
     let videoProducerOptions = {
       encodings: [
-        { scalabilityMode: 'L3T3', maxBitrate: 500000 }, // Single encoding for SVC (VP9 doesn’t support simulcast)
+        { scalabilityMode: 'L3T3', maxBitrate: 250000 }, // Single encoding for SVC (VP9 doesn’t support simulcast)
       ],
       codecOptions: {
-        videoGoogleStartBitrate: 300,
+        videoGoogleStartBitrate: 150,
       },
     };
 
@@ -779,7 +779,7 @@ export const WebRTCProvider = ({ children }) => {
       videoProducerOptions.encodings = [
         {
           scalabilityMode: 'L1T3', // Single spatial layer, three temporal layers
-          maxBitrate: 500000, // Adjust bitrate as needed
+          maxBitrate: 250000, // Adjust bitrate as needed
         },
       ];
     }
@@ -827,9 +827,11 @@ export const WebRTCProvider = ({ children }) => {
 
     const constraints = {
       video: {
-        width: { ideal: 1280, max: 1920, min: 640 },
-        height: { ideal: 720, max: 1080, min: 360 },
-        frameRate: { ideal: 30, max: 60, min: 15 }, // Aim for smooth video (30fps, max 60fps)
+        video: {
+          width: { ideal: 640, max: 1280, min: 320 },
+          height: { ideal: 360, max: 720, min: 180 },
+          frameRate: { ideal: 15, max: 30, min: 10 },
+        },
       },
       audio: true,
     };
