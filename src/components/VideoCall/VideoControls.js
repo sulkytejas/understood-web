@@ -26,7 +26,6 @@ import { ReactComponent as CaptionIcon } from './assets/caption_icon.svg';
 import { ReactComponent as MessageIcon } from './assets/message.svg';
 import { ReactComponent as TranslationIcon } from './assets/translation_icon.svg';
 import { useSocket } from '../context/SocketContext';
-import { set } from 'lodash';
 
 const CustomBottomNavigationAction = styled(BottomNavigationAction)({
   color: 'white',

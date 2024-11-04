@@ -7,12 +7,14 @@ import { Box, useMediaQuery } from '@mui/material';
 import Bowser from 'bowser';
 import { SocketProvider } from './components/context/SocketContext';
 import { WebRTCProvider } from './components/context/WebrtcContext';
+import { AudioTranscriptionProvider } from './components/context/AudioTranscriptionContext';
 import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
 
 import { useDispatch, useSelector } from 'react-redux';
 
 import VideoCall from './components/VideoCall/VideoCall';
 import CreateMeetingPage from './components/Meeting/CreateMeeting';
+import PracticeMain from './components/PraticeMode/PracticeMain';
 import UserLogin from './components/Login/UserLogin';
 import MeetingEnded from './components/Meeting/MeetingEnded';
 import GoogleCallback from './components/Login/GoogleCallback';
@@ -132,7 +134,7 @@ function App() {
       sx={{
         width: '100%',
         maxWidth: '100vw',
-        height: '100vh',
+        // height: '100vh',
         // overflow: 'hidden',
         margin: '0 auto',
         boxSizing: 'border-box',
@@ -146,12 +148,77 @@ function App() {
     >
       <SocketProvider>
         <WebRTCProvider>
-          <AnimatePresence mode="wait">
-            <Routes location={location}>
-              <Route
-                path="/"
-                element={
-                  !isLocaleAndSpokenSet ? (
+          <AudioTranscriptionProvider>
+            <AnimatePresence mode="wait">
+              <Routes location={location}>
+                <Route
+                  path="/"
+                  element={
+                    !isLocaleAndSpokenSet ? (
+                      <motion.div
+                        initial="initial"
+                        animate="in"
+                        exit="out"
+                        variants={pageVariants}
+                        transition={pageTransition}
+                      >
+                        <WelcomeScreen />
+                      </motion.div>
+                    ) : (
+                      <Navigate to="/login" />
+                    )
+                  }
+                />
+                <Route
+                  path="/login"
+                  element={
+                    !userData?.username ? (
+                      <UserLogin />
+                    ) : (
+                      <Navigate to="/meeting" />
+                    )
+                  }
+                />
+                <Route path="/googleCallback" element={<GoogleCallback />} />
+                <Route
+                  path="/meeting"
+                  element={
+                    <ProtectedRoute>
+                      <CreateMeetingPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/videocall/:meetingId"
+                  element={
+                    meetingId ? (
+                      <ProtectedRoute>
+                        <VideoCall />
+                      </ProtectedRoute>
+                    ) : (
+                      <Navigate to="/meetingEnded" />
+                    )
+                  }
+                />
+                <Route
+                  path="/vibe/:practiceSessionId"
+                  element={
+                    <ProtectedRoute>
+                      <motion.div
+                        initial="initial"
+                        animate="in"
+                        exit="out"
+                        variants={pageVariants}
+                        transition={pageTransition}
+                      >
+                        <PracticeMain />
+                      </motion.div>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/meetingEnded"
+                  element={
                     <motion.div
                       initial="initial"
                       animate="in"
@@ -159,65 +226,18 @@ function App() {
                       variants={pageVariants}
                       transition={pageTransition}
                     >
-                      <WelcomeScreen />
+                      <MeetingEnded />
                     </motion.div>
-                  ) : (
-                    <Navigate to="/login" />
-                  )
-                }
-              />
-              <Route
-                path="/login"
-                element={
-                  !userData?.username ? (
-                    <UserLogin />
-                  ) : (
-                    <Navigate to="/meeting" />
-                  )
-                }
-              />
-              <Route path="/googleCallback" element={<GoogleCallback />} />
-              <Route
-                path="/meeting"
-                element={
-                  <ProtectedRoute>
-                    <CreateMeetingPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/videocall/:meetingId"
-                element={
-                  meetingId ? (
-                    <ProtectedRoute>
-                      <VideoCall />
-                    </ProtectedRoute>
-                  ) : (
-                    <Navigate to="/meetingEnded" />
-                  )
-                }
-              />
-              <Route
-                path="/meetingEnded"
-                element={
-                  <motion.div
-                    initial="initial"
-                    animate="in"
-                    exit="out"
-                    variants={pageVariants}
-                    transition={pageTransition}
-                  >
-                    <MeetingEnded />
-                  </motion.div>
-                }
-              />
-              <Route path="/privacyPolicy" element={<PrivacyPolicy />} />
-              <Route
-                path="/termsAndConditions"
-                element={<TermsAndCondition />}
-              />
-            </Routes>
-          </AnimatePresence>
+                  }
+                />
+                <Route path="/privacyPolicy" element={<PrivacyPolicy />} />
+                <Route
+                  path="/termsAndConditions"
+                  element={<TermsAndCondition />}
+                />
+              </Routes>
+            </AnimatePresence>
+          </AudioTranscriptionProvider>
         </WebRTCProvider>
       </SocketProvider>
     </Box>

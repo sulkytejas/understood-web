@@ -458,8 +458,8 @@ async function trackFace(videoElement, container, stream, animationFrameRef) {
     'Stream dimensions:',
     streamWidth,
     streamHeight,
-    container.videoWidth,
-    container.videoHeight,
+    container.clientWidth,
+    container.clientHeight,
   );
 
   let frameCounter = 0;

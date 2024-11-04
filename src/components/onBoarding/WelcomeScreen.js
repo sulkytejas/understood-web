@@ -34,7 +34,7 @@ const StyledContainer = styled(Container)(({ theme }) => ({
   textAlign: 'center',
   padding: theme.spacing(2),
   backgroundColor: '#f5f5f5',
-  overflow: 'hidden',
+  // overflow: 'hidden',
 }));
 
 const StyledLogoBox = styled(Box)(() => ({
