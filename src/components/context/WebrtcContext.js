@@ -13,6 +13,8 @@ import { useNavigate } from 'react-router-dom';
 import { useSocket } from '../context/SocketContext';
 import { cleanupState } from '../../redux/actions';
 
+import { isBrowserSupportingL3T3 } from '../utils/peerConnectionUtils';
+
 const WebRTCContext = createContext();
 
 export const useWebRTC = () => useContext(WebRTCContext);
@@ -90,8 +92,8 @@ export const WebRTCProvider = ({ children }) => {
           transportStats.forEach((report) => {
             if (report.type === 'outbound-rtp' && report.kind === 'video') {
               console.log('Outbound RTP:', report);
-              packetsSent = report.packetsSent;
-              bitrate = report.bytesSent;
+              packetsSent = report.packetsSent || 0;
+              bitrate = report.bytesSent || 0;
               setCurrentBitrate(bitrate);
             }
             if (
@@ -221,14 +223,14 @@ export const WebRTCProvider = ({ children }) => {
     if (packetLoss > maxPacketLoss || rtt > maxRTT) {
       console.log('Reducing bitrate due to poor network conditions');
 
-      const currentBitrate = params.encodings[0].maxBitrate || 1500000;
+      const currentBitrate = params.encodings[0].maxBitrate || 1000000;
       params.encodings[0].maxBitrate = Math.max(currentBitrate * 0.75, 300000); // Reduce bitrate
       needUpdate = true;
     } else {
       console.log('Increasing bitrate due to good network conditions');
 
       const currentBitrate = params.encodings[0].maxBitrate || 300000;
-      params.encodings[0].maxBitrate = Math.min(currentBitrate * 1.25, 2500000); // Increase bitrate
+      params.encodings[0].maxBitrate = Math.min(currentBitrate * 1.5, 2500000); // Increase bitrate
       needUpdate = true;
     }
 
@@ -766,59 +768,68 @@ export const WebRTCProvider = ({ children }) => {
 
     let videoProducerOptions = {
       encodings: [
-        { scalabilityMode: 'L3T3', maxBitrate: 1000000 }, // Single encoding for SVC (VP9 doesn’t support simulcast)
+        { scalabilityMode: 'L3T3', maxBitrate: 500000 }, // Single encoding for SVC (VP9 doesn’t support simulcast)
       ],
       codecOptions: {
-        videoGoogleStartBitrate: 500,
+        videoGoogleStartBitrate: 300,
       },
     };
 
-    const vp9Codec = device.rtpCapabilities.codecs.find(
-      (codec) => codec.mimeType.toLowerCase() === 'video/vp9',
-    );
-
-    const vp8Codec = device.rtpCapabilities.codecs.find(
-      (codec) => codec.mimeType.toLowerCase() === 'video/vp8',
-    );
-
-    if (vp9Codec) {
-      videoProducerOptions = {
-        encodings: [
-          {
-            scalabilityMode: 'L3T3',
-            maxBitrate: 1500000,
-          },
-        ],
-        codecOptions: {
-          videoGoogleStartBitrate: 1000,
+    if (!isBrowserSupportingL3T3()) {
+      videoProducerOptions.encodings = [
+        {
+          scalabilityMode: 'L1T3', // Single spatial layer, three temporal layers
+          maxBitrate: 500000, // Adjust bitrate as needed
         },
-        codec: vp9Codec,
-      };
-    } else if (vp8Codec) {
-      videoProducerOptions = {
-        encodings: [
-          {
-            scalabilityMode: 'L1T3',
-            maxBitrate: 800000,
-            scaleResolutionDownBy: 1,
-          },
-          { maxBitrate: 500000, scaleResolutionDownBy: 2 },
-        ],
-        codecOptions: {
-          videoGoogleStartBitrate: 500,
-        },
-        codec: vp8Codec,
-      };
-    } else {
-      console.error('No VP9 or VP8 codec found');
-      return;
+      ];
     }
+
+    // const vp9Codec = device.rtpCapabilities.codecs.find(
+    //   (codec) => codec.mimeType.toLowerCase() === 'video/vp9',
+    // );
+
+    // const vp8Codec = device.rtpCapabilities.codecs.find(
+    //   (codec) => codec.mimeType.toLowerCase() === 'video/vp8',
+    // );
+
+    // if (vp9Codec) {
+    //   videoProducerOptions = {
+    //     encodings: [
+    //       {
+    //         scalabilityMode: 'L3T3',
+    //         maxBitrate: 1500000,
+    //       },
+    //     ],
+    //     codecOptions: {
+    //       videoGoogleStartBitrate: 1000,
+    //     },
+    //     codec: vp9Codec,
+    //   };
+    // } else if (vp8Codec) {
+    //   videoProducerOptions = {
+    //     encodings: [
+    //       {
+    //         scalabilityMode: 'L1T3',
+    //         maxBitrate: 800000,
+    //         scaleResolutionDownBy: 1,
+    //       },
+    //       { maxBitrate: 500000, scaleResolutionDownBy: 2 },
+    //     ],
+    //     codecOptions: {
+    //       videoGoogleStartBitrate: 500,
+    //     },
+    //     codec: vp8Codec,
+    //   };
+    // } else {
+    //   console.error('No VP9 or VP8 codec found');
+    //   return;
+    // }
 
     const constraints = {
       video: {
-        width: { min: 640, ideal: 1920 }, // Minimum width of 640px, ideal up to 1920px
-        height: { min: 480, ideal: 1080 }, // Minimum height of 480px, ideal up to 1080px
-        frameRate: { ideal: 30, max: 60 }, // Aim for smooth video (30fps, max 60fps)
+        width: { ideal: 1280, max: 1920, min: 640 },
+        height: { ideal: 720, max: 1080, min: 360 },
+        frameRate: { ideal: 30, max: 60, min: 15 }, // Aim for smooth video (30fps, max 60fps)
       },
       audio: true,
     };
@@ -834,8 +845,6 @@ export const WebRTCProvider = ({ children }) => {
     const audioTrack = stream.getAudioTracks()[0];
 
     try {
-      const capabilities = RTCRtpSender.getCapabilities('video');
-      console.log(capabilities, 'capabilities before video producer');
       const videoProducer = await newTransport.produce({
         track: videoTrack,
         ...videoProducerOptions,

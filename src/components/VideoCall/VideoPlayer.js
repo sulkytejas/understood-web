@@ -31,11 +31,20 @@ const VideoPlayer = ({
   const handleRemoteTrackProcessing = async () => {
     console.log('remoteTrack', remoteTrack);
     console.log(
-      'stream settings',
+      ' local stream settings',
       localStream.getVideoTracks()[0].getSettings().width,
       localStream.getVideoTracks()[0].getSettings().height,
+      'remostream settings',
+      remoteTrack.getVideoTracks()[0].getSettings().width,
+      remoteTrack.getVideoTracks()[0].getSettings().height,
     );
     if (remoteTrack && remoteVideoRef.current && videoContainerRef.current) {
+      if (
+        remoteTrack.getVideoTracks()[0].getSettings().width <
+        videoContainerRef.current?.clientWidth
+      ) {
+        return;
+      }
       const { stopTrack } = await trackFace(
         remoteVideoRef.current,
         videoContainerRef.current,
@@ -58,6 +67,17 @@ const VideoPlayer = ({
   }, []);
 
   useEffect(() => {
+    if (localStream && remoteTrack) {
+      console.log(
+        ' local stream settings',
+        localStream.getVideoTracks()[0].getSettings().width,
+        localStream.getVideoTracks()[0].getSettings().height,
+        'remostream settings',
+        remoteTrack.getVideoTracks()[0].getSettings().width,
+        remoteTrack.getVideoTracks()[0].getSettings().height,
+      );
+    }
+
     if (!remoteTrack && animationFrameRef.current && stopTrackRef.current) {
       stopTrackRef.current();
     }

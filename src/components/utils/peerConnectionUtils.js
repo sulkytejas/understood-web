@@ -30,3 +30,30 @@ export const addOrUpdateTranslatedText = (
     return newTexts;
   });
 };
+
+export const isBrowserSupportingL3T3 = () => {
+  const ua = navigator.userAgent;
+
+  // Check if the browser is Chrome or Chromium-based
+  const isChrome = /Chrome/.test(ua) && /Google Inc/.test(navigator.vendor);
+  const chromeVersionMatch = ua.match(/Chrome\/(\d+)/);
+  const chromeVersion = chromeVersionMatch
+    ? parseInt(chromeVersionMatch[1], 10)
+    : 0;
+
+  // Check if the browser is Edge (Chromium-based versions)
+  const isEdge = /Edg/.test(ua);
+
+  // Chrome/Chromium version 86+ supports VP9 SVC with L3T3, so we check for this
+  if ((isChrome && chromeVersion >= 86) || isEdge) {
+    return true; // Supports L3T3
+  }
+
+  return false; // Doesn't support L3T3
+};
+
+// Example usage
+if (!isBrowserSupportingL3T3()) {
+  console.log('The browser does not support L3T3 for VP9 SVC.');
+  // Fallback to another scalability mode or codec
+}
