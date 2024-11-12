@@ -77,6 +77,15 @@ const UserLogin = () => {
           <div>
             <Typography
               sx={{
+                textAlign: 'center',
+                textDecoration: 'underline',
+                color: '#000',
+              }}
+            >
+              {t('UI 2.0 coming this new year')} 🎉
+            </Typography>
+            <Typography
+              sx={{
                 fontWeight: 500,
                 fontSize: '32px',
                 lineHeight: '48px',
