@@ -7,8 +7,16 @@ const ProtectedRoute = ({ children }) => {
 
   if (!username) {
     // User is not logged in, redirect to login
-    const redirectURL = encodeURIComponent(location.search);
-    return <Navigate to={`/login?redirect=${redirectURL}`} />;
+    const urlParams = new URLSearchParams(location.search);
+    const meetingId = urlParams.get('meetingId');
+
+    let redirectURL = '/login';
+
+    if (meetingId) {
+      redirectURL += `?meetingId=${encodeURIComponent(meetingId)}`;
+    }
+
+    return <Navigate to={redirectURL} />;
   }
 
   // User is logged in, allow access to the page

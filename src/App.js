@@ -3,7 +3,7 @@
 import './App.css';
 import { React, useState, useEffect, useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Box, useMediaQuery } from '@mui/material';
+import { Box, Typography, useMediaQuery } from '@mui/material';
 import Bowser from 'bowser';
 import { SocketProvider } from './components/context/SocketContext';
 import { WebRTCProvider } from './components/context/WebrtcContext';
@@ -20,13 +20,16 @@ import MeetingEnded from './components/Meeting/MeetingEnded';
 import GoogleCallback from './components/Login/GoogleCallback';
 import ProtectedRoute from './components/onBoarding/ProtectedRoute';
 import PrivacyPolicy from './components/onBoarding/PrivacyPolicy';
-import UnsupportedBrowser from './components/onBoarding/Unsupported';
+// import UnsupportedBrowser from './components/onBoarding/Unsupported';
 import TermsAndCondition from './components/onBoarding/TermsAndCondition';
 import { initializeTensorFlow } from './components/utils/tensorFlowUtils';
 import WelcomeScreen from './components/onBoarding/WelcomeScreen';
 import LoadingSpinner from './components/onBoarding/LoadingSpinner';
 import { setEmail, setUserName, setUserPhoneNumber } from './redux/userSlice';
-import { setLocalSpokenLanguage } from './redux/translationSlice';
+import {
+  setLocalSpokenLanguage,
+  setLocalTranslationLanguage,
+} from './redux/translationSlice';
 import { setBrowserName } from './redux/uiSlice';
 
 function App() {
@@ -36,6 +39,7 @@ function App() {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isChrome, setIsChrome] = useState(true);
+  const [userDetails, setUserDetails] = useState(null);
   const isDeviceSupported = useMediaQuery('(max-width:430px)');
   const meetingId = useSelector((state) => state.meeting.meetingId);
 
@@ -62,6 +66,13 @@ function App() {
       setSpokenLanguageStorage(spokenLanguage);
       dispatch(setLocalSpokenLanguage(spokenLanguage));
     }
+
+    const translationLanguagePreference = localStorage.getItem(
+      'translationLanguagePreference',
+    );
+    if (translationLanguagePreference) {
+      dispatch(setLocalTranslationLanguage(translationLanguagePreference));
+    }
   }, []);
 
   const isLocaleAndSpokenSet = useMemo(() => {
@@ -87,6 +98,7 @@ function App() {
         if (response.ok) {
           const { user } = await response.json();
           dispatch(setUserName(user?.username));
+          setUserDetails({ ...user });
 
           if (user?.email) {
             dispatch(setEmail(user?.email));
@@ -96,6 +108,10 @@ function App() {
 
           setUserData({ ...user });
           console.log(user);
+        } else {
+          dispatch(setUserName(null));
+          dispatch(setUserPhoneNumber(null));
+          dispatch(setEmail(null));
         }
       } catch (error) {
         dispatch(setUserName(null));
@@ -111,9 +127,9 @@ function App() {
     checkAuth();
   }, [dispatch]);
 
-  if (!isDeviceSupported) {
-    return <UnsupportedBrowser variant="device" />;
-  }
+  // if (!isDeviceSupported) {
+  //   return <UnsupportedBrowser variant="device" />;
+  // }
 
   if (loading) {
     console.log('Loading spinner on app page');
@@ -133,17 +149,11 @@ function App() {
     <Box
       sx={{
         width: '100%',
-        maxWidth: '100vw',
+        maxWidth: { xs: '100vw', md: '430px' },
         // height: '100vh',
         // overflow: 'hidden',
         margin: '0 auto',
         boxSizing: 'border-box',
-        '@media (min-width: 390px) and (max-width: 430px)': {
-          maxWidth: '430px', // Adjust for iPhone 15 Pro Max
-        },
-        '@media (min-width:768px)': {
-          maxWidth: '768px', // For tablets and larger devices
-        },
       }}
     >
       <SocketProvider>
@@ -164,6 +174,8 @@ function App() {
                       >
                         <WelcomeScreen />
                       </motion.div>
+                    ) : userDetails?.username ? (
+                      <Navigate to="/meeting" />
                     ) : (
                       <Navigate to="/login" />
                     )

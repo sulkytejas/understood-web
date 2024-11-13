@@ -3,7 +3,7 @@ import { Box, Tabs, Tab } from '@mui/material';
 import { styled } from '@mui/system';
 import { useSelector, useDispatch } from 'react-redux';
 import { useSocket } from '../context/SocketContext';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
 import HostControl from './HostControl';
@@ -94,6 +94,7 @@ const CreateMeetingPage = () => {
   const dispatch = useDispatch();
   const { socket, isSocketConnected } = useSocket();
   const location = useLocation();
+  const navigate = useNavigate();
   const { t } = useTranslation();
 
   const [activeTab, setActiveTab] = useState(0);
@@ -106,6 +107,8 @@ const CreateMeetingPage = () => {
   const email = useSelector((state) => state.user.email);
   const [openSettingMenu, setOpenSettingMenu] = useState(false);
   const [loading, setLoading] = useState(true);
+  const urlParams = new URLSearchParams(location.search);
+  const urlMeetingId = urlParams.get('meetingId');
 
   const handleSettingClose = (languageCode) => {
     setOpenSettingMenu(false);
@@ -121,12 +124,10 @@ const CreateMeetingPage = () => {
   }, [meetingId]);
 
   useEffect(() => {
-    const urlParams = new URLSearchParams(location.search);
-    const urlMeetingId = urlParams.get('meetingId');
-
     if (socket && isSocketConnected) {
       if (urlMeetingId) {
         dispatch(joinMeeting(urlMeetingId));
+        navigate(location.pathname, { replace: true });
       } else {
         socket.emit(
           'getActiveMeetings',
@@ -151,7 +152,7 @@ const CreateMeetingPage = () => {
       }
       setLoading(false);
     }
-  }, [socket, isSocketConnected, dispatch]);
+  }, [socket, isSocketConnected, dispatch, urlMeetingId, navigate]);
 
   if (loading) {
     console.log('Loading spinner on create meeting page');

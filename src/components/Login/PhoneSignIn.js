@@ -271,11 +271,13 @@ const PhoneSignIn = forwardRef(
                 dispatch(setUserPhoneNumber(serverResponse?.user?.phoneNumber));
                 dispatch(setUserName(serverResponse?.user?.username));
 
-                const redirectQuery = new URLSearchParams(location.search).get(
-                  'redirect',
-                );
-                if (redirectQuery) {
-                  navigate(`/meeting${decodeURIComponent(redirectQuery)}`);
+                const redirectQuery = new URLSearchParams(location.search);
+                const meetingId = redirectQuery.get('meetingId');
+
+                if (meetingId) {
+                  navigate(
+                    `/meeting?meetingId=${encodeURIComponent(meetingId)}`,
+                  );
                 } else {
                   navigate('/meeting');
                 }

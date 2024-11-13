@@ -79,7 +79,6 @@ const WelcomeScreen = () => {
   const dispatch = useDispatch();
 
   const handleClick = () => {
-    console.log('clicked', languageCode);
     dispatch(setLocalSpokenLanguage(languageCode));
     localStorage.setItem('spokenLanguage', languageCode);
     localStorage.setItem('translationLanguagePreference', languageCode);
