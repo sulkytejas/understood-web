@@ -70,11 +70,13 @@ a {
 
 /* VideoChat.css */
 .video-chat {
-  position: absolute;
+  position: relative;
   width: 100%;
-  height: 100%;
+  max-width: 430px;
+  height: 100vh;
+  max-height: 932px;
+  margin: 0 auto;
   background-color: #000;
-  color: #fff;
   overflow: hidden;
 }
 
