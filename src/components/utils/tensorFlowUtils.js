@@ -364,7 +364,7 @@ const adjustVideoPosition = (
   streamWidth,
   streamHeight,
   menuHeight = 0,
-  isLocalStream = false, // New parameter to distinguish local vs remote stream
+  isLocalStream = false,
 ) => {
   if (
     videoWidth <= 0 ||
@@ -372,56 +372,31 @@ const adjustVideoPosition = (
     containerWidth <= 0 ||
     containerHeight <= 0
   ) {
-    console.error('Invalid dimensions');
+    console.error('Invalid dimensions', faceCenterY);
     return;
   }
 
   // Adjust container height to account for menu
   const adjustedContainerHeight = containerHeight - menuHeight;
 
-  // Check if stream is from iOS (either local or remote)
+  // Check if stream is from iOS
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
   const isIOSStream = isLocalStream
     ? isIOS
-    : detectIOSStream(streamWidth, streamHeight, faceCenterX, faceCenterY);
+    : detectIOSStream(streamWidth, streamHeight, faceCenterX);
 
-  // Function to detect if a remote stream is likely from iOS
-  function detectIOSStream(width, height, faceX, faceY) {
-    console.log(faceY);
-    // iOS typically sends streams with specific aspect ratios and cropped content
+  function detectIOSStream(width, height, faceX) {
     const aspectRatio = width / height;
-    const isCroppedAspectRatio = Math.abs(aspectRatio - 0.75) < 0.1; // iOS often sends 3:4
-
-    // Check if face position is significantly off-center
+    const isCroppedAspectRatio = Math.abs(aspectRatio - 0.75) < 0.1;
     const normalizedFaceX = faceX / width;
     const isOffCenter = normalizedFaceX < 0.3 || normalizedFaceX > 0.7;
-
     return isCroppedAspectRatio || isOffCenter;
   }
 
-  // Adjust dimensions based on whether it's an iOS stream
-  let effectiveStreamWidth = streamWidth;
+  // For iOS remote streams, use container dimensions to ensure proper fit
+  let effectiveStreamWidth =
+    isIOSStream && !isLocalStream ? containerWidth : streamWidth;
   let effectiveStreamHeight = streamHeight;
-
-  if (isIOSStream) {
-    // For iOS streams, we need to adjust the effective dimensions
-    // to account for cropping/padding
-    const normalizedFaceX = faceCenterX / streamWidth;
-
-    if (normalizedFaceX < 0.3) {
-      // Face is toward the left, adjust effective width
-      effectiveStreamWidth = faceCenterX * 2.5;
-    } else if (normalizedFaceX > 0.7) {
-      // Face is toward the right, adjust effective width
-      effectiveStreamWidth = (streamWidth - faceCenterX) * 2.5;
-    }
-
-    // Adjust height if needed (iOS might crop vertically too)
-    const normalizedFaceY = faceCenterY / streamHeight;
-    if (normalizedFaceY < 0.3 || normalizedFaceY > 0.7) {
-      effectiveStreamHeight = streamHeight * 1.2; // Add some padding
-    }
-  }
 
   // Calculate scale to fill the container
   const scaleX = containerWidth / effectiveStreamWidth;
@@ -431,63 +406,62 @@ const adjustVideoPosition = (
   const scaledVideoWidth = effectiveStreamWidth * scale;
   const scaledVideoHeight = effectiveStreamHeight * scale;
 
-  // Calculate offsets
-  const offsetX = (containerWidth - scaledVideoWidth) / 2;
-  const offsetY = (adjustedContainerHeight - scaledVideoHeight) / 2;
-
-  // Scale face coordinates
-  const scaledFaceCenterX = faceCenterX * scale;
-  const scaledFaceCenterY = faceCenterY * scale;
-
-  // Movement smoothing
-  if (lastFaceCenterX === null || lastFaceCenterY === null) {
-    lastFaceCenterX = scaledFaceCenterX;
-    lastFaceCenterY = scaledFaceCenterY;
+  // For iOS remote streams, ensure video always fills container width
+  if (isIOSStream && !isLocalStream) {
+    videoElement.style.width = '100%';
+    videoElement.style.height = `${adjustedContainerHeight}px`;
+    videoElement.style.position = 'absolute';
+    videoElement.style.left = '0';
+    videoElement.style.top = '0';
+  } else {
+    videoElement.style.width = `${scaledVideoWidth}px`;
+    videoElement.style.height = `${scaledVideoHeight}px`;
+    videoElement.style.position = 'absolute';
+    videoElement.style.left = '50%';
+    videoElement.style.transform = 'translateX(-50%)';
+    videoElement.style.top = '0';
   }
 
-  const movementThreshold = 50;
-  const deltaX = scaledFaceCenterX - lastFaceCenterX;
-  const deltaY = scaledFaceCenterY - lastFaceCenterY;
-  const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+  // For iOS remote streams, adjust face position calculations
+  const normalizedFaceX = faceCenterX / streamWidth;
+  let translateX = 0;
 
-  if (distance < movementThreshold) {
+  if (isIOSStream && !isLocalStream) {
+    // Calculate translation based on normalized face position
+    const targetCenter = containerWidth / 2;
+    const currentFaceX = normalizedFaceX * scaledVideoWidth;
+    translateX = targetCenter - currentFaceX;
+
+    // Limit translation to prevent blank spaces
+    const maxTranslate = 0;
+    const minTranslate = containerWidth - scaledVideoWidth;
+    translateX = Math.min(Math.max(translateX, minTranslate), maxTranslate);
+
+    // Movement smoothing for iOS remote streams
+    if (typeof videoElement.lastTranslateX === 'undefined') {
+      videoElement.lastTranslateX = translateX;
+    }
+
+    const smoothingFactor = 0.1; // Adjust this value to control smoothing (0.1 = very smooth, 1 = no smoothing)
+    translateX =
+      videoElement.lastTranslateX +
+      (translateX - videoElement.lastTranslateX) * smoothingFactor;
+    videoElement.lastTranslateX = translateX;
+
+    // Apply transform with smooth animation
+    videoElement.style.transition =
+      'transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1)';
+    videoElement.style.transform = `translateX(${translateX}px)`;
+  }
+
+  // Update position without animation if movement is too small
+  const movementThreshold = containerWidth * 0.005; // 0.5% of container width
+  if (
+    Math.abs(translateX - (videoElement.lastTranslateX || 0)) <
+    movementThreshold
+  ) {
     return;
   }
-
-  lastFaceCenterX = scaledFaceCenterX;
-  lastFaceCenterY = scaledFaceCenterY;
-
-  // Set video dimensions
-  videoElement.style.width = `${scaledVideoWidth}px`;
-  videoElement.style.height = `${scaledVideoHeight}px`;
-  videoElement.style.position = 'absolute';
-  videoElement.style.top = `${offsetY}px`;
-
-  // Calculate translations
-  let translateX = containerWidth / 2 - scaledFaceCenterX;
-
-  // Calculate bounds
-  const maxTranslateX = Math.min(0, -offsetX);
-  const minTranslateX = Math.max(
-    containerWidth - scaledVideoWidth,
-    -scaledVideoWidth + containerWidth / 2,
-  );
-
-  // Adjust bounds for iOS streams to prevent showing empty areas
-  if (isIOSStream) {
-    const boundsAdjustment = scaledVideoWidth * 0.1; // 10% adjustment
-    translateX = Math.min(
-      Math.max(translateX, minTranslateX + boundsAdjustment),
-      maxTranslateX - boundsAdjustment,
-    );
-  } else {
-    translateX = Math.min(Math.max(translateX, minTranslateX), maxTranslateX);
-  }
-
-  // Apply transform
-  videoElement.style.transition = 'transform 0.3s ease-out';
-  videoElement.style.transform = `translate(${translateX}px, 0)`;
-  videoElement.style.transformOrigin = 'top left';
 };
 
 // Update trackFace to pass isLocalStream
