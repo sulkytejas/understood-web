@@ -372,7 +372,7 @@ const adjustVideoPosition = (
     containerWidth <= 0 ||
     containerHeight <= 0
   ) {
-    console.error('Invalid dimensions');
+    console.error('Invalid dimensions', faceCenterY);
     return;
   }
 
@@ -383,14 +383,14 @@ const adjustVideoPosition = (
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
   const isIOSStream = isLocalStream
     ? isIOS
-    : detectIOSStream(streamWidth, streamHeight, faceCenterX, faceCenterY);
+    : detectIOSStream(streamWidth, streamHeight, faceCenterX);
 
-  function detectIOSStream(width, height, faceX, faceY) {
+  function detectIOSStream(width, height, faceX) {
     const aspectRatio = width / height;
     const isCroppedAspectRatio = Math.abs(aspectRatio - 0.75) < 0.1;
     const normalizedFaceX = faceX / width;
     const isOffCenter = normalizedFaceX < 0.3 || normalizedFaceX > 0.7;
-    faceY = 0;
+
     return isCroppedAspectRatio || isOffCenter;
   }
 
