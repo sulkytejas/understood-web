@@ -378,24 +378,32 @@ const adjustVideoPosition = (
   // Adjust container height to account for menu
   const adjustedContainerHeight = containerHeight - menuHeight;
 
-  // For iOS, we need to consider that the face coordinates might be relative
-  // to the active region rather than the full stream size
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  // Check both stream source and viewing device
+  const isIOSStream =
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    streamWidth / streamHeight > 2; // iOS streams often have unusual aspect ratios
+  const isRemoteIOSStream =
+    !/iPad|iPhone|iPod/.test(navigator.userAgent) &&
+    streamWidth / streamHeight > 2;
 
   // Calculate effective stream dimensions
-  // On iOS, if face coordinates are very off-center, use them to estimate actual content area
   let effectiveStreamWidth = streamWidth;
   let effectiveStreamHeight = streamHeight;
 
-  if (isIOS) {
+  if (isIOSStream) {
     // If face is significantly off-center, it might indicate padding
     const streamCenterX = streamWidth / 2;
     const faceOffset = Math.abs(faceCenterX - streamCenterX);
 
     if (faceOffset > streamWidth * 0.3) {
       // If face is more than 30% off center
-      // Estimate actual content width based on face position
       effectiveStreamWidth = Math.min(streamWidth, faceCenterX * 2);
+    }
+
+    // For remote iOS streams, adjust face coordinates
+    if (isRemoteIOSStream) {
+      const aspectRatioAdjustment = streamWidth / effectiveStreamWidth;
+      faceCenterX = faceCenterX / aspectRatioAdjustment;
     }
   }
 
@@ -459,7 +467,8 @@ const adjustVideoPosition = (
   videoElement.style.transformOrigin = 'top left';
 
   console.warn('Stream Debug:', {
-    isIOS,
+    isIOSStream,
+    isRemoteIOSStream,
     original: { width: streamWidth, height: streamHeight },
     effective: { width: effectiveStreamWidth, height: effectiveStreamHeight },
     face: { x: faceCenterX, y: faceCenterY },
