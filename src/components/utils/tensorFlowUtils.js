@@ -353,6 +353,18 @@ let lastFaceCenterY = null;
 //   videoElement.style.transformOrigin = 'top left'; // Ensure transformations are relative to the top-left corner
 // };
 
+const detectDeviceType = (streamWidth, streamHeight) => {
+  const isLocalIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const hasIOSAspectRatio =
+    streamWidth && streamHeight && streamWidth / streamHeight > 1.8;
+
+  return {
+    isLocalIOS,
+    isIOSStream: isLocalIOS || hasIOSAspectRatio,
+    isRemoteIOSStream: !isLocalIOS && hasIOSAspectRatio,
+  };
+};
+
 const adjustVideoPosition = (
   videoElement,
   faceCenterX,
@@ -378,13 +390,11 @@ const adjustVideoPosition = (
   // Adjust container height to account for menu
   const adjustedContainerHeight = containerHeight - menuHeight;
 
-  // Check both stream source and viewing device
-  const isIOSStream =
-    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-    streamWidth / streamHeight > 2; // iOS streams often have unusual aspect ratios
-  const isRemoteIOSStream =
-    !/iPad|iPhone|iPod/.test(navigator.userAgent) &&
-    streamWidth / streamHeight > 2;
+  // Use the enhanced device detection
+  const { isIOSStream, isRemoteIOSStream } = detectDeviceType(
+    streamWidth,
+    streamHeight,
+  );
 
   // Calculate effective stream dimensions
   let effectiveStreamWidth = streamWidth;
@@ -467,8 +477,7 @@ const adjustVideoPosition = (
   videoElement.style.transformOrigin = 'top left';
 
   console.warn('Stream Debug:', {
-    isIOSStream,
-    isRemoteIOSStream,
+    deviceInfo: detectDeviceType(streamWidth, streamHeight),
     original: { width: streamWidth, height: streamHeight },
     effective: { width: effectiveStreamWidth, height: effectiveStreamHeight },
     face: { x: faceCenterX, y: faceCenterY },
@@ -476,15 +485,6 @@ const adjustVideoPosition = (
     translation: translateX,
     bounds: { min: minTranslateX, max: maxTranslateX },
   });
-};
-
-// Helper function to be used in trackFace
-const detectDeviceType = () => {
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-  return {
-    isIOS,
-    // Add more device-specific checks if needed
-  };
 };
 
 const trackFace = async (
@@ -498,7 +498,8 @@ const trackFace = async (
   }
 
   let isTracking = true;
-  const deviceInfo = detectDeviceType();
+  const settings = stream.getVideoTracks()[0].getSettings();
+  const deviceInfo = detectDeviceType(settings.width, settings.height);
 
   console.warn('Device Info:', deviceInfo);
 
