@@ -197,8 +197,8 @@ const detectFace = async (video, model) => {
 
 //   return { scaledFaceCenterX, scaledFaceCenterY };
 // };
-let lastFaceCenterX = null;
-let lastFaceCenterY = null;
+// let lastFaceCenterX = null;
+// let lastFaceCenterY = null;
 // // let faceOutOfFrame = false;
 
 // Adjust video position to keep the face centered
