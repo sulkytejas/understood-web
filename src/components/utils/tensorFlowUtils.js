@@ -371,42 +371,58 @@ const adjustVideoPosition = (
     containerWidth <= 0 ||
     containerHeight <= 0
   ) {
-    console.error(
-      'Invalid dimensions: Video or container dimensions must be greater than zero.',
-    );
+    console.error('Invalid dimensions');
     return;
   }
 
   // Adjust container height to account for menu
   const adjustedContainerHeight = containerHeight - menuHeight;
 
-  // Calculate scale to fill the container completely
-  const scaleX = containerWidth / streamWidth;
-  const scaleY = adjustedContainerHeight / streamHeight;
+  // For iOS, we need to consider that the face coordinates might be relative
+  // to the active region rather than the full stream size
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+  // Calculate effective stream dimensions
+  // On iOS, if face coordinates are very off-center, use them to estimate actual content area
+  let effectiveStreamWidth = streamWidth;
+  let effectiveStreamHeight = streamHeight;
+
+  if (isIOS) {
+    // If face is significantly off-center, it might indicate padding
+    const streamCenterX = streamWidth / 2;
+    const faceOffset = Math.abs(faceCenterX - streamCenterX);
+
+    if (faceOffset > streamWidth * 0.3) {
+      // If face is more than 30% off center
+      // Estimate actual content width based on face position
+      effectiveStreamWidth = Math.min(streamWidth, faceCenterX * 2);
+    }
+  }
+
+  // Calculate scale to fill the container
+  const scaleX = containerWidth / effectiveStreamWidth;
+  const scaleY = adjustedContainerHeight / effectiveStreamHeight;
   const scale = Math.max(scaleX, scaleY);
 
-  const scaledVideoWidth = streamWidth * scale;
-  const scaledVideoHeight = streamHeight * scale;
+  const scaledVideoWidth = effectiveStreamWidth * scale;
+  const scaledVideoHeight = effectiveStreamHeight * scale;
 
   // Calculate offsets
-  // const offsetX = (containerWidth - scaledVideoWidth) / 2;
+  const offsetX = (containerWidth - scaledVideoWidth) / 2;
   const offsetY = (adjustedContainerHeight - scaledVideoHeight) / 2;
 
-  // First normalize face position to 0-1 range
-  const normalizedFaceX = faceCenterX / streamWidth;
+  // Scale face coordinates based on effective dimensions
+  const scaledFaceCenterX = faceCenterX * scale;
+  const scaledFaceCenterY = faceCenterY * scale;
 
-  // Then calculate the actual pixel position in the scaled video
-  const scaledFaceCenterX = normalizedFaceX * scaledVideoWidth;
-  const scaledFaceCenterY =
-    (faceCenterY / streamHeight) * scaledVideoHeight + offsetY;
-
-  // Movement smoothing
+  // Update last known face position
   if (lastFaceCenterX === null || lastFaceCenterY === null) {
     lastFaceCenterX = scaledFaceCenterX;
     lastFaceCenterY = scaledFaceCenterY;
   }
 
-  const movementThreshold = scaledVideoWidth * 0.02; // Make threshold relative to video size
+  // Movement threshold
+  const movementThreshold = 50;
   const deltaX = scaledFaceCenterX - lastFaceCenterX;
   const deltaY = scaledFaceCenterY - lastFaceCenterY;
   const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
@@ -418,45 +434,48 @@ const adjustVideoPosition = (
   lastFaceCenterX = scaledFaceCenterX;
   lastFaceCenterY = scaledFaceCenterY;
 
-  // Position the video element
+  // Set video dimensions
   videoElement.style.width = `${scaledVideoWidth}px`;
   videoElement.style.height = `${scaledVideoHeight}px`;
   videoElement.style.position = 'absolute';
-  videoElement.style.top = `${offsetY - menuHeight}px`;
+  videoElement.style.top = `${offsetY}px`;
 
-  // Calculate translation needed to center the face
+  // Calculate translations to center the face
   let translateX = containerWidth / 2 - scaledFaceCenterX;
-  let translateY = adjustedContainerHeight / 2 - scaledFaceCenterY;
 
-  // Calculate bounds based on scaled dimensions
-  const minTranslateX = -(scaledVideoWidth - containerWidth);
-  const maxTranslateX = 0;
-  const maxTranslateY = -offsetY;
-  const minTranslateY = adjustedContainerHeight - scaledVideoHeight - offsetY;
+  // Calculate bounds to prevent empty spaces
+  const maxTranslateX = Math.min(0, -offsetX);
+  const minTranslateX = Math.max(
+    containerWidth - scaledVideoWidth,
+    -scaledVideoWidth + containerWidth / 2,
+  );
 
   // Clamp translations
   translateX = Math.min(Math.max(translateX, minTranslateX), maxTranslateX);
-  translateY = Math.min(Math.max(translateY, minTranslateY), maxTranslateY);
 
-  console.warn('Debug Values:', {
-    container: { width: containerWidth, height: adjustedContainerHeight },
-    face: {
-      original: faceCenterX,
-      normalized: normalizedFaceX,
-      scaled: scaledFaceCenterX,
-    },
-    scaled: { width: scaledVideoWidth, height: scaledVideoHeight },
-    stream: { width: streamWidth, height: streamHeight },
-    translation: {
-      x: translateX,
-      bounds: { min: minTranslateX, max: maxTranslateX },
-    },
-    scale,
-  });
-
-  videoElement.style.transition = 'transform 0.5s ease, top 0.5s ease';
-  videoElement.style.transform = `translate(${translateX}px, ${translateY}px)`;
+  // Apply transform
+  videoElement.style.transition = 'transform 0.3s ease-out';
+  videoElement.style.transform = `translate(${translateX}px, 0)`;
   videoElement.style.transformOrigin = 'top left';
+
+  console.warn('Stream Debug:', {
+    isIOS,
+    original: { width: streamWidth, height: streamHeight },
+    effective: { width: effectiveStreamWidth, height: effectiveStreamHeight },
+    face: { x: faceCenterX, y: faceCenterY },
+    scaled: { x: scaledFaceCenterX, width: scaledVideoWidth },
+    translation: translateX,
+    bounds: { min: minTranslateX, max: maxTranslateX },
+  });
+};
+
+// Helper function to be used in trackFace
+const detectDeviceType = () => {
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  return {
+    isIOS,
+    // Add more device-specific checks if needed
+  };
 };
 
 const trackFace = async (
@@ -470,41 +489,15 @@ const trackFace = async (
   }
 
   let isTracking = true;
-  let lastStreamWidth = null;
-  let lastStreamHeight = null;
+  const deviceInfo = detectDeviceType();
 
-  const getStreamDimensions = () => {
-    const settings = stream.getVideoTracks()[0].getSettings();
-    return {
-      width: settings.width,
-      height: settings.height,
-    };
-  };
-
-  console.warn('Initial stream dimensions:', getStreamDimensions());
+  console.warn('Device Info:', deviceInfo);
 
   let frameCounter = 0;
   const processEveryNthFrame = 3;
 
   const renderFrame = async () => {
     if (!isTracking) return;
-
-    // Check if stream dimensions have changed
-    const { width: currentWidth, height: currentHeight } =
-      getStreamDimensions();
-
-    // Log if stream dimensions changed
-    if (
-      currentWidth !== lastStreamWidth ||
-      currentHeight !== lastStreamHeight
-    ) {
-      console.warn('Stream dimensions changed:', {
-        from: { width: lastStreamWidth, height: lastStreamHeight },
-        to: { width: currentWidth, height: currentHeight },
-      });
-      lastStreamWidth = currentWidth;
-      lastStreamHeight = currentHeight;
-    }
 
     frameCounter++;
     if (frameCounter % processEveryNthFrame === 0) {
@@ -518,6 +511,7 @@ const trackFace = async (
         containerRect?.bottom < elementRect?.bottom ? 0 : 100;
 
       if (face) {
+        const settings = stream.getVideoTracks()[0].getSettings();
         adjustVideoPosition(
           videoElement,
           face.faceCenterX,
@@ -526,8 +520,8 @@ const trackFace = async (
           videoElement.videoHeight,
           container.clientWidth,
           container.clientHeight,
-          currentWidth, // Use current stream width
-          currentHeight, // Use current stream height
+          settings.width,
+          settings.height,
           translationTextBoxHeight,
         );
       }
