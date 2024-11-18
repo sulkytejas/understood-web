@@ -364,6 +364,7 @@ const adjustVideoPosition = (
   streamWidth,
   streamHeight,
   menuHeight = 0,
+  isLocalStream = false, // New parameter to distinguish local vs remote stream
 ) => {
   if (
     videoWidth <= 0 ||
@@ -378,24 +379,46 @@ const adjustVideoPosition = (
   // Adjust container height to account for menu
   const adjustedContainerHeight = containerHeight - menuHeight;
 
-  // For iOS, we need to consider that the face coordinates might be relative
-  // to the active region rather than the full stream size
+  // Check if stream is from iOS (either local or remote)
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const isIOSStream = isLocalStream
+    ? isIOS
+    : detectIOSStream(streamWidth, streamHeight, faceCenterX, faceCenterY);
 
-  // Calculate effective stream dimensions
-  // On iOS, if face coordinates are very off-center, use them to estimate actual content area
+  // Function to detect if a remote stream is likely from iOS
+  function detectIOSStream(width, height, faceX, faceY) {
+    // iOS typically sends streams with specific aspect ratios and cropped content
+    const aspectRatio = width / height;
+    const isCroppedAspectRatio = Math.abs(aspectRatio - 0.75) < 0.1; // iOS often sends 3:4
+
+    // Check if face position is significantly off-center
+    const normalizedFaceX = faceX / width;
+    const isOffCenter = normalizedFaceX < 0.3 || normalizedFaceX > 0.7;
+
+    return isCroppedAspectRatio || isOffCenter;
+  }
+
+  // Adjust dimensions based on whether it's an iOS stream
   let effectiveStreamWidth = streamWidth;
   let effectiveStreamHeight = streamHeight;
 
-  if (isIOS) {
-    // If face is significantly off-center, it might indicate padding
-    const streamCenterX = streamWidth / 2;
-    const faceOffset = Math.abs(faceCenterX - streamCenterX);
+  if (isIOSStream) {
+    // For iOS streams, we need to adjust the effective dimensions
+    // to account for cropping/padding
+    const normalizedFaceX = faceCenterX / streamWidth;
 
-    if (faceOffset > streamWidth * 0.3) {
-      // If face is more than 30% off center
-      // Estimate actual content width based on face position
-      effectiveStreamWidth = Math.min(streamWidth, faceCenterX * 2);
+    if (normalizedFaceX < 0.3) {
+      // Face is toward the left, adjust effective width
+      effectiveStreamWidth = faceCenterX * 2.5;
+    } else if (normalizedFaceX > 0.7) {
+      // Face is toward the right, adjust effective width
+      effectiveStreamWidth = (streamWidth - faceCenterX) * 2.5;
+    }
+
+    // Adjust height if needed (iOS might crop vertically too)
+    const normalizedFaceY = faceCenterY / streamHeight;
+    if (normalizedFaceY < 0.3 || normalizedFaceY > 0.7) {
+      effectiveStreamHeight = streamHeight * 1.2; // Add some padding
     }
   }
 
@@ -411,17 +434,16 @@ const adjustVideoPosition = (
   const offsetX = (containerWidth - scaledVideoWidth) / 2;
   const offsetY = (adjustedContainerHeight - scaledVideoHeight) / 2;
 
-  // Scale face coordinates based on effective dimensions
+  // Scale face coordinates
   const scaledFaceCenterX = faceCenterX * scale;
   const scaledFaceCenterY = faceCenterY * scale;
 
-  // Update last known face position
+  // Movement smoothing
   if (lastFaceCenterX === null || lastFaceCenterY === null) {
     lastFaceCenterX = scaledFaceCenterX;
     lastFaceCenterY = scaledFaceCenterY;
   }
 
-  // Movement threshold
   const movementThreshold = 50;
   const deltaX = scaledFaceCenterX - lastFaceCenterX;
   const deltaY = scaledFaceCenterY - lastFaceCenterY;
@@ -440,58 +462,46 @@ const adjustVideoPosition = (
   videoElement.style.position = 'absolute';
   videoElement.style.top = `${offsetY}px`;
 
-  // Calculate translations to center the face
+  // Calculate translations
   let translateX = containerWidth / 2 - scaledFaceCenterX;
 
-  // Calculate bounds to prevent empty spaces
+  // Calculate bounds
   const maxTranslateX = Math.min(0, -offsetX);
   const minTranslateX = Math.max(
     containerWidth - scaledVideoWidth,
     -scaledVideoWidth + containerWidth / 2,
   );
 
-  // Clamp translations
-  translateX = Math.min(Math.max(translateX, minTranslateX), maxTranslateX);
+  // Adjust bounds for iOS streams to prevent showing empty areas
+  if (isIOSStream) {
+    const boundsAdjustment = scaledVideoWidth * 0.1; // 10% adjustment
+    translateX = Math.min(
+      Math.max(translateX, minTranslateX + boundsAdjustment),
+      maxTranslateX - boundsAdjustment,
+    );
+  } else {
+    translateX = Math.min(Math.max(translateX, minTranslateX), maxTranslateX);
+  }
 
   // Apply transform
   videoElement.style.transition = 'transform 0.3s ease-out';
   videoElement.style.transform = `translate(${translateX}px, 0)`;
   videoElement.style.transformOrigin = 'top left';
-
-  console.warn('Stream Debug:', {
-    isIOS,
-    original: { width: streamWidth, height: streamHeight },
-    effective: { width: effectiveStreamWidth, height: effectiveStreamHeight },
-    face: { x: faceCenterX, y: faceCenterY },
-    scaled: { x: scaledFaceCenterX, width: scaledVideoWidth },
-    translation: translateX,
-    bounds: { min: minTranslateX, max: maxTranslateX },
-  });
 };
 
-// Helper function to be used in trackFace
-const detectDeviceType = () => {
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-  return {
-    isIOS,
-    // Add more device-specific checks if needed
-  };
-};
-
+// Update trackFace to pass isLocalStream
 const trackFace = async (
   videoElement,
   container,
   stream,
   animationFrameRef,
+  isLocalStream = false,
 ) => {
   if (!model) {
     await initializeTensorFlow();
   }
 
   let isTracking = true;
-  const deviceInfo = detectDeviceType();
-
-  console.warn('Device Info:', deviceInfo);
 
   let frameCounter = 0;
   const processEveryNthFrame = 3;
@@ -523,6 +533,7 @@ const trackFace = async (
           settings.width,
           settings.height,
           translationTextBoxHeight,
+          isLocalStream,
         );
       }
     }
