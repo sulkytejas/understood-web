@@ -13,7 +13,12 @@ import { useNavigate } from 'react-router-dom';
 import { useSocket } from '../context/SocketContext';
 import { cleanupState } from '../../redux/actions';
 
-import { isBrowserSupportingL3T3 } from '../utils/peerConnectionUtils';
+import {
+  isBrowserSupportingL3T3,
+  getVideoConstraints,
+  applyAdvancedCameraControls,
+  applyAdvancedAudioControls,
+} from '../utils/peerConnectionUtils';
 
 const WebRTCContext = createContext();
 
@@ -825,26 +830,50 @@ export const WebRTCProvider = ({ children }) => {
     //   return;
     // }
 
-    const constraints = {
-      video: {
-        video: {
-          width: { ideal: 640, max: 1280, min: 320 },
-          height: { ideal: 360, max: 720, min: 180 },
-          frameRate: { ideal: 15, max: 30, min: 10 },
-        },
-      },
-      audio: true,
-    };
+    // const constraints = {
+    //   video: {
+    //     width: { min: 1280, ideal: 1920, max: 1920 },
+    //     height: { min: 720, ideal: 1080, max: 1080 },
+    //     aspectRatio: { ideal: 16 / 9 },
+    //     frameRate: { ideal: 30, max: 30 },
+    //   },
+    //   audio: true,
+    // };
 
-    if (browserName == 'Safari') {
-      constraints.video = true;
-    }
+    // if (browserName == 'Safari') {
+    //   constraints.video = true;
+    // }
 
+    const constraints = await getVideoConstraints(browserName);
     const stream = await navigator.mediaDevices.getUserMedia(constraints);
+
     setLocalStream(stream);
 
     const videoTrack = stream.getVideoTracks()[0];
     const audioTrack = stream.getAudioTracks()[0];
+
+    // await videoTrack.applyConstraints({
+    //   width: { exact: 1920 },
+    //   height: { exact: 1080 },
+    // });
+
+    // Apply all advanced controls including resolution in one go
+    await applyAdvancedCameraControls(videoTrack);
+    await applyAdvancedAudioControls(audioTrack);
+
+    console.log('Camera Label:', videoTrack.label);
+    console.log('Capabilities:', videoTrack.getCapabilities());
+    console.log('Current Settings:', videoTrack.getSettings());
+    console.log(
+      'Supported Constraints:',
+      navigator.mediaDevices.getSupportedConstraints(),
+    );
+
+    console.log(
+      ' local stream settings',
+      stream.getVideoTracks()[0].getSettings().width,
+      stream.getVideoTracks()[0].getSettings().height,
+    );
 
     try {
       const videoProducer = await newTransport.produce({

@@ -7,7 +7,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
 import HostControl from './HostControl';
-import UserAvatar from './UserAvatar';
+// import UserAvatar from './UserAvatar';
 import ParticipantTab from './ParticipantTab';
 import VibeModeTab from './VibeModeTab';
 import AccountSeetingDialog from './AccountSettingDialog';
@@ -188,9 +188,7 @@ const CreateMeetingPage = () => {
           <CustomTab label={t('Join')} />
           <CustomTabDark label={t('Vibe')} />
         </CustomTabs>
-        <div className="create-meeting-content">
-          <UserAvatar />
-        </div>
+        <div className="create-meeting-content">{/* <UserAvatar /> */}</div>
 
         {activeTab === 0 && (
           <HostControl

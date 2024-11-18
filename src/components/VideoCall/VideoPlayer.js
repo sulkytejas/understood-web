@@ -7,6 +7,61 @@ import useListTracker from '../hooks/useListTracker';
 import ListOverlay from './ListOverlay';
 
 import { trackFace } from '../utils/tensorFlowUtils';
+import {
+  enhanceVideoContainer,
+  applyVideoEnhancements,
+} from '../utils/videoPlayerUtils';
+
+const circularRemoteVideo = {
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  backgroundColor: '#DF4303',
+  borderRadius: '50px',
+  padding: ' 4px',
+  width: '60pxpx',
+  height: '100px',
+  boxShadow: '0px 3px 10px rgba(0, 0, 0, 0.2)',
+  border: '1px solid #fff',
+  transition: 'all 0.5s ease-in-out',
+};
+
+const circularRemoteVideoInner = {
+  width: '55px',
+  height: '55px',
+  borderRadius: '50%',
+  overflow: 'hidden',
+  marginBottom: '10px',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+};
+
+const mainRemoteVideo = {
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  width: '100px',
+  height: '140px',
+  boxShadow: '0px 3px 10px rgba(0, 0, 0, 0.2)',
+};
+
+const mainRemoteVideoInner = {
+  width: '100%',
+  height: '100%',
+  overflow: 'hidden',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  transition: 'all 0.5s ease-in-out',
+};
+
+// const containerStyle = {
+//   position: 'relative',
+//   width: '100%',
+//   height: '100%',
+//   backgroundColor: '#000', // Black letterboxing
+// };
 
 const VideoPlayer = ({
   localStream,
@@ -27,42 +82,93 @@ const VideoPlayer = ({
   const showConnectionAlert = connectionState !== 'connected';
   const animationFrameRef = useRef(null);
   const stopTrackRef = useRef(null);
+  const pipVideoRef = useRef(null);
+  const faceTrackingRef = useRef({
+    isTracking: false,
+    currentStreamId: null,
+    stopTrack: null,
+  });
 
-  const handleRemoteTrackProcessing = async () => {
-    console.log('remoteTrack', remoteTrack);
-    console.log(
-      ' local stream settings',
-      localStream.getVideoTracks()[0].getSettings().width,
-      localStream.getVideoTracks()[0].getSettings().height,
-      'remostream settings',
-      remoteTrack.getVideoTracks()[0].getSettings().width,
-      remoteTrack.getVideoTracks()[0].getSettings().height,
-    );
-    if (remoteTrack && remoteVideoRef.current && videoContainerRef.current) {
-      if (
-        remoteTrack.getVideoTracks()[0].getSettings().width <
-        videoContainerRef.current?.clientWidth
-      ) {
-        return;
-      }
-      const { stopTrack } = await trackFace(
-        remoteVideoRef.current,
-        videoContainerRef.current,
-        remoteTrack,
-        animationFrameRef,
-      );
+  const isCallStarted = connectionState === 'connected' && remoteTrack;
 
-      stopTrackRef.current = stopTrack;
+  const stopFaceTracking = async () => {
+    if (faceTrackingRef.current.stopTrack) {
+      await faceTrackingRef.current.stopTrack();
+      faceTrackingRef.current = {
+        isTracking: false,
+        currentStreamId: null,
+        stopTrack: null,
+      };
+    }
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
     }
   };
 
-  useEffect(() => {
-    // Cleanup function to run when component unmounts
+  const handleFaceTracking = async (stream, videoRef) => {
+    if (
+      !stream?.getVideoTracks?.()?.length ||
+      !videoRef?.current ||
+      !videoContainerRef?.current
+    ) {
+      return;
+    }
 
+    const videoTrack = stream.getVideoTracks()[0];
+    const settings = videoTrack.getSettings();
+    const streamId = videoTrack.id;
+
+    console.log('Stream settings:', {
+      width: settings.width,
+      height: settings.height,
+      containerWidth: videoContainerRef.current?.clientWidth,
+    });
+
+    if (
+      !settings?.width ||
+      settings.width < videoContainerRef.current.clientWidth
+    ) {
+      return;
+    }
+
+    try {
+      // Stop existing face tracking if any
+      // if (stopTrackRef.current) {
+      //   stopTrackRef.current();
+      //   stopTrackRef.current = null;
+      // }
+
+      await stopFaceTracking();
+
+      const { stopTrack } = await trackFace(
+        videoRef.current,
+        videoContainerRef.current,
+        stream,
+        animationFrameRef,
+      );
+
+      // Update tracking state
+      faceTrackingRef.current = {
+        isTracking: true,
+        currentStreamId: streamId,
+        stopTrack,
+      };
+    } catch (error) {
+      console.error('Error in face tracking:', error);
+
+      faceTrackingRef.current = {
+        isTracking: false,
+        currentStreamId: null,
+        stopTrack: null,
+      };
+    }
+  };
+
+  // Cleanup effect
+  useEffect(() => {
     return () => {
-      if (stopTrackRef.current) {
-        stopTrackRef.current(); // Stop face detection when component unmounts
-      }
+      stopFaceTracking();
     };
   }, []);
 
@@ -83,59 +189,110 @@ const VideoPlayer = ({
     }
   }, [remoteTrack, animationFrameRef, stopTrackRef]);
 
-  const circularRemoteVideo = {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    backgroundColor: '#DF4303',
-    borderRadius: '50px',
-    padding: ' 4px',
-    width: '60pxpx',
-    height: '100px',
-    boxShadow: '0px 3px 10px rgba(0, 0, 0, 0.2)',
-    border: '1px solid #fff',
-    transition: 'all 0.5s ease-in-out',
-  };
+  // Effect to handle stream switching
+  useEffect(() => {
+    const currentStream = isCallStarted ? remoteTrack : localStream;
 
-  const circularRemoteVideoInner = {
-    width: '55px',
-    height: '55px',
-    borderRadius: '50%',
-    overflow: 'hidden',
-    marginBottom: '10px',
+    // Stop face tracking before switching streams
+    stopFaceTracking();
+
+    if (remoteVideoRef.current) {
+      remoteVideoRef.current.srcObject = currentStream;
+    }
+
+    // Handle PiP video stream
+    if (pipVideoRef.current) {
+      pipVideoRef.current.srcObject = isCallStarted ? localStream : null;
+    }
+  }, [isCallStarted, localStream, remoteTrack]);
+
+  useEffect(() => {
+    const currentStream = isCallStarted ? remoteTrack : localStream;
+    const isShowingLocalStream = !isCallStarted;
+
+    if (remoteVideoRef.current) {
+      remoteVideoRef.current.srcObject = currentStream;
+      // Only apply enhancements if showing local stream
+      applyVideoEnhancements(remoteVideoRef.current, isShowingLocalStream);
+      // optimizeVideoStream(currentStream, isShowingLocalStream);
+    }
+
+    if (pipVideoRef.current) {
+      pipVideoRef.current.srcObject = isCallStarted ? localStream : null;
+      // For PiP, apply enhancements only when call is active (showing local stream in PiP)
+      applyVideoEnhancements(pipVideoRef.current, isCallStarted);
+    }
+
+    // Only enhance container when showing local stream
+    enhanceVideoContainer(videoContainerRef, isShowingLocalStream);
+
+    // Cleanup function
+    return () => {
+      if (remoteVideoRef.current) {
+        remoteVideoRef.current.style.filter = 'none';
+        remoteVideoRef.current.style.boxShadow = 'none';
+      }
+      if (pipVideoRef.current) {
+        pipVideoRef.current.style.filter = 'none';
+        pipVideoRef.current.style.boxShadow = 'none';
+      }
+      if (videoContainerRef.current) {
+        videoContainerRef.current.style.background = '#000';
+        const ambientLight =
+          videoContainerRef.current.querySelector('.ambient-light');
+        if (ambientLight) {
+          ambientLight.remove();
+        }
+      }
+    };
+  }, [isCallStarted, localStream, remoteTrack]);
+
+  // Effect to handle remote track changes
+  useEffect(() => {
+    if (!remoteTrack && faceTrackingRef.current.isTracking) {
+      stopFaceTracking();
+    }
+  }, [remoteTrack]);
+
+  const videoWrapperStyle = {
+    position: 'relative',
+    width: '100%',
+    height: '70%',
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
+    // Add subtle shadow only when showing local stream
+    boxShadow: !isCallStarted ? 'inset 0 0 50px rgba(0,0,0,0.5)' : 'none',
   };
 
-  const mainRemoteVideo = {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    width: '100px',
-    height: '140px',
-    boxShadow: '0px 3px 10px rgba(0, 0, 0, 0.2)',
-  };
-
-  const mainRemoteVideoInner = {
+  const containerStyle = {
+    position: 'relative',
     width: '100%',
     height: '100%',
-    overflow: 'hidden',
+    backgroundColor: '#000',
     display: 'flex',
+    flexDirection: 'column',
     justifyContent: 'center',
     alignItems: 'center',
-    transition: 'all 0.5s ease-in-out',
+    overflow: 'hidden',
   };
 
   return (
-    <div className="video-player">
-      <video
-        className="local-video"
-        ref={remoteVideoRef}
-        autoPlay
-        playsInline
-        onLoadedMetadata={handleRemoteTrackProcessing}
-      />
+    <div className="video-player" style={containerStyle}>
+      <Box sx={videoWrapperStyle}>
+        <video
+          className="local-video"
+          ref={remoteVideoRef}
+          autoPlay
+          playsInline
+          onLoadedMetadata={() => {
+            const currentStream = isCallStarted ? remoteTrack : localStream;
+            handleFaceTracking(currentStream, remoteVideoRef);
+          }}
+          style={{ width: '100%', height: '80%' }}
+        />
+      </Box>
 
       {showList && (
         <ListOverlay listItems={listItems} showList={showList} title={title} />
@@ -150,11 +307,12 @@ const VideoPlayer = ({
             }
           >
             <video
-              ref={(video) => {
-                if (video) {
-                  video.srcObject = localStream;
-                }
-              }}
+              // ref={(video) => {
+              //   if (video) {
+              //     video.srcObject = localStream;
+              //   }
+              // }}
+              ref={pipVideoRef}
               autoPlay
               playsInline
               muted

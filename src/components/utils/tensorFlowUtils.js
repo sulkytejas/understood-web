@@ -363,7 +363,7 @@ const adjustVideoPosition = (
   containerHeight,
   streamWidth,
   streamHeight,
-  menuHeight = 0, // Default to 0 if no menu is open
+  menuHeight = 0,
 ) => {
   if (
     videoWidth <= 0 ||
@@ -383,37 +383,38 @@ const adjustVideoPosition = (
   // Calculate scale to fill the container completely
   const scaleX = containerWidth / streamWidth;
   const scaleY = adjustedContainerHeight / streamHeight;
-  const scale = Math.max(scaleX, scaleY); // Use Math.max to fill container
+  const scale = Math.max(scaleX, scaleY);
 
   const scaledVideoWidth = streamWidth * scale;
   const scaledVideoHeight = streamHeight * scale;
 
-  // Calculate offsets (these can be negative due to overflow)
-  const offsetX = (containerWidth - scaledVideoWidth) / 2;
+  // Calculate offsets
+  // const offsetX = (containerWidth - scaledVideoWidth) / 2;
   const offsetY = (adjustedContainerHeight - scaledVideoHeight) / 2;
 
-  // Scale face coordinates to the scaled video dimensions
-  const scaledFaceCenterX = faceCenterX * scale + offsetX;
-  const scaledFaceCenterY = faceCenterY * scale + offsetY;
+  // First normalize face position to 0-1 range
+  const normalizedFaceX = faceCenterX / streamWidth;
 
-  // Update last known face position (we'll implement threshold below)
+  // Then calculate the actual pixel position in the scaled video
+  const scaledFaceCenterX = normalizedFaceX * scaledVideoWidth;
+  const scaledFaceCenterY =
+    (faceCenterY / streamHeight) * scaledVideoHeight + offsetY;
+
+  // Movement smoothing
   if (lastFaceCenterX === null || lastFaceCenterY === null) {
     lastFaceCenterX = scaledFaceCenterX;
     lastFaceCenterY = scaledFaceCenterY;
   }
 
-  // Implement movement threshold to prevent jitter
-  const movementThreshold = 50; // Adjust as needed
+  const movementThreshold = scaledVideoWidth * 0.02; // Make threshold relative to video size
   const deltaX = scaledFaceCenterX - lastFaceCenterX;
   const deltaY = scaledFaceCenterY - lastFaceCenterY;
   const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
   if (distance < movementThreshold) {
-    // Movement is too small, skip update
     return;
   }
 
-  // Update last known face position
   lastFaceCenterX = scaledFaceCenterX;
   lastFaceCenterY = scaledFaceCenterY;
 
@@ -421,51 +422,90 @@ const adjustVideoPosition = (
   videoElement.style.width = `${scaledVideoWidth}px`;
   videoElement.style.height = `${scaledVideoHeight}px`;
   videoElement.style.position = 'absolute';
-  // videoElement.style.left = `${offsetX}px`;
-  videoElement.style.top = `${offsetY - menuHeight}px`; // Adjust for menu
+  videoElement.style.top = `${offsetY - menuHeight}px`;
 
-  // Calculate desired translations to center the face
+  // Calculate translation needed to center the face
   let translateX = containerWidth / 2 - scaledFaceCenterX;
   let translateY = adjustedContainerHeight / 2 - scaledFaceCenterY;
 
-  // Clamp translations to prevent empty spaces
-  const maxTranslateX = -offsetX;
-  const minTranslateX = containerWidth - scaledVideoWidth - offsetX;
+  // Calculate bounds based on scaled dimensions
+  const minTranslateX = -(scaledVideoWidth - containerWidth);
+  const maxTranslateX = 0;
   const maxTranslateY = -offsetY;
   const minTranslateY = adjustedContainerHeight - scaledVideoHeight - offsetY;
 
+  // Clamp translations
   translateX = Math.min(Math.max(translateX, minTranslateX), maxTranslateX);
   translateY = Math.min(Math.max(translateY, minTranslateY), maxTranslateY);
 
-  const finalTranslateX = Math.min(offsetX + translateX, offsetX);
+  console.warn('Debug Values:', {
+    container: { width: containerWidth, height: adjustedContainerHeight },
+    face: {
+      original: faceCenterX,
+      normalized: normalizedFaceX,
+      scaled: scaledFaceCenterX,
+    },
+    scaled: { width: scaledVideoWidth, height: scaledVideoHeight },
+    stream: { width: streamWidth, height: streamHeight },
+    translation: {
+      x: translateX,
+      bounds: { min: minTranslateX, max: maxTranslateX },
+    },
+    scale,
+  });
 
   videoElement.style.transition = 'transform 0.5s ease, top 0.5s ease';
-  videoElement.style.transform = `translate(${finalTranslateX}px, ${translateY}px)`;
+  videoElement.style.transform = `translate(${translateX}px, ${translateY}px)`;
   videoElement.style.transformOrigin = 'top left';
 };
 
-async function trackFace(videoElement, container, stream, animationFrameRef) {
+const trackFace = async (
+  videoElement,
+  container,
+  stream,
+  animationFrameRef,
+) => {
   if (!model) {
     await initializeTensorFlow();
   }
 
   let isTracking = true;
+  let lastStreamWidth = null;
+  let lastStreamHeight = null;
 
-  const streamWidth = stream.getVideoTracks()[0].getSettings().width; // Actual video width (e.g., 640px)
-  const streamHeight = stream.getVideoTracks()[0].getSettings().height;
+  const getStreamDimensions = () => {
+    const settings = stream.getVideoTracks()[0].getSettings();
+    return {
+      width: settings.width,
+      height: settings.height,
+    };
+  };
 
-  console.log(
-    'Stream dimensions:',
-    streamWidth,
-    streamHeight,
-    container.clientWidth,
-    container.clientHeight,
-  );
+  console.warn('Initial stream dimensions:', getStreamDimensions());
 
   let frameCounter = 0;
   const processEveryNthFrame = 3;
+
   const renderFrame = async () => {
     if (!isTracking) return;
+
+    // Check if stream dimensions have changed
+    const { width: currentWidth, height: currentHeight } =
+      getStreamDimensions();
+
+    // Log if stream dimensions changed
+    if (
+      currentWidth !== lastStreamWidth ||
+      currentHeight !== lastStreamHeight
+    ) {
+      console.warn('Stream dimensions changed:', {
+        from: { width: lastStreamWidth, height: lastStreamHeight },
+        to: { width: currentWidth, height: currentHeight },
+      });
+      lastStreamWidth = currentWidth;
+      lastStreamHeight = currentHeight;
+    }
+
     frameCounter++;
     if (frameCounter % processEveryNthFrame === 0) {
       const face = await detectFace(videoElement, model);
@@ -486,8 +526,8 @@ async function trackFace(videoElement, container, stream, animationFrameRef) {
           videoElement.videoHeight,
           container.clientWidth,
           container.clientHeight,
-          streamWidth,
-          streamHeight,
+          currentWidth, // Use current stream width
+          currentHeight, // Use current stream height
           translationTextBoxHeight,
         );
       }
@@ -505,7 +545,7 @@ async function trackFace(videoElement, container, stream, animationFrameRef) {
   };
 
   return { stopTrack };
-}
+};
 
 async function avatarFaceProcessing(
   video,
