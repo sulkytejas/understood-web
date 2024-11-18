@@ -387,6 +387,7 @@ const adjustVideoPosition = (
 
   // Function to detect if a remote stream is likely from iOS
   function detectIOSStream(width, height, faceX, faceY) {
+    console.log(faceY);
     // iOS typically sends streams with specific aspect ratios and cropped content
     const aspectRatio = width / height;
     const isCroppedAspectRatio = Math.abs(aspectRatio - 0.75) < 0.1; // iOS often sends 3:4
