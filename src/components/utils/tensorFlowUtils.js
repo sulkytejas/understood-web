@@ -390,73 +390,76 @@ const adjustVideoPosition = (
     const isCroppedAspectRatio = Math.abs(aspectRatio - 0.75) < 0.1;
     const normalizedFaceX = faceX / width;
     const isOffCenter = normalizedFaceX < 0.3 || normalizedFaceX > 0.7;
-
     return isCroppedAspectRatio || isOffCenter;
   }
 
-  // Calculate initial dimensions
-  const scaleX = containerWidth / streamWidth;
-  const scaleY = adjustedContainerHeight / streamHeight;
+  // For iOS remote streams, use container dimensions to ensure proper fit
+  let effectiveStreamWidth =
+    isIOSStream && !isLocalStream ? containerWidth : streamWidth;
+  let effectiveStreamHeight = streamHeight;
+
+  // Calculate scale to fill the container
+  const scaleX = containerWidth / effectiveStreamWidth;
+  const scaleY = adjustedContainerHeight / effectiveStreamHeight;
   const scale = Math.max(scaleX, scaleY);
 
-  // Scale up slightly to prevent edge gaps during transitions
-  const safetyScale = isIOSStream && !isLocalStream ? scale * 1.1 : scale;
+  const scaledVideoWidth = effectiveStreamWidth * scale;
+  const scaledVideoHeight = effectiveStreamHeight * scale;
 
-  const scaledVideoWidth = streamWidth * safetyScale;
-  const scaledVideoHeight = streamHeight * safetyScale;
+  // For iOS remote streams, ensure video always fills container width
+  if (isIOSStream && !isLocalStream) {
+    videoElement.style.width = '100%';
+    videoElement.style.height = `${adjustedContainerHeight}px`;
+    videoElement.style.position = 'absolute';
+    videoElement.style.left = '0';
+    videoElement.style.top = '0';
 
-  // Set base styles only once (move this to onMount/initialization if possible)
-  if (!videoElement.isStylesInitialized) {
+    // Remove transition during initial setup
+    if (!videoElement.isInitialized) {
+      videoElement.style.transition = 'none';
+      videoElement.isInitialized = true;
+    } else {
+      videoElement.style.transition = 'transform 0.2s ease-out';
+    }
+  } else {
+    videoElement.style.width = `${scaledVideoWidth}px`;
+    videoElement.style.height = `${scaledVideoHeight}px`;
     videoElement.style.position = 'absolute';
     videoElement.style.left = '50%';
-    videoElement.style.top = '50%';
-    videoElement.style.transformOrigin = 'center center';
-    videoElement.isStylesInitialized = true;
+    videoElement.style.transform = 'translateX(-50%)';
+    videoElement.style.top = '0';
   }
 
-  // Set dimensions
-  videoElement.style.width = `${scaledVideoWidth}px`;
-  videoElement.style.height = `${scaledVideoHeight}px`;
-
-  // Calculate face position in scaled space
+  // For iOS remote streams, adjust face position calculations
   const normalizedFaceX = faceCenterX / streamWidth;
-  let translateX = containerWidth / 2 - normalizedFaceX * scaledVideoWidth;
+  let translateX = 0;
 
-  // Limit translation
-  const maxTranslate = (containerWidth - scaledVideoWidth) / 2;
-  const minTranslate = -maxTranslate;
-  translateX = Math.min(Math.max(translateX, minTranslate), maxTranslate);
+  if (isIOSStream && !isLocalStream) {
+    // Calculate translation based on normalized face position
+    const targetCenter = containerWidth / 2;
+    const currentFaceX = normalizedFaceX * scaledVideoWidth;
+    translateX = targetCenter - currentFaceX;
 
-  // Movement smoothing
-  if (typeof videoElement.lastTranslateX === 'undefined') {
+    // Limit translation to prevent blank spaces
+    const maxTranslate = 0;
+    const minTranslate = containerWidth - scaledVideoWidth;
+    translateX = Math.min(Math.max(translateX, minTranslate), maxTranslate);
+
+    // Movement smoothing for iOS remote streams
+    if (typeof videoElement.lastTranslateX === 'undefined') {
+      videoElement.lastTranslateX = translateX;
+    }
+
+    const movementThreshold = containerWidth * 0.005;
+    if (
+      Math.abs(translateX - videoElement.lastTranslateX) < movementThreshold
+    ) {
+      return;
+    }
+
     videoElement.lastTranslateX = translateX;
+    videoElement.style.transform = `translateX(${translateX}px)`;
   }
-
-  // Calculate movement delta
-  const movementThreshold = containerWidth * 0.002; // Reduced threshold
-  const delta = translateX - videoElement.lastTranslateX;
-
-  if (Math.abs(delta) < movementThreshold) {
-    return;
-  }
-
-  // Smooth out the movement
-  const smoothingFactor = 0.15; // Slightly increased for more responsive movement
-  translateX = videoElement.lastTranslateX + delta * smoothingFactor;
-  videoElement.lastTranslateX = translateX;
-
-  // Apply transform with minimal transition for smoothness
-  if (!videoElement.style.transition) {
-    videoElement.style.transition =
-      'transform 0.2s cubic-bezier(0.4, 0.0, 0.2, 1)';
-  }
-
-  // Use a single transform that combines all operations
-  videoElement.style.transform = `
-    translate(-50%, -50%)
-    translateX(${translateX}px)
-    scale(${isIOSStream && !isLocalStream ? 1.1 : 1})
-  `;
 };
 
 // Update trackFace to pass isLocalStream
