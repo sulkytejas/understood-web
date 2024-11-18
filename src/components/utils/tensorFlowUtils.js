@@ -413,14 +413,6 @@ const adjustVideoPosition = (
     videoElement.style.position = 'absolute';
     videoElement.style.left = '0';
     videoElement.style.top = '0';
-
-    // Remove transition during initial setup
-    if (!videoElement.isInitialized) {
-      videoElement.style.transition = 'none';
-      videoElement.isInitialized = true;
-    } else {
-      videoElement.style.transition = 'transform 0.2s ease-out';
-    }
   } else {
     videoElement.style.width = `${scaledVideoWidth}px`;
     videoElement.style.height = `${scaledVideoHeight}px`;
@@ -450,15 +442,25 @@ const adjustVideoPosition = (
       videoElement.lastTranslateX = translateX;
     }
 
-    const movementThreshold = containerWidth * 0.005;
-    if (
-      Math.abs(translateX - videoElement.lastTranslateX) < movementThreshold
-    ) {
-      return;
-    }
-
+    const smoothingFactor = 0.1; // Adjust this value to control smoothing (0.1 = very smooth, 1 = no smoothing)
+    translateX =
+      videoElement.lastTranslateX +
+      (translateX - videoElement.lastTranslateX) * smoothingFactor;
     videoElement.lastTranslateX = translateX;
+
+    // Apply transform with smooth animation
+    videoElement.style.transition =
+      'transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1)';
     videoElement.style.transform = `translateX(${translateX}px)`;
+  }
+
+  // Update position without animation if movement is too small
+  const movementThreshold = containerWidth * 0.005; // 0.5% of container width
+  if (
+    Math.abs(translateX - (videoElement.lastTranslateX || 0)) <
+    movementThreshold
+  ) {
+    return;
   }
 };
 
