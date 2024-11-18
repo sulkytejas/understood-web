@@ -353,11 +353,25 @@ let lastFaceCenterY = null;
 //   videoElement.style.transformOrigin = 'top left'; // Ensure transformations are relative to the top-left corner
 // };
 
-const detectDeviceType = (streamWidth, streamHeight) => {
+const detectDeviceType = (
+  streamWidth,
+  streamHeight,
+  remoteStreamInfo = null,
+) => {
   const isLocalIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+  // If we have remote stream info, use it directly
+  if (remoteStreamInfo) {
+    return {
+      isLocalIOS,
+      isIOSStream: remoteStreamInfo.isIOS,
+      isRemoteIOSStream: remoteStreamInfo.sourceIsIOS,
+    };
+  }
+
+  // Fallback to aspect ratio detection
   const hasIOSAspectRatio =
     streamWidth && streamHeight && streamWidth / streamHeight > 1.8;
-
   return {
     isLocalIOS,
     isIOSStream: isLocalIOS || hasIOSAspectRatio,
@@ -376,6 +390,7 @@ const adjustVideoPosition = (
   streamWidth,
   streamHeight,
   menuHeight = 0,
+  remoteStreamInfo,
 ) => {
   if (
     videoWidth <= 0 ||
@@ -394,6 +409,7 @@ const adjustVideoPosition = (
   const { isIOSStream, isRemoteIOSStream } = detectDeviceType(
     streamWidth,
     streamHeight,
+    remoteStreamInfo,
   );
 
   // Calculate effective stream dimensions
@@ -492,6 +508,7 @@ const trackFace = async (
   container,
   stream,
   animationFrameRef,
+  remoteStreamInfo,
 ) => {
   if (!model) {
     await initializeTensorFlow();
@@ -499,7 +516,11 @@ const trackFace = async (
 
   let isTracking = true;
   const settings = stream.getVideoTracks()[0].getSettings();
-  const deviceInfo = detectDeviceType(settings.width, settings.height);
+  const deviceInfo = detectDeviceType(
+    settings.width,
+    settings.height,
+    remoteStreamInfo,
+  );
 
   console.warn('Device Info:', deviceInfo);
 
@@ -533,6 +554,7 @@ const trackFace = async (
           settings.width,
           settings.height,
           translationTextBoxHeight,
+          remoteStreamInfo,
         );
       }
     }

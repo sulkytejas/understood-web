@@ -80,6 +80,9 @@ const VideoPlayer = ({
   // Check if the srcObject is available or not
   const showAlert = !remoteVideoRef?.current?.srcObject;
   const showConnectionAlert = connectionState !== 'connected';
+  const otherParticipantInfo = useSelector(
+    (state) => state.meeting.participantInfo,
+  );
   const animationFrameRef = useRef(null);
   const stopTrackRef = useRef(null);
   const pipVideoRef = useRef(null);
@@ -141,11 +144,25 @@ const VideoPlayer = ({
 
       await stopFaceTracking();
 
+      let remoteStreamInfo = null;
+      if (otherParticipantInfo) {
+        const { pin: { isIOS, userAgent, isLocalDevice, sourceIsIOS } = {} } =
+          Object.values(otherParticipantInfo)[0] ?? {};
+
+        remoteStreamInfo = {
+          isIOS,
+          userAgent,
+          isLocalDevice,
+          sourceIsIOS,
+        };
+      }
+
       const { stopTrack } = await trackFace(
         videoRef.current,
         videoContainerRef.current,
         stream,
         animationFrameRef,
+        remoteStreamInfo,
       );
 
       // Update tracking state

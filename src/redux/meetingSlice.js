@@ -6,6 +6,7 @@ const initialState = {
   hostSocketId: null,
   isHost: null,
   meetingPhrase: null,
+  participantInfo: null,
 };
 
 const meetingSlice = createSlice({
@@ -24,14 +25,22 @@ const meetingSlice = createSlice({
     setMeetingPhrase: (state, action) => {
       state.meetingPhrase = action.payload;
     },
+    setParticipantInfo: (state, action) => {
+      state.participantInfo = action.payload;
+    },
   },
   extraReducers: (builder) => {
     builder.addCase(cleanupState, () => initialState);
   },
 });
 
-export const { joinMeeting, setHostSocketId, setIsHost, setMeetingPhrase } =
-  meetingSlice.actions;
+export const {
+  joinMeeting,
+  setHostSocketId,
+  setIsHost,
+  setMeetingPhrase,
+  setParticipantInfo,
+} = meetingSlice.actions;
 export const selectMeetingId = (state) => state.meeting.meetingId;
 
 export default meetingSlice.reducer;

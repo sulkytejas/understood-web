@@ -12,6 +12,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { useSocket } from '../context/SocketContext';
 import { cleanupState } from '../../redux/actions';
+import { setParticipantInfo } from '../../redux/meetingSlice';
 
 import {
   isBrowserSupportingL3T3,
@@ -62,6 +63,44 @@ export const WebRTCProvider = ({ children }) => {
   }, [device]);
 
   console.log(packetLoss, rtt, currentBitrate, 'packetLoss,rtt,currentBitrate');
+
+  useEffect(() => {
+    if (socket) {
+      // Send device info when socket connects
+      socket.emit('device-info', {
+        userAgent: navigator.userAgent,
+        platform: navigator.platform,
+        // Can add more device-specific info if needed
+      });
+    }
+  }, [socket]);
+
+  useEffect(() => {
+    const handleOtherParticipantsDeviceInfo = (info) => {
+      // Filter out own device info using socket.id
+      const otherParticipantInfo = Object.fromEntries(
+        Object.entries(info).filter(
+          ([participantId]) => participantId !== socket.id,
+        ),
+      );
+
+      console.log('Filtered device info:', otherParticipantInfo);
+      dispatch(setParticipantInfo(otherParticipantInfo));
+    };
+
+    if (socket) {
+      socket.on('participants-device-info', handleOtherParticipantsDeviceInfo);
+    }
+
+    return () => {
+      if (socket) {
+        socket.off(
+          'participants-device-info',
+          handleOtherParticipantsDeviceInfo,
+        );
+      }
+    };
+  }, [socket]);
 
   useEffect(() => {
     if (videoProducerRef.current) {
