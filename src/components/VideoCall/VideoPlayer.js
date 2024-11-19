@@ -93,7 +93,7 @@ const VideoPlayer = ({
   });
 
   const isCallStarted = connectionState === 'connected' && remoteTrack;
-
+  console.log('otherParticipantInfo', otherParticipantInfo);
   const stopFaceTracking = async () => {
     if (faceTrackingRef.current.stopTrack) {
       await faceTrackingRef.current.stopTrack();
@@ -146,8 +146,10 @@ const VideoPlayer = ({
 
       let remoteStreamInfo = null;
       if (otherParticipantInfo) {
-        const { pin: { isIOS, userAgent, isLocalDevice, sourceIsIOS } = {} } =
-          Object.values(otherParticipantInfo)[0] ?? {};
+        const values = Object.values(otherParticipantInfo)[0];
+        console.log('otherParticipantInfo values', values);
+
+        const { isIOS, userAgent, isLocalDevice, sourceIsIOS } = values;
 
         remoteStreamInfo = {
           isIOS,
@@ -156,6 +158,8 @@ const VideoPlayer = ({
           sourceIsIOS,
         };
       }
+
+      console.log('otherParticipantInfo', remoteStreamInfo);
 
       const { stopTrack } = await trackFace(
         videoRef.current,

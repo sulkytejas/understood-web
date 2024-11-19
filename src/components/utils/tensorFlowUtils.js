@@ -362,6 +362,7 @@ const detectDeviceType = (
 
   // If we have remote stream info, use it directly
   if (remoteStreamInfo) {
+    console.log('Remote Stream Info:', remoteStreamInfo);
     return {
       isLocalIOS,
       isIOSStream: remoteStreamInfo.isIOS,
@@ -410,6 +411,13 @@ const adjustVideoPosition = (
     streamWidth,
     streamHeight,
     remoteStreamInfo,
+  );
+
+  console.log(
+    'isIOSStream',
+    isIOSStream,
+    'isRemoteIOSStream',
+    isRemoteIOSStream,
   );
 
   // Calculate effective stream dimensions
