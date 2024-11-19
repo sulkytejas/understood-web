@@ -18,6 +18,7 @@ import {
   Select,
   Box,
   IconButton,
+  FormHelperText,
 } from '@mui/material';
 
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -100,6 +101,7 @@ const PhoneSignIn = forwardRef(
     const [userData, setUserData] = useState(null);
     const { t } = useTranslation();
     const [isOtpInvalid, setIsOtpInvalid] = useState(false);
+    const [phoneSignInError, setPhoneSignInError] = useState('');
 
     useEffect(() => {
       const loadRecaptchaScript = () => {
@@ -227,6 +229,9 @@ const PhoneSignIn = forwardRef(
         .catch((error) => {
           // Error; SMS not sent
           console.error('Error during signInWithPhoneNumber ', error);
+          setPhoneSignInError(
+            'Phone number not found. Please sign up for early access',
+          );
         });
     };
 
@@ -374,6 +379,13 @@ const PhoneSignIn = forwardRef(
                 ),
               }}
             />
+            {phoneSignInError && (
+              <FormHelperText>
+                {t(
+                  'Phone number not found. Sign up below to gain early access.',
+                )}
+              </FormHelperText>
+            )}
           </FormControl>
         )}
         {/* </Screen>

@@ -130,49 +130,77 @@ const ParticipantTab = ({
     setCopiedToClipboard(false);
   };
 
+  const isValidMeetingId = (str) => {
+    // Nanoid default alphabet: A-Za-z0-9_-
+    // Length: 10 characters (as specified in your generation code)
+    const nanoidPattern = /^[A-Za-z0-9_-]{10}$/;
+    return nanoidPattern.test(str);
+  };
+
+  const handleInputChange = (e) => {
+    const value = e.target.value;
+
+    // Clear previous errors
+    setError(null);
+
+    // Check if input matches nanoid format
+    if (isValidMeetingId(value)) {
+      setMeetingId(value);
+      setMeetingPhraseLocal(null);
+    } else {
+      setMeetingPhraseLocal(value);
+      setMeetingId(null);
+    }
+  };
+
   const onClickHandler = async () => {
+    if (!meetingId && !meetingPhraseLocal) {
+      setError('Please enter a valid meeting ID or phrase');
+      return;
+    }
+
+    let meetingIDToJoin = meetingId;
+
     if (meetingPhraseLocal && !meetingId) {
-      socket.emit(
-        'getMeetingForPhrase',
-        meetingPhraseLocal,
-        async ({ meetingID }) => {
-          console.log('meetingID from phrase', meetingID);
+      try {
+        await new Promise((resolve, reject) => {
+          socket.emit(
+            'getMeetingForPhrase',
+            meetingPhraseLocal,
+            async ({ meetingID, message }) => {
+              console.log('meetingID from phrase', meetingID);
 
-          if (!meetingID) {
-            setError('Meeting not found');
-            return;
-          }
-          try {
-            const { joined, hostSocketId, isHost } = await joinRoom(meetingID);
-            console.log('clicked', joined, hostSocketId, isHost);
-
-            if (joined) {
-              dispatch(joinMeeting(meetingID));
-              dispatch(setHostSocketId(hostSocketId));
-              dispatch(setIsHost(isHost));
-              dispatch(setMeetingPhrase(meetingPhraseLocal));
-
-              if (username !== persistedUserName) {
-                socket.emit('updateUsername', { username, phoneNumber, email });
+              if (!meetingID || !isValidMeetingId(meetingID)) {
+                setError(message || 'Invalid or not found meeting ID');
+                reject(new Error(message || 'Invalid or not found meeting ID'));
+                return;
               }
 
-              navigate(`/videocall/${meetingID}`);
-            }
-          } catch (e) {
-            console.log(e, 'err err');
-            setError(e?.error);
-          }
-        },
-      );
-    } else {
+              meetingIDToJoin = meetingID;
+              resolve();
+            },
+          );
+        });
+      } catch (e) {
+        return;
+      }
+    }
+
+    if (meetingIDToJoin && isValidMeetingId(meetingIDToJoin)) {
       try {
-        const { joined, hostSocketId, isHost } = await joinRoom(meetingId);
+        const { joined, hostSocketId, isHost } =
+          await joinRoom(meetingIDToJoin);
+
         console.log('clicked', joined, hostSocketId, isHost);
 
         if (joined) {
-          dispatch(joinMeeting(meetingId));
+          dispatch(joinMeeting(meetingIDToJoin));
           dispatch(setHostSocketId(hostSocketId));
           dispatch(setIsHost(isHost));
+
+          if (meetingPhraseLocal) {
+            dispatch(setMeetingPhrase(meetingPhraseLocal));
+          }
 
           if (username !== persistedUserName) {
             socket.emit('updateUsername', { username, phoneNumber, email });
@@ -188,23 +216,43 @@ const ParticipantTab = ({
   };
 
   const handleWhatsAppShare = () => {
-    const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent('Join meeting with following link:')} ${encodeURIComponent(`https://www.myunderstood.com/meeting?meetingId=${meetingId}`)}`;
+    const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent('Join meeting with following link:')} ${encodeURIComponent(`https://app.myunderstood.com/meeting?meetingId=${meetingId}`)}`;
     window.open(whatsappUrl, '_blank');
   };
 
+  // Helper function to get display value with correct priority
+  const getDisplayValue = () => {
+    if (meetingPhraseLocal) {
+      return meetingPhraseLocal;
+    }
+    if (meetingId) {
+      return meetingId;
+    }
+    return '';
+  };
+
   const handleCopyClick = () => {
-    navigator.clipboard.writeText(meetingPhraseLocal).then(() => {
-      console.log('Text copied to clipboard!');
-      setCopiedToClipboard(true);
-    });
+    const valueToCopy = getDisplayValue();
+    if (valueToCopy) {
+      navigator.clipboard.writeText(valueToCopy).then(() => {
+        console.log('Text copied to clipboard!');
+        setCopiedToClipboard(true);
+      });
+    }
   };
 
   const handleCopyShare = () => {
     navigator.clipboard
-      .writeText(`https://www.myunderstood.com/meeting?meetingId=${meetingId}`)
+      .writeText(`https://app.myunderstood.com/meeting?meetingId=${meetingId}`)
       .then(() => {
         console.log('Text copied to clipboard!');
       });
+  };
+
+  // Helper to determine if the input is valid and join should be enabled
+  const isValidInput = () => {
+    const value = getDisplayValue();
+    return value && (meetingPhraseLocal || isValidMeetingId(value));
   };
 
   const tooltipTitle = t('Language and settings');
@@ -254,8 +302,8 @@ const ParticipantTab = ({
         variant="outlined"
         fullWidth
         margin="normal"
-        value={meetingPhraseLocal || ''}
-        onChange={(e) => setMeetingPhraseLocal(e.target.value)}
+        value={getDisplayValue()}
+        onChange={handleInputChange}
         InputProps={{
           startAdornment: (
             <InputAdornment position="start">
@@ -267,7 +315,7 @@ const ParticipantTab = ({
           endAdornment: (
             <InputAdornment position="end">
               <IconButton
-                disabled={!meetingPhraseLocal}
+                disabled={!getDisplayValue()}
                 onClick={handleCopyClick}
               >
                 <CopyIcon color="action" />
@@ -332,7 +380,7 @@ const ParticipantTab = ({
         fullWidth
         className="create-invite-button"
         onClick={onClickHandler}
-        disabled={!meetingPhraseLocal}
+        disabled={!isValidInput()}
         sx={{ marginTop: '45px', color: '#fff', fontSize: '18px' }}
       >
         Join
