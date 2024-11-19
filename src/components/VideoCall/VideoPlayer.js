@@ -278,7 +278,7 @@ const VideoPlayer = ({
   const videoWrapperStyle = {
     position: 'relative',
     width: '100%',
-    height: '70%',
+    height: '100%',
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
@@ -311,7 +311,7 @@ const VideoPlayer = ({
             const currentStream = isCallStarted ? remoteTrack : localStream;
             handleFaceTracking(currentStream, remoteVideoRef);
           }}
-          style={{ width: '100%', height: '80%' }}
+          style={{ width: '100%', height: '100%' }}
         />
       </Box>
 
