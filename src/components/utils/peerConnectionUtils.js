@@ -130,6 +130,8 @@ export const getVideoConstraints = async (browserName) => {
     }
   }
 
+  const isIosDevice = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
   // Fallback to most permissive constraints while maintaining format
   console.log('Falling back to minimum constraints');
   return {
@@ -138,6 +140,7 @@ export const getVideoConstraints = async (browserName) => {
       height: { min: 270, ideal: 360, max: 360 },
       aspectRatio: { ideal: 16 / 9 },
       frameRate: { ideal: 30, max: 30 },
+      ...(isIosDevice && { resizeMode: 'none' }),
     },
     audio: true,
   };
