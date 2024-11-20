@@ -23,8 +23,9 @@ const useListTracker = () => {
       socket.on('listStart', (data) => {
         console.log(data, 'listStart');
         if (data?.meetingId === meetingId) {
+          let items = data?.listItems || [];
           setShowList(true);
-          setListItems([]);
+          setListItems(items);
           setTitle(data.title);
         }
       });
@@ -50,6 +51,16 @@ const useListTracker = () => {
         }
       });
 
+      socket.on('listDelete', (data) => {
+        console.log(data, 'listItems listDelete');
+        if (data?.meetingId === meetingId) {
+          if (data?.listItems) {
+            // Replace the entire list with the updated list after deletion
+            setListItems(data.listItems);
+          }
+        }
+      });
+
       socket.on('listComplete', (data) => {
         if (data?.meetingId === meetingId) {
           setShowList(false);
@@ -65,6 +76,7 @@ const useListTracker = () => {
         socket.off('listStart');
         socket.off('listUpdate');
         socket.off('listComplete');
+        socket.off('listDelete');
       }
     };
   }, [socket, meetingId]);
