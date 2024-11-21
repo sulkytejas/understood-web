@@ -12,9 +12,27 @@ const SignUpModal = ({ open, handleClose }) => {
   const { t } = useTranslation();
   const { socket } = useSocket();
 
-  const handleNotifyCTAClick = () => {
+  const handleNotifyCTAClick = async () => {
     // Emit the contact information to the server
+
     socket.emit('submitContact', { phone, email });
+
+    try {
+      await fetch(
+        'https://script.google.com/macros/s/AKfycbwrQxv5VsUR2VvthlFR-b-qWjXgs4k4KyzgKmwICjawcFJAonuaXGZhvnSOb33aunH4BQ/exec',
+        {
+          method: 'POST',
+          body: JSON.stringify({ email, phoneNumber: phone }),
+        },
+      );
+      setEmail('');
+      setPhone('');
+      setSubmitted(true);
+      setStatusMessage('Thanks for signing up! We’ll keep you posted.');
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      setStatusMessage('An error occurred. Please try again later.');
+    }
 
     // Listen for the response from the server
     socket.on('contactSubmissionStatus', (response) => {
