@@ -58,7 +58,19 @@ if (!isBrowserSupportingL3T3()) {
   // Fallback to another scalability mode or codec
 }
 
-export const getVideoConstraints = async (browserName) => {
+export const getVideoConstraints = async (
+  browserName,
+  connectionQuality = 'good',
+) => {
+  if (connectionQuality === 'poor') {
+    return {
+      video: {
+        width: { ideal: 640, max: 1280 },
+        height: { ideal: 480, max: 720 },
+        frameRate: { ideal: 20, max: 24 },
+      },
+    };
+  }
   // Define resolution presets with consistent format
   const resolutionLevels = [
     // 1080p
@@ -134,6 +146,7 @@ export const getVideoConstraints = async (browserName) => {
 
   // Fallback to most permissive constraints while maintaining format
   console.log('Falling back to minimum constraints');
+
   return {
     video: {
       width: { min: 480, ideal: 640, max: 640 },
@@ -146,7 +159,10 @@ export const getVideoConstraints = async (browserName) => {
   };
 };
 
-export const applyAdvancedCameraControls = async (videoTrack) => {
+export const applyAdvancedCameraControls = async (
+  videoTrack,
+  connectionQuality = 'good',
+) => {
   try {
     const supportedConstraints =
       navigator.mediaDevices.getSupportedConstraints();
@@ -198,6 +214,26 @@ export const applyAdvancedCameraControls = async (videoTrack) => {
       cameraConstraints.enableHdr = true;
     }
 
+    if (supportedConstraints.colorTemperature) {
+      cameraConstraints.colorTemperature = 6500;
+    }
+
+    if (supportedConstraints.noiseReduction) {
+      cameraConstraints.noiseReduction =
+        connectionQuality === 'poor' ? 'high' : 'medium';
+    }
+
+    if (supportedConstraints.autoWhiteBalanceMode) {
+      cameraConstraints.autoWhiteBalanceMode = 'continuous';
+    }
+
+    if (supportedConstraints.sharpness) {
+      cameraConstraints.sharpness =
+        connectionQuality === 'poor'
+          ? videoTrack.getCapabilities().sharpness?.min
+          : videoTrack.getCapabilities().sharpness?.max;
+    }
+
     // Only apply camera controls if any are supported
     if (Object.keys(cameraConstraints).length > 0) {
       console.log('Applying supported camera controls:', cameraConstraints);
@@ -219,7 +255,10 @@ export const applyAdvancedCameraControls = async (videoTrack) => {
   }
 };
 
-export const applyAdvancedAudioControls = async (audioTrack) => {
+export const applyAdvancedAudioControls = async (
+  audioTrack,
+  connectionQuality = 'good',
+) => {
   try {
     const supportedConstraints =
       navigator.mediaDevices.getSupportedConstraints();
@@ -255,6 +294,10 @@ export const applyAdvancedAudioControls = async (audioTrack) => {
     // Sample size
     if (supportedConstraints.sampleSize) {
       constraints.sampleSize = 16;
+    }
+
+    if (supportedConstraints.latency) {
+      constraints.latency = connectionQuality === 'poor' ? 0.1 : 0.05;
     }
 
     // Apply constraints if any are supported

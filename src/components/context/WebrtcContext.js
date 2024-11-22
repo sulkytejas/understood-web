@@ -43,11 +43,15 @@ export const WebRTCProvider = ({ children }) => {
   const [rtt, setRtt] = useState(null);
   const [intentionalDisconnect, setIntentionalDisconnect] = useState(false);
   const [connectionState, setConnectionState] = useState('connected');
+  const [connectionQuality, setConnectionQuality] = useState('good');
 
   const videoProducerRef = useRef(null);
   const audioProducerRef = useRef(null);
   const consumers = useRef({});
   const isReconnecting = useRef(false);
+  const statsInterval = useRef(null);
+  const reconnectAttempts = useRef(0);
+  const MAX_RECONNECT_ATTEMPTS = 5;
 
   const meetingId = useSelector((state) => state.meeting.meetingId);
   const isVideoPaused = useSelector((state) => state.videoPlayer.videoPause);
@@ -57,123 +61,6 @@ export const WebRTCProvider = ({ children }) => {
   const userSpokenLanguage = useSelector(
     (state) => state.translation.localSpokenLanguage,
   );
-
-  useEffect(() => {
-    console.log('Device state after update:', device);
-  }, [device]);
-
-  console.log(packetLoss, rtt, currentBitrate, 'packetLoss,rtt,currentBitrate');
-
-  useEffect(() => {
-    if (socket) {
-      // Send device info when socket connects
-      socket.emit('device-info', {
-        userAgent: navigator.userAgent,
-        platform: navigator.platform,
-        // Can add more device-specific info if needed
-      });
-    }
-  }, [socket]);
-
-  useEffect(() => {
-    const handleOtherParticipantsDeviceInfo = (info) => {
-      // Filter out own device info using socket.id
-      const otherParticipantInfo = Object.fromEntries(
-        Object.entries(info).filter(
-          ([participantId]) => participantId !== socket.id,
-        ),
-      );
-
-      console.log('Filtered device info:', otherParticipantInfo);
-      dispatch(setParticipantInfo(otherParticipantInfo));
-    };
-
-    if (socket) {
-      socket.on('participants-device-info', handleOtherParticipantsDeviceInfo);
-    }
-
-    return () => {
-      if (socket) {
-        socket.off(
-          'participants-device-info',
-          handleOtherParticipantsDeviceInfo,
-        );
-      }
-    };
-  }, [socket]);
-
-  useEffect(() => {
-    if (videoProducerRef.current) {
-      if (isVideoPaused) {
-        videoProducerRef.current.pause();
-      } else {
-        videoProducerRef.current.resume();
-      }
-    }
-  }, [isVideoPaused, videoProducerRef.current]);
-
-  useEffect(() => {
-    if (audioProducerRef.current) {
-      if (isAudioPaused) {
-        audioProducerRef.current.pause();
-      } else {
-        audioProducerRef.current.resume();
-      }
-    }
-  }, [isAudioPaused, audioProducerRef.current]);
-
-  useEffect(() => {
-    const interval = setInterval(async () => {
-      if (videoProducerRef.current) {
-        try {
-          const pc = sendTransport._handler._pc;
-          const transportStats = await pc.getStats();
-          let bitrate;
-          let packetsLost;
-          let roundTripTime;
-          let packetsSent;
-
-          transportStats.forEach((report) => {
-            if (report.type === 'outbound-rtp' && report.kind === 'video') {
-              console.log('Outbound RTP:', report);
-              packetsSent = report.packetsSent || 0;
-              bitrate = report.bytesSent || 0;
-              setCurrentBitrate(bitrate);
-            }
-            if (
-              report.type === 'candidate-pair' &&
-              report.state === 'succeeded' &&
-              report.nominated
-            ) {
-              console.log('Candidate Pair:', report);
-              roundTripTime = report.currentRoundTripTime * 1000; // Convert to milliseconds
-              setRtt(roundTripTime);
-            }
-            if (
-              report.type === 'remote-inbound-rtp' &&
-              report.kind === 'video'
-            ) {
-              console.log('Remote Inbound RTP:', report);
-
-              packetsLost = report.packetsLost;
-            }
-          });
-
-          const loss = (packetsLost / packetsSent) * 100;
-          setPacketLoss(loss);
-          adjustBitrateAndResolution(bitrate, loss, roundTripTime);
-          // stats.forEach((report) => {
-          //   if (report.type === 'outbound-rtp') {
-          //   }
-          // });
-        } catch (error) {
-          console.error('Error fecthing videoproducer stats', error);
-        }
-      }
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [videoProducerRef.current]);
 
   // const adjustBitrateAndResolution = (bitrate, packetLoss, rtt) => {
   //   const minBitrate = 500000;
@@ -422,6 +309,15 @@ export const WebRTCProvider = ({ children }) => {
     }
     try {
       isReconnecting.current = true;
+      reconnectAttempts.current++;
+
+      // exponential backoff with a maximum delay of 10 seconds
+      const backoffDelay = Math.min(
+        1000 * Math.pow(2, reconnectAttempts.current),
+        10000,
+      );
+      await new Promise((resolve) => setTimeout(resolve, backoffDelay));
+
       socket.emit('reconnecting', { meetingId, userId: socket.id });
       console.log('Recreating producer transport...');
 
@@ -445,14 +341,20 @@ export const WebRTCProvider = ({ children }) => {
         audioProducerRef.current = null;
       }
 
+      if (localStream) {
+        localStream.getTracks().forEach((track) => track.stop());
+        setLocalStream(null);
+      }
+      if (remoteStream) {
+        remoteStream.getTracks().forEach((track) => track.stop());
+        setRemoteStream(null);
+      }
+
       // Close existing consumers
       Object.values(consumers.current).forEach((consumer) => {
         consumer.close();
       });
       consumers.current = {};
-
-      // Clear remote stream
-      setRemoteStream(null);
 
       // await createProducerTransport();
       console.log('Reconnecting to meeting...');
@@ -465,9 +367,14 @@ export const WebRTCProvider = ({ children }) => {
       socket.on('reconnected', ({ userId }) => {
         console.log(`${userId} has reconnected to the meeting.`);
       });
+      isReconnecting.current = false;
     } catch (error) {
       console.error('Error during reconnection:', error);
-      setTimeout(attemptReconnect, 3000); // Retry after 3 seconds
+      isReconnecting.current = false;
+
+      if (reconnectAttempts.current >= MAX_RECONNECT_ATTEMPTS) {
+        handleDisconnectCall(meetingId);
+      }
     } finally {
       isReconnecting.current = false;
     }
@@ -493,12 +400,25 @@ export const WebRTCProvider = ({ children }) => {
 
   const createProducerTransport = async () => {
     return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error('Transport creation timeout'));
+      }, 15000);
+
       socket.emit(
         'create-producer-transport',
         { meetingId: meetingId },
         async (transportOptions) => {
+          clearTimeout(timeout);
+
+          if (transportOptions.error) {
+            reject(new Error(transportOptions.error));
+            return;
+          }
+
           try {
             const transport = device.createSendTransport(transportOptions);
+            monitorConnection(transport);
+
             console.log(
               'DTLS Connect event triggered for transport ID:',
               transport.id,
@@ -511,17 +431,37 @@ export const WebRTCProvider = ({ children }) => {
                 dtlsParameters,
               );
 
-              await socket.emit(
-                'connect-producer-transport',
-                {
-                  dtlsParameters,
-                  transportId: transport.id,
-                  meetingId: meetingId,
-                },
-                callback,
-              );
+              try {
+                await new Promise((resolve, reject) => {
+                  const connectTimeout = setTimeout(() => {
+                    reject(new Error('Connect timeout'));
+                  }, 10000);
+
+                  socket.emit(
+                    'connect-producer-transport',
+                    {
+                      dtlsParameters,
+                      transportId: transport.id,
+                      meetingId: meetingId,
+                    },
+                    (response) => {
+                      clearTimeout(connectTimeout);
+                      if (response.error) {
+                        reject(new Error(response.error));
+                      } else {
+                        resolve();
+                      }
+                    },
+                  );
+                });
+                callback();
+              } catch (error) {
+                console.error('Error creating transport:', error);
+                callback(error);
+              }
             });
 
+            // Handle produce event
             transport.on(
               'produce',
               async ({ kind, rtpParameters }, callback) => {
@@ -531,27 +471,47 @@ export const WebRTCProvider = ({ children }) => {
                   'kind:',
                   kind,
                 );
-                // Handle produce event
-                const { producerId } = await socket.emit(
-                  'produce',
-                  {
-                    kind,
-                    rtpParameters,
-                    transportId: transport.id,
-                    meetingId: meetingId,
-                    userSpokenLanguage: userSpokenLanguage,
-                  },
-                  ({ producerId, error }) => {
-                    if (error) {
-                      console.error('Error in producing media:', error);
-                      callback({ error }); // Call the callback with the error
-                      return;
-                    }
-                    console.log('Producer created with ID:', producerId);
+                try {
+                  await new Promise((resolve, reject) => {
+                    const connectTimeout = setTimeout(() => {
+                      reject(new Error('Connect timeout'));
+                    }, 10000);
 
-                    callback({ id: producerId });
-                  },
-                );
+                    socket.emit(
+                      'produce',
+                      {
+                        kind,
+                        rtpParameters,
+                        transportId: transport.id,
+                        meetingId: meetingId,
+                        userSpokenLanguage: userSpokenLanguage,
+                      },
+                      (response) => {
+                        clearTimeout(connectTimeout);
+                        if (response.error) {
+                          console.error(
+                            'Error in producing media:',
+                            response?.error,
+                          );
+                          reject(new Error(response.error));
+                          callback({ error: response.error }); // Call the callback with the error
+                          return;
+                        }
+
+                        console.log(
+                          'Producer created with ID:',
+                          response?.producerId,
+                        );
+
+                        resolve(response);
+                        callback({ id: response.producerId });
+                      },
+                    );
+                  });
+                } catch (error) {
+                  console.error('Transport connect error:', error);
+                  callback(error);
+                }
               },
             );
 
@@ -680,6 +640,402 @@ export const WebRTCProvider = ({ children }) => {
     );
   };
 
+  const handleDisconnectCall = (scoppedMeetingId) => {
+    if (!scoppedMeetingId) {
+      scoppedMeetingId = meetingId;
+    }
+    setIntentionalDisconnect(true);
+
+    if (socket) {
+      socket.disconnect();
+    }
+    if (localStream) {
+      localStream.getTracks().forEach((track) => track.stop());
+
+      setLocalStream(null);
+    }
+
+    if (remoteStream) {
+      remoteStream.getTracks().forEach((track) => track.stop());
+      setRemoteStream(null);
+    }
+
+    // Dispatch Redux cleanup action
+    dispatch(cleanupState());
+    setCallStarted(false);
+    navigate(`/meetingEnded?meetingId=${scoppedMeetingId}`);
+  };
+
+  const getProgressiveVideoConstraints = async (stage = 1) => {
+    // Get full capabilities with your existing function
+    const fullConstraints = await getVideoConstraints(browserName, 'good');
+
+    // If it's Safari, return the original constraints without modification
+    if (browserName === 'Safari') {
+      return fullConstraints; // Your existing Safari-specific constraints
+    }
+
+    // For other browsers, apply progressive constraints
+    if (stage === 1) {
+      return {
+        ...fullConstraints,
+        video: {
+          ...fullConstraints.video,
+          // Apply progressive constraints only for non-Safari browsers
+          ...(browserName !== 'Safari' && {
+            width: { min: 640, ideal: 1280, max: 1920 },
+            height: { min: 360, ideal: 720, max: 1080 },
+            frameRate: { min: 24, ideal: 30, max: 30 },
+          }),
+        },
+      };
+    }
+
+    return fullConstraints;
+  };
+
+  const startStreaming = async () => {
+    if (isStreaming) {
+      console.log('startStreaming already in progress, skipping...');
+      return;
+    }
+    setIsStreaming(true);
+
+    const newTransport = await createProducerTransport();
+    console.log('Transport ready, starting to produce media...');
+
+    let videoProducerOptions = {
+      encodings: [
+        { scalabilityMode: 'L3T3', maxBitrate: 250000 }, // Single encoding for SVC (VP9 doesn’t support simulcast)
+      ],
+      codecOptions: {
+        videoGoogleStartBitrate: 150,
+      },
+    };
+
+    if (!isBrowserSupportingL3T3()) {
+      videoProducerOptions.encodings = [
+        {
+          scalabilityMode: 'L1T3', // Single spatial layer, three temporal layers
+        },
+      ];
+    }
+
+    const constraints = await getProgressiveVideoConstraints();
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+
+    setLocalStream(stream);
+
+    const videoTrack = stream.getVideoTracks()[0];
+    const audioTrack = stream.getAudioTracks()[0];
+
+    // Apply all advanced controls including resolution in one go
+    await applyAdvancedCameraControls(videoTrack, connectionQuality);
+    await applyAdvancedAudioControls(audioTrack, connectionQuality);
+
+    console.log('Camera Label:', videoTrack.label);
+    console.log('Capabilities:', videoTrack.getCapabilities());
+    console.log('Current Settings:', videoTrack.getSettings());
+    console.log(
+      'Supported Constraints:',
+      navigator.mediaDevices.getSupportedConstraints(),
+    );
+
+    console.log(
+      ' local stream settings',
+      stream.getVideoTracks()[0].getSettings().width,
+      stream.getVideoTracks()[0].getSettings().height,
+    );
+
+    try {
+      const videoProducer = await newTransport.produce({
+        track: videoTrack,
+        ...videoProducerOptions,
+      }); // Use the transport directly
+      const audioProducer = await newTransport.produce({
+        track: audioTrack,
+      }); // Use the transport directly
+
+      videoProducerRef.current = videoProducer;
+      audioProducerRef.current = audioProducer;
+
+      console.log(
+        'Audio video producer setup complete:',
+        videoProducer,
+        audioProducer,
+      );
+
+      const checkConnectionAndUpgrade = async () => {
+        if (connectionQuality === 'good' && videoProducer._rtpSender) {
+          try {
+            const sender = videoProducer._rtpSender;
+            const params = sender.getParameters();
+
+            if (browserName === 'Safari') {
+              // Simple bitrate increase for Safari
+              params.encodings[0].maxBitrate = 1000000;
+            } else {
+              // Full upgrades for other browsers
+              params.encodings[0].maxBitrate = 2500000;
+              const fullConstraints = await getProgressiveVideoConstraints(2);
+              await videoTrack.applyConstraints(fullConstraints.video);
+            }
+
+            await sender.setParameters(params);
+            console.log('Successfully upgraded quality for', browserName);
+          } catch (error) {
+            console.warn('Quality upgrade failed:', error);
+          }
+        }
+      };
+
+      const stabilityPeriod = browserName === 'Safari' ? 7000 : 5000;
+      setTimeout(checkConnectionAndUpgrade, stabilityPeriod);
+    } catch (error) {
+      console.error('Failed to produce video:', error);
+    } finally {
+      setIsStreaming(false);
+    }
+  };
+
+  const monitorConnection = (transport) => {
+    if (!transport) return;
+
+    const pc = transport._handler._pc;
+
+    pc.oniceconnectionstatechange = () => {
+      const state = pc.iceConnectionState;
+      console.log('ICE Connection State:', state);
+
+      switch (state) {
+        case 'checking':
+          setTimeout(() => {
+            if (pc.iceConnectionState === 'checking') {
+              console.log('ICE checking timeout - attempting reconnect');
+              attemptReconnect();
+            }
+          }, 10000);
+          break;
+
+        case 'disconnected':
+          setTimeout(() => {
+            if (pc.iceConnectionState === 'disconnected') {
+              attemptReconnect();
+            }
+          }, 3000);
+          break;
+
+        case 'failed':
+          attemptReconnect();
+          break;
+
+        case 'connected':
+          reconnectAttempts.current = 0;
+          startStatsMonitoring(pc);
+          break;
+      }
+    };
+  };
+
+  // Modify startStatsMonitoring to use your existing adjustBitrateAndResolution
+  const startStatsMonitoring = (pc) => {
+    if (statsInterval.current) {
+      clearInterval(statsInterval.current);
+    }
+
+    statsInterval.current = setInterval(async () => {
+      const stats = await pc.getStats();
+      let totalPacketsLost = 0;
+      let totalPackets = 0;
+      let currentRtt = 0;
+      let currentBitrate = 0;
+
+      stats.forEach((report) => {
+        if (report.type === 'inbound-rtp') {
+          totalPacketsLost += report.packetsLost || 0;
+          totalPackets += report.packetsReceived || 0;
+        }
+        if (report.type === 'candidate-pair' && report.state === 'succeeded') {
+          currentRtt = report.currentRoundTripTime * 1000;
+        }
+        if (report.type === 'outbound-rtp' && report.kind === 'video') {
+          currentBitrate = report.bytesSent || 0;
+        }
+      });
+
+      const lossRate = totalPackets > 0 ? totalPacketsLost / totalPackets : 0;
+
+      // Use your existing function with its expected parameters
+      adjustBitrateAndResolution(currentBitrate, lossRate, currentRtt);
+
+      // Update connection quality state
+      if (lossRate > 0.1 || currentRtt > 300) {
+        setConnectionQuality('poor');
+      } else if (lossRate > 0.05 || currentRtt > 200) {
+        setConnectionQuality('fair');
+      } else {
+        setConnectionQuality('good');
+      }
+    }, 2000);
+  };
+
+  const cleanup = () => {
+    if (statsInterval.current) {
+      clearInterval(statsInterval.current);
+      statsInterval.current = null;
+    }
+
+    if (localStream) {
+      localStream.getTracks().forEach((track) => {
+        track.stop();
+      });
+      setLocalStream(null);
+    }
+
+    if (remoteStream) {
+      remoteStream.getTracks().forEach((track) => {
+        track.stop();
+      });
+      setRemoteStream(null);
+    }
+
+    if (sendTransport) {
+      sendTransport.close();
+      setSendTransport(null);
+    }
+
+    if (recvTransport) {
+      recvTransport.close();
+      setRecvTransport(null);
+    }
+
+    setIsStreaming(false);
+    setConnectionState('disconnected');
+    reconnectAttempts.current = 0;
+    isReconnecting.current = false;
+  };
+
+  /**
+   * Use Effects for handling socket events
+   */
+
+  useEffect(() => {
+    console.log('Device state after update:', device);
+  }, [device]);
+
+  console.log(packetLoss, rtt, currentBitrate, 'packetLoss,rtt,currentBitrate');
+
+  useEffect(() => {
+    if (socket) {
+      // Send device info when socket connects
+      socket.emit('device-info', {
+        userAgent: navigator.userAgent,
+        platform: navigator.platform,
+        // Can add more device-specific info if needed
+      });
+    }
+  }, [socket]);
+
+  useEffect(() => {
+    const handleOtherParticipantsDeviceInfo = (info) => {
+      // Filter out own device info using socket.id
+      const otherParticipantInfo = Object.fromEntries(
+        Object.entries(info).filter(
+          ([participantId]) => participantId !== socket.id,
+        ),
+      );
+
+      console.log('Filtered device info:', otherParticipantInfo);
+      dispatch(setParticipantInfo(otherParticipantInfo));
+    };
+
+    if (socket) {
+      socket.on('participants-device-info', handleOtherParticipantsDeviceInfo);
+    }
+
+    return () => {
+      if (socket) {
+        socket.off(
+          'participants-device-info',
+          handleOtherParticipantsDeviceInfo,
+        );
+      }
+    };
+  }, [socket]);
+
+  useEffect(() => {
+    if (videoProducerRef.current) {
+      if (isVideoPaused) {
+        videoProducerRef.current.pause();
+      } else {
+        videoProducerRef.current.resume();
+      }
+    }
+  }, [isVideoPaused, videoProducerRef.current]);
+
+  useEffect(() => {
+    if (audioProducerRef.current) {
+      if (isAudioPaused) {
+        audioProducerRef.current.pause();
+      } else {
+        audioProducerRef.current.resume();
+      }
+    }
+  }, [isAudioPaused, audioProducerRef.current]);
+
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      if (videoProducerRef.current) {
+        try {
+          const pc = sendTransport._handler._pc;
+          const transportStats = await pc.getStats();
+          let bitrate;
+          let packetsLost;
+          let roundTripTime;
+          let packetsSent;
+
+          transportStats.forEach((report) => {
+            if (report.type === 'outbound-rtp' && report.kind === 'video') {
+              console.log('Outbound RTP:', report);
+              packetsSent = report.packetsSent || 0;
+              bitrate = report.bytesSent || 0;
+              setCurrentBitrate(bitrate);
+            }
+            if (
+              report.type === 'candidate-pair' &&
+              report.state === 'succeeded' &&
+              report.nominated
+            ) {
+              console.log('Candidate Pair:', report);
+              roundTripTime = report.currentRoundTripTime * 1000; // Convert to milliseconds
+              setRtt(roundTripTime);
+            }
+            if (
+              report.type === 'remote-inbound-rtp' &&
+              report.kind === 'video'
+            ) {
+              console.log('Remote Inbound RTP:', report);
+
+              packetsLost = report.packetsLost;
+            }
+          });
+
+          const loss = (packetsLost / packetsSent) * 100;
+          setPacketLoss(loss);
+          adjustBitrateAndResolution(bitrate, loss, roundTripTime);
+          // stats.forEach((report) => {
+          //   if (report.type === 'outbound-rtp') {
+          //   }
+          // });
+        } catch (error) {
+          console.error('Error fecthing videoproducer stats', error);
+        }
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [videoProducerRef.current]);
+
   useEffect(() => {
     // Set up the listener for new producers
     const handleNewProducer = async ({ producerId, kind }) => {
@@ -774,169 +1130,28 @@ export const WebRTCProvider = ({ children }) => {
     };
   }, [socket, meetingId]);
 
-  const handleDisconnectCall = (scoppedMeetingId) => {
-    if (!scoppedMeetingId) {
-      scoppedMeetingId = meetingId;
-    }
-    setIntentionalDisconnect(true);
+  useEffect(() => {
+    if (!socket || !device) return;
 
-    if (socket) {
-      socket.disconnect();
-    }
-    if (localStream) {
-      localStream.getTracks().forEach((track) => track.stop());
-
-      setLocalStream(null);
-    }
-
-    if (remoteStream) {
-      remoteStream.getTracks().forEach((track) => track.stop());
-      setRemoteStream(null);
-    }
-
-    // Dispatch Redux cleanup action
-    dispatch(cleanupState());
-    setCallStarted(false);
-    navigate(`/meetingEnded?meetingId=${scoppedMeetingId}`);
-  };
-
-  const startStreaming = async () => {
-    if (isStreaming) {
-      console.log('startStreaming already in progress, skipping...');
-      return;
-    }
-    setIsStreaming(true);
-
-    const newTransport = await createProducerTransport();
-    console.log('Transport ready, starting to produce media...');
-
-    let videoProducerOptions = {
-      encodings: [
-        { scalabilityMode: 'L3T3', maxBitrate: 250000 }, // Single encoding for SVC (VP9 doesn’t support simulcast)
-      ],
-      codecOptions: {
-        videoGoogleStartBitrate: 150,
-      },
+    const handleError = (error) => {
+      console.error('Socket error:', error);
+      if (!intentionalDisconnect) {
+        attemptReconnect();
+      }
     };
 
-    if (!isBrowserSupportingL3T3()) {
-      videoProducerOptions.encodings = [
-        {
-          scalabilityMode: 'L1T3', // Single spatial layer, three temporal layers
-          maxBitrate: 250000, // Adjust bitrate as needed
-        },
-      ];
-    }
+    socket.on('error', handleError);
 
-    // const vp9Codec = device.rtpCapabilities.codecs.find(
-    //   (codec) => codec.mimeType.toLowerCase() === 'video/vp9',
-    // );
+    return () => {
+      socket.off('error', handleError);
+    };
+  }, [socket, device]);
 
-    // const vp8Codec = device.rtpCapabilities.codecs.find(
-    //   (codec) => codec.mimeType.toLowerCase() === 'video/vp8',
-    // );
-
-    // if (vp9Codec) {
-    //   videoProducerOptions = {
-    //     encodings: [
-    //       {
-    //         scalabilityMode: 'L3T3',
-    //         maxBitrate: 1500000,
-    //       },
-    //     ],
-    //     codecOptions: {
-    //       videoGoogleStartBitrate: 1000,
-    //     },
-    //     codec: vp9Codec,
-    //   };
-    // } else if (vp8Codec) {
-    //   videoProducerOptions = {
-    //     encodings: [
-    //       {
-    //         scalabilityMode: 'L1T3',
-    //         maxBitrate: 800000,
-    //         scaleResolutionDownBy: 1,
-    //       },
-    //       { maxBitrate: 500000, scaleResolutionDownBy: 2 },
-    //     ],
-    //     codecOptions: {
-    //       videoGoogleStartBitrate: 500,
-    //     },
-    //     codec: vp8Codec,
-    //   };
-    // } else {
-    //   console.error('No VP9 or VP8 codec found');
-    //   return;
-    // }
-
-    // const constraints = {
-    //   video: {
-    //     width: { min: 1280, ideal: 1920, max: 1920 },
-    //     height: { min: 720, ideal: 1080, max: 1080 },
-    //     aspectRatio: { ideal: 16 / 9 },
-    //     frameRate: { ideal: 30, max: 30 },
-    //   },
-    //   audio: true,
-    // };
-
-    // if (browserName == 'Safari') {
-    //   constraints.video = true;
-    // }
-
-    const constraints = await getVideoConstraints(browserName);
-    const stream = await navigator.mediaDevices.getUserMedia(constraints);
-
-    setLocalStream(stream);
-
-    const videoTrack = stream.getVideoTracks()[0];
-    const audioTrack = stream.getAudioTracks()[0];
-
-    // await videoTrack.applyConstraints({
-    //   width: { exact: 1920 },
-    //   height: { exact: 1080 },
-    // });
-
-    // Apply all advanced controls including resolution in one go
-    await applyAdvancedCameraControls(videoTrack);
-    await applyAdvancedAudioControls(audioTrack);
-
-    console.log('Camera Label:', videoTrack.label);
-    console.log('Capabilities:', videoTrack.getCapabilities());
-    console.log('Current Settings:', videoTrack.getSettings());
-    console.log(
-      'Supported Constraints:',
-      navigator.mediaDevices.getSupportedConstraints(),
-    );
-
-    console.log(
-      ' local stream settings',
-      stream.getVideoTracks()[0].getSettings().width,
-      stream.getVideoTracks()[0].getSettings().height,
-    );
-
-    try {
-      const videoProducer = await newTransport.produce({
-        track: videoTrack,
-        ...videoProducerOptions,
-      }); // Use the transport directly
-      const audioProducer = await newTransport.produce({
-        track: audioTrack,
-      }); // Use the transport directly
-
-      videoProducerRef.current = videoProducer;
-      audioProducerRef.current = audioProducer;
-
-      console.log(
-        'Audio video producer setup complete:',
-        videoProducer,
-        audioProducer,
-      );
-    } catch (error) {
-      console.error('Failed to produce video:', error);
-    } finally {
-      setIsStreaming(false);
-    }
-  };
+  useEffect(() => {
+    return () => {
+      cleanup();
+    };
+  }, []);
 
   return (
     <WebRTCContext.Provider
@@ -948,6 +1163,7 @@ export const WebRTCProvider = ({ children }) => {
         startStreaming,
         connectionState,
         callStarted,
+        connectionQuality,
       }}
     >
       {children}

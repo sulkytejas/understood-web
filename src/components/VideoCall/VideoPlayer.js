@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import LoadingSpinner from '../onBoarding/LoadingSpinner';
 import useListTracker from '../hooks/useListTracker';
 import ListOverlay from './ListOverlay';
+import useStudioLight from '../hooks/useStudioLight';
 
 import { trackFace } from '../utils/tensorFlowUtils';
 import {
@@ -93,6 +94,12 @@ const VideoPlayer = ({
   });
 
   const isCallStarted = connectionState === 'connected' && remoteTrack;
+  const { enabled: studioLightEnabled, applyStudioLight } = useStudioLight(
+    remoteVideoRef,
+    !isCallStarted,
+  );
+
+  console.log('enabled', studioLightEnabled);
   console.log('otherParticipantInfo', otherParticipantInfo);
   const stopFaceTracking = async () => {
     if (faceTrackingRef.current.stopTrack) {
@@ -175,6 +182,10 @@ const VideoPlayer = ({
         currentStreamId: streamId,
         stopTrack,
       };
+
+      if (studioLightEnabled && typeof applyStudioLight === 'function') {
+        applyStudioLight();
+      }
     } catch (error) {
       console.error('Error in face tracking:', error);
 
