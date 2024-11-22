@@ -8,10 +8,7 @@ import ListOverlay from './ListOverlay';
 import useStudioLight from '../hooks/useStudioLight';
 
 import { trackFace } from '../utils/tensorFlowUtils';
-import {
-  enhanceVideoContainer,
-  applyVideoEnhancements,
-} from '../utils/videoPlayerUtils';
+import { enhanceVideoContainer } from '../utils/videoPlayerUtils';
 
 const circularRemoteVideo = {
   display: 'flex',
@@ -94,7 +91,7 @@ const VideoPlayer = ({
   });
 
   const isCallStarted = connectionState === 'connected' && remoteTrack;
-  const { enabled: studioLightEnabled, applyStudioLight } = useStudioLight(
+  const { enabled: studioLightEnabled } = useStudioLight(
     remoteVideoRef,
     !isCallStarted,
   );
@@ -182,10 +179,6 @@ const VideoPlayer = ({
         currentStreamId: streamId,
         stopTrack,
       };
-
-      if (studioLightEnabled && typeof applyStudioLight === 'function') {
-        applyStudioLight();
-      }
     } catch (error) {
       console.error('Error in face tracking:', error);
 
@@ -244,39 +237,16 @@ const VideoPlayer = ({
 
     if (remoteVideoRef.current) {
       remoteVideoRef.current.srcObject = currentStream;
-      // Only apply enhancements if showing local stream
-      applyVideoEnhancements(remoteVideoRef.current, isShowingLocalStream);
-      // optimizeVideoStream(currentStream, isShowingLocalStream);
     }
 
     if (pipVideoRef.current) {
       pipVideoRef.current.srcObject = isCallStarted ? localStream : null;
-      // For PiP, apply enhancements only when call is active (showing local stream in PiP)
-      applyVideoEnhancements(pipVideoRef.current, isCallStarted);
     }
 
     // Only enhance container when showing local stream
     enhanceVideoContainer(videoContainerRef, isShowingLocalStream);
 
-    // Cleanup function
-    return () => {
-      if (remoteVideoRef.current) {
-        remoteVideoRef.current.style.filter = 'none';
-        remoteVideoRef.current.style.boxShadow = 'none';
-      }
-      if (pipVideoRef.current) {
-        pipVideoRef.current.style.filter = 'none';
-        pipVideoRef.current.style.boxShadow = 'none';
-      }
-      if (videoContainerRef.current) {
-        videoContainerRef.current.style.background = '#000';
-        const ambientLight =
-          videoContainerRef.current.querySelector('.ambient-light');
-        if (ambientLight) {
-          ambientLight.remove();
-        }
-      }
-    };
+    // Studio light is handled by the hook
   }, [isCallStarted, localStream, remoteTrack]);
 
   // Effect to handle remote track changes
@@ -295,7 +265,7 @@ const VideoPlayer = ({
     alignItems: 'center',
     overflow: 'hidden',
     // Add subtle shadow only when showing local stream
-    boxShadow: !isCallStarted ? 'inset 0 0 50px rgba(0,0,0,0.5)' : 'none',
+    // boxShadow: !isCallStarted ? 'inset 0 0 50px rgba(0,0,0,0.5)' : 'none',
   };
 
   const containerStyle = {
