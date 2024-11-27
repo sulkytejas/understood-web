@@ -163,7 +163,7 @@ const ParticipantTab = ({
 
     if (meetingPhraseLocal && !meetingId) {
       try {
-        await new Promise((resolve, reject) => {
+        const result = await new Promise((resolve, reject) => {
           socket.emit(
             'getMeetingForPhrase',
             meetingPhraseLocal,
@@ -176,11 +176,16 @@ const ParticipantTab = ({
                 return;
               }
 
-              meetingIDToJoin = meetingID;
-              resolve();
+              if (!meetingID || !isValidMeetingId(meetingID)) {
+                reject(new Error(message || 'Invalid or not found meeting ID'));
+                return;
+              }
+
+              resolve(meetingID);
             },
           );
         });
+        meetingIDToJoin = result;
       } catch (e) {
         return;
       }
@@ -206,7 +211,7 @@ const ParticipantTab = ({
             socket.emit('updateUsername', { username, phoneNumber, email });
           }
 
-          navigate(`/videocall/${meetingId}`);
+          navigate(`/videocall/${meetingIDToJoin}`);
         }
       } catch (e) {
         console.log(e, 'err err');

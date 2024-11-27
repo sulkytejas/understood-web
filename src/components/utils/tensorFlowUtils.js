@@ -173,8 +173,12 @@ async function generateProcessedStream(videoElement, stream, canvas) {
   return processedStream;
 }
 
-const detectFace = async (video, model) => {
+const detectFace = async (video, model, applyStudioLight = null) => {
   const predictions = await model.estimateFaces(video, false);
+
+  if (applyStudioLight && predictions.length > 0) {
+    await applyStudioLight(predictions);
+  }
 
   if (predictions.length > 0) {
     // Get the bounding box of the face
@@ -539,6 +543,7 @@ const trackFace = async (
   stream,
   animationFrameRef,
   remoteStreamInfo,
+  applyStudioLight = null,
 ) => {
   if (!model) {
     await initializeTensorFlow();
@@ -562,7 +567,7 @@ const trackFace = async (
 
     frameCounter++;
     if (frameCounter % processEveryNthFrame === 0) {
-      const face = await detectFace(videoElement, model);
+      const face = await detectFace(videoElement, model, applyStudioLight);
 
       const translationMenu = document.getElementById('translationTextBox');
       const elementRect = translationMenu?.getBoundingClientRect();

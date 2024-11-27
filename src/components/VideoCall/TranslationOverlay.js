@@ -1,14 +1,14 @@
 import React, { useEffect } from 'react';
-import Translation from '../Translation/Translation';
+// import Translation from '../Translation/Translation';
 import useTranslatedTextDisplay from '../hooks/useTranslatedTextDisplay';
 // import { addOrUpdateTranslatedText } from '../utils/peerConnectionUtils';
 
 const TranslationOverlay = ({
-  detectedLanguage,
-  localTargetLanguage,
+  // detectedLanguage,
+  // localTargetLanguage,
   setTranslatedTexts,
   socket,
-  callStarted,
+  // callStarted,
 }) => {
   const addOrUpdateTranslatedText =
     useTranslatedTextDisplay(setTranslatedTexts);
@@ -27,14 +27,7 @@ const TranslationOverlay = ({
     };
   }, [socket, setTranslatedTexts]);
 
-  return (
-    <Translation
-      socket={socket} // Pass the socket object here
-      detectedLanguage={detectedLanguage}
-      targetLanguage={localTargetLanguage}
-      callStarted={callStarted}
-    />
-  );
+  return <></>;
 };
 
 export default TranslationOverlay;

@@ -23,7 +23,7 @@ import { setCallMenuOpen, setCallSideMenu } from '../../redux/uiSlice';
 import SideMenu from './SideMenu';
 import { ReactComponent as CurvedMenuBackground } from './assets/curved_menu.svg';
 import { ReactComponent as CaptionIcon } from './assets/caption_icon.svg';
-import { ReactComponent as MessageIcon } from './assets/message.svg';
+import SummarizeOutlinedIcon from '@mui/icons-material/SummarizeOutlined';
 import { ReactComponent as TranslationIcon } from './assets/translation_icon.svg';
 import { useSocket } from '../context/SocketContext';
 
@@ -67,12 +67,17 @@ const VideoControls = ({
   const [timeInSeconds, setTimeInSeconds] = useState(15 * 60);
   const [isMeetingEndingSoon, setIsMeetingEndingSoon] = useState(false);
   const [openSnackbar, setOpenSnackbar] = useState(false);
+  const [openSnackbarMeetingNotes, setOpenSnackbarMeetingNotes] =
+    useState(false);
+  const [isMeetingNotes, setIsMeetingNotes] = useState(true);
 
   const isMainMenuOpen = useSelector((state) => state.ui.callMenuOpen);
   const isSideMenuOpen = useSelector((state) => state.ui.callSideMenu);
   const userTranslationLanguage = useSelector(
     (state) => state.translation.localTranslationLanguage,
   );
+  const meetingId = useSelector((state) => state.meeting.meetingId);
+
   const { t } = useTranslation();
   const { socket } = useSocket();
 
@@ -159,6 +164,10 @@ const VideoControls = ({
 
   const handleCloseSnackbar = () => {
     setOpenSnackbar(false);
+  };
+
+  const handleCloseSnackbarMeetingNotes = () => {
+    setOpenSnackbarMeetingNotes(false);
   };
 
   const checkOverFlow = () => {
@@ -301,9 +310,11 @@ const VideoControls = ({
         >
           {!userTranslationLanguage &&
             t('Please select the language for translation')}
-          {userTranslationLanguage && translatedTexts?.text?.length > 0 && (
-            <TranslatedTextView translatedTexts={translatedTexts} />
-          )}
+          {userTranslationLanguage &&
+            translatedTexts?.text &&
+            translatedTexts.text.length > 0 && (
+              <TranslatedTextView translatedTexts={translatedTexts} />
+            )}
 
           {userTranslationLanguage &&
             !translatedTexts?.text.length &&
@@ -391,10 +402,27 @@ const VideoControls = ({
           />
 
           <CustomBottomNavigationAction
-            icon={<MessageIcon sx={{ fontSize: 36, marginLeft: 3 }} />}
+            icon={
+              <SummarizeOutlinedIcon
+                sx={{
+                  fontSize: 36,
+                  marginLeft: 3,
+                  color: isMeetingNotes ? 'orange' : 'white',
+                }}
+              />
+            }
             sx={{ color: 'white' }}
             onClick={() => {
-              setOpenSnackbar(true);
+              setIsMeetingNotes((isMeetingNotes) => {
+                socket.emit('setTranscriptPreference', {
+                  meetingId,
+                  preference: !isMeetingNotes,
+                });
+
+                return !isMeetingNotes;
+              });
+
+              setOpenSnackbarMeetingNotes(true);
             }}
           />
 
@@ -409,6 +437,15 @@ const VideoControls = ({
             open={openSnackbar}
             onClose={handleCloseSnackbar}
             message="Feature available early 2025"
+            key={'bottom' + 'center'}
+            autoHideDuration={500}
+          />
+
+          <Snackbar
+            anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+            open={openSnackbarMeetingNotes}
+            onClose={handleCloseSnackbarMeetingNotes}
+            message={`Meeting notes ${isMeetingNotes ? 'enabled' : 'disabled'}`}
             key={'bottom' + 'center'}
             autoHideDuration={500}
           />

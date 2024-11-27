@@ -721,7 +721,10 @@ export const WebRTCProvider = ({ children }) => {
       ];
     }
 
-    const constraints = await getProgressiveVideoConstraints();
+    const constraints = await getVideoConstraints(
+      browserName,
+      connectionQuality,
+    );
     const stream = await navigator.mediaDevices.getUserMedia(constraints);
 
     setLocalStream(stream);

@@ -91,13 +91,10 @@ const VideoPlayer = ({
   });
 
   const isCallStarted = connectionState === 'connected' && remoteTrack;
-  const { enabled: studioLightEnabled } = useStudioLight(
-    remoteVideoRef,
-    !isCallStarted,
-  );
+  const { applyStudioLight } = useStudioLight(remoteVideoRef, !isCallStarted);
 
-  console.log('enabled', studioLightEnabled);
   console.log('otherParticipantInfo', otherParticipantInfo);
+
   const stopFaceTracking = async () => {
     if (faceTrackingRef.current.stopTrack) {
       await faceTrackingRef.current.stopTrack();
@@ -163,14 +160,13 @@ const VideoPlayer = ({
         };
       }
 
-      console.log('otherParticipantInfo', remoteStreamInfo);
-
       const { stopTrack } = await trackFace(
         videoRef.current,
         videoContainerRef.current,
         stream,
         animationFrameRef,
         remoteStreamInfo,
+        applyStudioLight,
       );
 
       // Update tracking state
@@ -309,11 +305,6 @@ const VideoPlayer = ({
             }
           >
             <video
-              // ref={(video) => {
-              //   if (video) {
-              //     video.srcObject = localStream;
-              //   }
-              // }}
               ref={pipVideoRef}
               autoPlay
               playsInline
