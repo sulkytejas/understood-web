@@ -164,7 +164,7 @@ const ParticipantTab = ({
 
     if (meetingPhraseLocal && !meetingId) {
       try {
-        const result = await new Promise((resolve, reject) => {
+        meetingIDToJoin = await new Promise((resolve, reject) => {
           socket.emit(
             'getMeetingForPhrase',
             meetingPhraseLocal,
@@ -181,10 +181,14 @@ const ParticipantTab = ({
             },
           );
         });
-        meetingIDToJoin = result;
       } catch (e) {
         return;
       }
+    }
+
+    if (!meetingIDToJoin || !isValidMeetingId(meetingIDToJoin)) {
+      setError('Invalid meeting ID');
+      return;
     }
 
     if (meetingIDToJoin && isValidMeetingId(meetingIDToJoin)) {
@@ -195,20 +199,27 @@ const ParticipantTab = ({
         console.log('clicked', joined, hostSocketId, isHost);
 
         if (joined) {
-          await Promise.all([
-            dispatch(joinMeeting(meetingIDToJoin)),
-            dispatch(setHostSocketId(hostSocketId)),
-            dispatch(setIsHost(isHost)),
-            meetingPhraseLocal
-              ? dispatch(setMeetingPhrase(meetingPhraseLocal))
-              : Promise.resolve(),
-          ]);
-
           if (username !== persistedUserName) {
-            socket.emit('updateUsername', { username, phoneNumber, email });
+            await new Promise((resolve) => {
+              socket.emit('updateUsername', { username, phoneNumber, email });
+              resolve();
+            });
           }
 
-          navigate(`/videocall/${meetingIDToJoin}`);
+          // Then update redux state
+          dispatch(joinMeeting(meetingIDToJoin));
+          dispatch(setHostSocketId(hostSocketId));
+          dispatch(setIsHost(isHost));
+          if (meetingPhraseLocal) {
+            dispatch(setMeetingPhrase(meetingPhraseLocal));
+          }
+
+          // Add a small delay before navigation to ensure state updates complete
+          setTimeout(() => {
+            navigate(`/videocall/${meetingIDToJoin}`);
+          }, 100);
+
+          // navigate(`/videocall/${meetingIDToJoin}`);
         }
       } catch (e) {
         console.log(e, 'err err');

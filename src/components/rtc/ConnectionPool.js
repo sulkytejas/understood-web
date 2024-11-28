@@ -16,6 +16,10 @@ class ConnectionPool extends EventEmitter {
     this.CLEANUP_INTERVAL = 300000; // 5 minutes
     this.TRANSPORT_TIMEOUT = 30000; // 30 seconds
     this.MAX_RETRIES = 3;
+
+    this.TRANSPORT_IDLE_TIMEOUT = 60000; // 1 minute
+    this.TRANSPORT_WARNING_TIME = 45000; // 45 seconds
+    this.transportWarnings = new Map();
   }
 
   /**
@@ -96,35 +100,74 @@ class ConnectionPool extends EventEmitter {
    * @param {string} state - New connection state
    */
   handleConnectionStateChange(type, transportId, state) {
-    const transportMap =
-      type === 'producer' ? this.producerTransports : this.consumerTransports;
-    const transportData = transportMap.get(transportId);
-
+    const transportData = this.getTransportData(type, transportId);
     if (!transportData) return;
 
-    const stats = transportData.stats;
-    transportData.lastUsed = Date.now();
+    const now = Date.now();
+    transportData.lastStateChange = now;
 
     switch (state) {
       case 'connected':
-        stats.failures = 0;
+        this.clearTransportWarning(transportId);
         break;
-      case 'failed':
-        stats.failures++;
-        stats.lastFailure = Date.now();
-        if (stats.failures >= this.MAX_RETRIES) {
-          this.handleTransportFailure(type, transportId);
+
+      case 'disconnected':
+        // Don't immediately fail - set up warning timer
+        if (!this.transportWarnings.has(transportId)) {
+          const warningTimer = setTimeout(() => {
+            this.emit('transportWarning', {
+              type,
+              transportId,
+              message: 'Transport may be stale',
+            });
+          }, this.TRANSPORT_WARNING_TIME);
+
+          this.transportWarnings.set(transportId, warningTimer);
         }
         break;
-      case 'disconnected':
-        if (Date.now() - transportData.lastUsed > this.TRANSPORT_TIMEOUT) {
+
+      case 'failed':
+        if (transportData.stats.failures >= this.MAX_RETRIES) {
           this.handleTransportFailure(type, transportId);
+        } else {
+          this.attemptTransportRecovery(type, transportId);
         }
         break;
     }
 
     // Update transport stats
-    transportMap.set(transportId, transportData);
+    this.updateTransportStats(type, transportId, state);
+  }
+
+  attemptTransportRecovery(type, transportId) {
+    const transportData = this.getTransportData(type, transportId);
+    if (!transportData) return;
+
+    transportData.stats.failures++;
+    transportData.stats.lastRecoveryAttempt = Date.now();
+
+    // Emit recovery attempt event
+    this.emit('transportRecoveryAttempt', {
+      type,
+      transportId,
+      attemptCount: transportData.stats.failures,
+    });
+
+    // Attempt ICE restart or other recovery mechanisms
+    if (transportData.transport.restartIce) {
+      transportData.transport.restartIce().catch((error) => {
+        console.error('ICE restart failed:', error);
+        this.handleTransportFailure(type, transportId);
+      });
+    }
+  }
+
+  clearTransportWarning(transportId) {
+    const warningTimer = this.transportWarnings.get(transportId);
+    if (warningTimer) {
+      clearTimeout(warningTimer);
+      this.transportWarnings.delete(transportId);
+    }
   }
 
   /**

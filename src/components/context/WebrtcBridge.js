@@ -43,8 +43,16 @@ export const WebRTCBridge = ({ children }) => {
   const connectionManager = useRef(null);
 
   useEffect(() => {
+    console.log('WebRTCBridge Effect - Socket state:', {
+      hasSocket: !!socket,
+      meetingId,
+      connectionManagerExists: !!connectionManager.current,
+    });
     if (socket && !connectionManager.current) {
       // Initialize Connection Manager with all callbacks
+
+      console.log('Initializing new ConnectionManager');
+
       connectionManager.current = new ConnectionManager({
         socket,
         meetingId,
@@ -74,12 +82,13 @@ export const WebRTCBridge = ({ children }) => {
     }
 
     return () => {
+      console.log('WebRTCBridge cleanup triggered');
       if (connectionManager.current) {
         connectionManager.current.cleanup();
         connectionManager.current = null;
       }
     };
-  }, [socket, meetingId]);
+  }, [socket]);
 
   // Handle Redux state changes
   useEffect(() => {

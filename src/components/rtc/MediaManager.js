@@ -21,15 +21,16 @@ class MediaManager {
    */
   getDefaultConstraints() {
     return {
-      audio: {
-        echoCancellation: true,
-        noiseSuppression: true,
-        autoGainControl: true,
-        sampleRate: 16000,
-        sampleSize: 16,
-        channelCount: 1,
-        latency: 0.05,
-      },
+      //   audio: {
+      //     echoCancellation: true,
+      //     noiseSuppression: true,
+      //     autoGainControl: true,
+      //     sampleRate: 16000,
+      //     sampleSize: 16,
+      //     channelCount: 1,
+      //     latency: 0.05,
+      //   },
+      audio: true,
       video: {
         width: { ideal: 1280, max: 1920 },
         height: { ideal: 720, max: 1080 },
@@ -256,21 +257,49 @@ class MediaManager {
   /**
    * Clean up all resources
    */
-  cleanup() {
+  async cleanup(options = { force: false }) {
     if (this.localStream) {
-      this.localStream.getTracks().forEach((track) => {
-        track.stop();
+      const tracks = this.localStream.getTracks();
+
+      // Check if tracks are still in use before stopping
+      tracks.forEach((track) => {
+        const producer = this.producers.get(track.kind);
+        if (options.force || !producer || producer.closed) {
+          track.stop();
+        }
       });
-      this.localStream = null;
+
+      // Only null the stream if all tracks are stopped
+      if (tracks.every((track) => track.readyState === 'ended')) {
+        this.localStream = null;
+      }
     }
 
-    this.producers.forEach((producer) => producer.close());
+    // Cleanup producers and consumers with checks
+    for (const [kind, producer] of this.producers) {
+      if (!producer.closed) {
+        try {
+          await producer.pause();
+          producer.close();
+        } catch (error) {
+          console.warn(`Error closing producer ${kind}:`, error);
+        }
+      }
+    }
     this.producers.clear();
 
-    this.consumers.forEach((consumer) => consumer.close());
+    // Similar careful cleanup for consumers
+    for (const [id, consumer] of this.consumers) {
+      if (!consumer.closed) {
+        try {
+          await consumer.pause();
+          consumer.close();
+        } catch (error) {
+          console.warn(`Error closing consumer ${id}:`, error);
+        }
+      }
+    }
     this.consumers.clear();
-
-    this.activeDevices.clear();
   }
 
   /**

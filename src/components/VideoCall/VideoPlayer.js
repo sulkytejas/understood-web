@@ -236,13 +236,31 @@ const VideoPlayer = ({
     console.log('Stream status:', {
       callStarted,
       hasLocalStream: !!localStream,
-      hasRemoteTrack: !!remoteTrack,
+      localAudioTracks: localStream?.getAudioTracks().map((t) => ({
+        kind: t.kind,
+        enabled: t.enabled,
+        muted: t.muted,
+        readyState: t.readyState,
+      })),
+      hasRemoteStream: !!remoteTrack,
+      remoteAudioTracks: remoteTrack?.getAudioTracks().map((t) => ({
+        kind: t.kind,
+        enabled: t.enabled,
+        muted: t.muted,
+        readyState: t.readyState,
+      })),
     });
 
     if (remoteVideoRef.current) {
-      remoteVideoRef.current.srcObject = callStarted
-        ? remoteTrack
-        : localStream;
+      const stream = callStarted ? remoteTrack : localStream;
+      remoteVideoRef.current.srcObject = stream;
+
+      // Chrome sometimes needs a push to play audio
+      if (callStarted && stream?.getAudioTracks().length > 0) {
+        remoteVideoRef.current
+          .play()
+          .catch((e) => console.error('Error playing audio:', e));
+      }
     }
 
     if (pipVideoRef.current) {
@@ -307,6 +325,7 @@ const VideoPlayer = ({
           ref={remoteVideoRef}
           autoPlay
           playsInline
+          muted={!callStarted}
           onLoadedMetadata={() => {
             const currentStream = !callStarted ? remoteTrack : localStream;
             handleFaceTracking(currentStream, remoteVideoRef);

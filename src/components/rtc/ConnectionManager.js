@@ -395,6 +395,39 @@ class ConnectionManager extends EventEmitter {
     }
   }
 
+  async attemptReconnect() {
+    if (this.reconnectionAttempts >= this.MAX_RECONNECTION_ATTEMPTS) {
+      this.handleError(
+        'Reconnection failed',
+        new Error('Max reconnection attempts reached'),
+      );
+      return false;
+    }
+
+    try {
+      // Exponential backoff for reconnection delay
+      const delay = Math.min(
+        this.RECONNECTION_DELAY * Math.pow(2, this.reconnectionAttempts),
+        30000,
+      );
+      await new Promise((resolve) => setTimeout(resolve, delay));
+
+      this.reconnectionAttempts++;
+      this.connectionState.transition('reconnecting');
+
+      // Try to reestablish connection
+      await this.setupTransports();
+
+      // If successful, reset attempts and update state
+      this.reconnectionAttempts = 0;
+      this.connectionState.transition('connected');
+      return true;
+    } catch (error) {
+      console.error('Reconnection attempt failed:', error);
+      return this.attemptReconnect(); // Try again if attempts remain
+    }
+  }
+
   /**
    * Setup media transports
    * @private
@@ -493,6 +526,7 @@ class ConnectionManager extends EventEmitter {
           dtlsParameters,
           transportId: transport.id,
         });
+
         callback();
       } catch (error) {
         errback(error);

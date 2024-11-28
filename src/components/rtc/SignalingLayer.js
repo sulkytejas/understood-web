@@ -12,7 +12,12 @@ class SignalingLayer {
     this.meetingId = null;
     this.eventHandlers = new Map();
     this.pendingRequests = new Map();
-    this.requestTimeout = 10000; // 10 seconds timeout for requests
+    this.timeouts = {
+      joinRoom: 15000, // 15s for initial join
+      transport: 10000, // 10s for transport operations
+      media: 20000, // 20s for media operations
+      reconnect: 30000, // 30s for reconnection attempts
+    };
   }
 
   /**
@@ -22,26 +27,51 @@ class SignalingLayer {
    * @param {number} [timeout] - Custom timeout in ms
    * @returns {Promise} Response from server
    */
-  emitWithTimeout(event, data, timeout = this.requestTimeout) {
+  emitWithTimeout(event, data, customTimeout) {
+    // Choose appropriate timeout based on operation type
+    const timeout = customTimeout || this.getTimeoutForEvent(event);
+
     return new Promise((resolve, reject) => {
       const timeoutId = setTimeout(() => {
+        this.pendingRequests.delete(requestId);
         reject(new Error(`${event} request timed out after ${timeout}ms`));
       }, timeout);
 
       const requestId = `${event}-${Date.now()}-${Math.random()}`;
       this.pendingRequests.set(requestId, { resolve, reject, timeoutId });
 
-      this.socket.emit(event, { ...data, requestId }, (response) => {
-        clearTimeout(timeoutId);
-        this.pendingRequests.delete(requestId);
+      // Add retry logic for critical operations
+      let retryCount = 0;
+      const maxRetries = 2;
 
-        if (response?.error) {
-          reject(new Error(response.error));
-        } else {
-          resolve(response);
-        }
-      });
+      const attemptEmit = () => {
+        this.socket.emit(event, { ...data, requestId }, (response) => {
+          clearTimeout(timeoutId);
+          this.pendingRequests.delete(requestId);
+
+          if (response?.error && retryCount < maxRetries) {
+            retryCount++;
+            setTimeout(attemptEmit, 1000); // Retry after 1s
+          } else {
+            if (response?.error) {
+              reject(new Error(response.error));
+            } else {
+              resolve(response);
+            }
+          }
+        });
+      };
+
+      attemptEmit();
     });
+  }
+
+  getTimeoutForEvent(event) {
+    if (event.includes('join')) return this.timeouts.joinRoom;
+    if (event.includes('transport')) return this.timeouts.transport;
+    if (event.includes('media')) return this.timeouts.media;
+    if (event.includes('reconnect')) return this.timeouts.reconnect;
+    return this.timeouts.transport; // default
   }
 
   setMeetingId(meetingId) {
