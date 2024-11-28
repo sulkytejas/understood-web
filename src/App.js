@@ -6,7 +6,8 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Box, Typography, useMediaQuery } from '@mui/material';
 import Bowser from 'bowser';
 import { SocketProvider } from './components/context/SocketContext';
-import { WebRTCProvider } from './components/context/WebrtcContext';
+// import { WebRTCProvider } from './components/context/WebrtcContext';
+import { WebRTCBridge } from './components/context/WebrtcBridge';
 import { AudioTranscriptionProvider } from './components/context/AudioTranscriptionContext';
 import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
 
@@ -157,7 +158,7 @@ function App() {
       }}
     >
       <SocketProvider>
-        <WebRTCProvider>
+        <WebRTCBridge>
           <AudioTranscriptionProvider>
             <AnimatePresence mode="wait">
               <Routes location={location}>
@@ -250,7 +251,7 @@ function App() {
               </Routes>
             </AnimatePresence>
           </AudioTranscriptionProvider>
-        </WebRTCProvider>
+        </WebRTCBridge>
       </SocketProvider>
     </Box>
   );

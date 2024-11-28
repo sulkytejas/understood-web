@@ -6,7 +6,8 @@ import VideoControls from './VideoControls';
 
 import VideoPlayer from './VideoPlayer';
 import { useSocket } from '../context/SocketContext';
-import { useWebRTC } from '../context/WebrtcContext';
+// import { useWebRTC } from '../context/WebrtcContext';
+import { useWebRTC } from '../context/WebrtcBridge';
 import { useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
 
@@ -22,6 +23,7 @@ const pageTransition = {
 const VideoCall = () => {
   const [detectedLanguage, setDetectedLanguage] = useState(null);
   const [translatedTexts, setTranslatedTexts] = useState({ text: '' });
+  const [isRemoteConnected, setIsRemoteConnected] = useState(false);
 
   const remoteVideoRef = useRef(null);
   const videoContainerRef = useRef(null);
@@ -31,7 +33,7 @@ const VideoCall = () => {
   );
 
   const {
-    startStreaming,
+    // startStreaming,
     handleDisconnectCall,
     localStream,
     remoteStream,
@@ -41,9 +43,7 @@ const VideoCall = () => {
 
   const { socket } = useSocket();
 
-  useEffect(() => {
-    startStreaming();
-  }, []);
+  console.log(connectionState, 'connectionState');
 
   useEffect(() => {
     const handleBeforeUnload = () => {
@@ -59,13 +59,23 @@ const VideoCall = () => {
     };
   }, [socket]);
   console.log(remoteStream, 'remoteTrack');
-  useEffect(() => {
-    if (remoteVideoRef.current && remoteStream) {
-      remoteVideoRef.current.srcObject = remoteStream;
-    } else if (remoteVideoRef.current.srcObject) {
-      remoteVideoRef.current.srcObject = remoteStream;
-    }
-  }, [remoteStream]);
+
+  // useEffect(() => {
+  //   if (remoteVideoRef.current) {
+  //     if (remoteStream && remoteStream.getTracks().length > 0 && callStarted) {
+  //       console.log(
+  //         'Setting remote stream with tracks:',
+  //         remoteStream.getTracks(),
+  //       );
+  //       remoteVideoRef.current.srcObject = remoteStream;
+  //       setIsRemoteConnected(true);
+  //     } else {
+  //       console.log('No remote stream or tracks yet');
+  //       remoteVideoRef.current.srcObject = null;
+  //       setIsRemoteConnected(false);
+  //     }
+  //   }
+  // }, [remoteStream, callStarted, remoteVideoRef]);
 
   useEffect(() => {
     if (socket) {
@@ -95,8 +105,9 @@ const VideoCall = () => {
           remoteTrack={remoteStream}
           remoteVideoRef={remoteVideoRef}
           videoContainerRef={videoContainerRef}
-          // remoteAudioRef={remoteAudioRef}
+          callStarted={callStarted}
           connectionState={connectionState}
+          isRemoteConnected={isRemoteConnected}
         />
         <TranslationOverlay
           detectedLanguage={detectedLanguage}

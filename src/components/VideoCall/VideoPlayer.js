@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Box, Alert, Typography } from '@mui/material';
 import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
@@ -67,7 +67,10 @@ const VideoPlayer = ({
   connectionState,
   remoteTrack,
   videoContainerRef,
+  callStarted,
 }) => {
+  console.log('connectionState check before call', connectionState);
+
   const isMainMenuOpen = useSelector((state) => state.ui.callMenuOpen);
   const localTranslationLanguage = useSelector(
     (state) => state.translation.localTranslationLanguage,
@@ -76,7 +79,7 @@ const VideoPlayer = ({
   const { listItems, showList, title } = useListTracker();
   const { t } = useTranslation();
   // Check if the srcObject is available or not
-  const showAlert = !remoteVideoRef?.current?.srcObject;
+
   const showConnectionAlert = connectionState !== 'connected';
   const otherParticipantInfo = useSelector(
     (state) => state.meeting.participantInfo,
@@ -89,9 +92,9 @@ const VideoPlayer = ({
     currentStreamId: null,
     stopTrack: null,
   });
+  const [showAlert, setShowAlert] = useState(false);
 
-  const isCallStarted = connectionState === 'connected' && remoteTrack;
-  const { applyStudioLight } = useStudioLight(remoteVideoRef, !isCallStarted);
+  const { applyStudioLight } = useStudioLight(remoteVideoRef, !callStarted);
 
   console.log('otherParticipantInfo', otherParticipantInfo);
 
@@ -142,7 +145,7 @@ const VideoPlayer = ({
       //   stopTrackRef.current();
       //   stopTrackRef.current = null;
       // }
-
+      console.log(remoteVideoRef.current, 'remoteVideoRef');
       await stopFaceTracking();
 
       let remoteStreamInfo = null;
@@ -194,16 +197,16 @@ const VideoPlayer = ({
   }, []);
 
   useEffect(() => {
-    if (localStream && remoteTrack) {
-      console.log(
-        ' local stream settings',
-        localStream.getVideoTracks()[0].getSettings().width,
-        localStream.getVideoTracks()[0].getSettings().height,
-        'remostream settings',
-        remoteTrack.getVideoTracks()[0].getSettings().width,
-        remoteTrack.getVideoTracks()[0].getSettings().height,
-      );
-    }
+    // if (localStream && remoteTrack) {
+    //   console.log(
+    //     ' local stream settings',
+    //     localStream.getVideoTracks()[0].getSettings().width,
+    //     localStream.getVideoTracks()[0].getSettings().height,
+    //     'remostream settings',
+    //     remoteTrack.getVideoTracks()[0].getSettings().width,
+    //     remoteTrack.getVideoTracks()[0].getSettings().height,
+    //   );
+    // }
 
     if (!remoteTrack && animationFrameRef.current && stopTrackRef.current) {
       stopTrackRef.current();
@@ -212,38 +215,45 @@ const VideoPlayer = ({
 
   // Effect to handle stream switching
   useEffect(() => {
-    const currentStream = isCallStarted ? remoteTrack : localStream;
+    const currentStream = callStarted ? remoteTrack : localStream;
 
     // Stop face tracking before switching streams
     stopFaceTracking();
 
     if (remoteVideoRef.current) {
       remoteVideoRef.current.srcObject = currentStream;
+    } else {
+      setShowAlert(true);
     }
 
     // Handle PiP video stream
     if (pipVideoRef.current) {
-      pipVideoRef.current.srcObject = isCallStarted ? localStream : null;
+      pipVideoRef.current.srcObject = callStarted ? localStream : null;
     }
-  }, [isCallStarted, localStream, remoteTrack]);
+  }, [callStarted, localStream, remoteTrack]);
 
   useEffect(() => {
-    const currentStream = isCallStarted ? remoteTrack : localStream;
-    const isShowingLocalStream = !isCallStarted;
+    console.log('Stream status:', {
+      callStarted,
+      hasLocalStream: !!localStream,
+      hasRemoteTrack: !!remoteTrack,
+    });
 
     if (remoteVideoRef.current) {
-      remoteVideoRef.current.srcObject = currentStream;
+      remoteVideoRef.current.srcObject = callStarted
+        ? remoteTrack
+        : localStream;
     }
 
     if (pipVideoRef.current) {
-      pipVideoRef.current.srcObject = isCallStarted ? localStream : null;
+      pipVideoRef.current.srcObject = callStarted ? localStream : null;
     }
 
     // Only enhance container when showing local stream
-    enhanceVideoContainer(videoContainerRef, isShowingLocalStream);
+    enhanceVideoContainer(videoContainerRef, !callStarted);
 
     // Studio light is handled by the hook
-  }, [isCallStarted, localStream, remoteTrack]);
+  }, [callStarted, localStream, remoteTrack]);
 
   // Effect to handle remote track changes
   useEffect(() => {
@@ -276,6 +286,19 @@ const VideoPlayer = ({
     overflow: 'hidden',
   };
 
+  console.log('VideoCall stream state:', {
+    hasLocalStream: !!localStream,
+    localTracks: localStream
+      ?.getTracks()
+      .map((t) => ({ kind: t.kind, enabled: t.enabled })),
+    hasRemoteStream: !!remoteTrack,
+    remoteTracks: remoteTrack
+      ?.getTracks()
+      .map((t) => ({ kind: t.kind, enabled: t.enabled })),
+    connectionState,
+    callStarted,
+  });
+
   return (
     <div className="video-player" style={containerStyle}>
       <Box sx={videoWrapperStyle}>
@@ -285,7 +308,7 @@ const VideoPlayer = ({
           autoPlay
           playsInline
           onLoadedMetadata={() => {
-            const currentStream = isCallStarted ? remoteTrack : localStream;
+            const currentStream = !callStarted ? remoteTrack : localStream;
             handleFaceTracking(currentStream, remoteVideoRef);
           }}
           style={{ width: '100%', height: '100%' }}

@@ -20,7 +20,8 @@ import {
 } from '@mui/icons-material';
 import { useSelector, useDispatch } from 'react-redux';
 import { styled } from '@mui/system';
-import { useWebRTC } from '../context/WebrtcContext';
+// import { useWebRTC } from '../context/WebrtcContext';
+import { useWebRTC } from '../context/WebrtcBridge';
 import { useSocket } from '../context/SocketContext';
 import {
   joinMeeting,
@@ -176,11 +177,6 @@ const ParticipantTab = ({
                 return;
               }
 
-              if (!meetingID || !isValidMeetingId(meetingID)) {
-                reject(new Error(message || 'Invalid or not found meeting ID'));
-                return;
-              }
-
               resolve(meetingID);
             },
           );
@@ -199,13 +195,14 @@ const ParticipantTab = ({
         console.log('clicked', joined, hostSocketId, isHost);
 
         if (joined) {
-          dispatch(joinMeeting(meetingIDToJoin));
-          dispatch(setHostSocketId(hostSocketId));
-          dispatch(setIsHost(isHost));
-
-          if (meetingPhraseLocal) {
-            dispatch(setMeetingPhrase(meetingPhraseLocal));
-          }
+          await Promise.all([
+            dispatch(joinMeeting(meetingIDToJoin)),
+            dispatch(setHostSocketId(hostSocketId)),
+            dispatch(setIsHost(isHost)),
+            meetingPhraseLocal
+              ? dispatch(setMeetingPhrase(meetingPhraseLocal))
+              : Promise.resolve(),
+          ]);
 
           if (username !== persistedUserName) {
             socket.emit('updateUsername', { username, phoneNumber, email });
