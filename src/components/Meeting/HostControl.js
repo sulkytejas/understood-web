@@ -95,6 +95,7 @@ const HostControl = ({
   const meetingPhraseRedux = useSelector(
     (state) => state.meeting.meetingPhrase,
   );
+
   // const navigate = useNavigate();
 
   const [meetingId, setMeetingId] = useState('');

@@ -26,7 +26,12 @@ import TermsAndCondition from './components/onBoarding/TermsAndCondition';
 import { initializeTensorFlow } from './components/utils/tensorFlowUtils';
 import WelcomeScreen from './components/onBoarding/WelcomeScreen';
 import LoadingSpinner from './components/onBoarding/LoadingSpinner';
-import { setEmail, setUserName, setUserPhoneNumber } from './redux/userSlice';
+import {
+  setEmail,
+  setUserName,
+  setUserPhoneNumber,
+  setUid,
+} from './redux/userSlice';
 import {
   setLocalSpokenLanguage,
   setLocalTranslationLanguage,
@@ -99,6 +104,7 @@ function App() {
         if (response.ok) {
           const { user } = await response.json();
           dispatch(setUserName(user?.username));
+          dispatch(setUid(user?.uid));
           setUserDetails({ ...user });
 
           if (user?.email) {
@@ -113,11 +119,13 @@ function App() {
           dispatch(setUserName(null));
           dispatch(setUserPhoneNumber(null));
           dispatch(setEmail(null));
+          dispatch(setUid(null));
         }
       } catch (error) {
         dispatch(setUserName(null));
         dispatch(setUserPhoneNumber(null));
         dispatch(setEmail(null));
+        dispatch(setUid(null));
 
         console.error('Error checking authentication:', error);
       } finally {

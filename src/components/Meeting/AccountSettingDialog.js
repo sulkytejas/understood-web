@@ -10,13 +10,16 @@ import { blue } from '@mui/material/colors';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import { Check } from '@mui/icons-material';
+import { useSocket } from '../context/SocketContext';
 
 function AccountSeetingDialog(props) {
   const { onClose, selectedValue, open } = props;
+  const { socket } = useSocket();
   const { t } = useTranslation();
   const localSpokenLanguage = useSelector(
     (state) => state.translation.localSpokenLanguage,
   );
+  const userUid = useSelector((state) => state.user.uid);
 
   const countries = [
     { code: 'IN', languageCode: 'hi-IN', name: t('Hindi') },
@@ -32,6 +35,7 @@ function AccountSeetingDialog(props) {
   const handleListItemClick = (value) => {
     onClose(value);
     localStorage.setItem('spokenLanguage', value);
+    socket.emit('updateLanguages', { uid: userUid, spokenLanguage: value });
   };
 
   return (

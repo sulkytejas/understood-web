@@ -32,6 +32,8 @@ const VideoCall = () => {
     (state) => state.translation.localTranslationLanguage,
   );
 
+  const userUid = useSelector((state) => state.user.uid);
+
   const {
     // startStreaming,
     handleDisconnectCall,
@@ -80,8 +82,9 @@ const VideoCall = () => {
   useEffect(() => {
     if (socket) {
       if (localTranslationLanguage) {
-        socket.emit('setLanguagePreference', {
-          languageCode: localTranslationLanguage,
+        socket.emit('updateLanguages', {
+          uid: userUid,
+          translationLanguage: localTranslationLanguage,
         });
       }
     }

@@ -76,6 +76,7 @@ const VideoControls = ({
   const userTranslationLanguage = useSelector(
     (state) => state.translation.localTranslationLanguage,
   );
+  const userUid = useSelector((state) => state.user.uid);
   const meetingId = useSelector((state) => state.meeting.meetingId);
 
   const { t } = useTranslation();
@@ -155,7 +156,7 @@ const VideoControls = ({
     handleClose();
     dispatch(setLocalTranslationLanguage(lang));
     localStorage.setItem('translationLanguagePreference', lang);
-    socket.emit('setLanguagePreference', { languageCode: lang });
+    socket.emit('updateLanguages', { uid: userUid, translationLanguage: lang });
   };
 
   const handleClose = () => {

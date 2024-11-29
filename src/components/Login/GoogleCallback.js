@@ -3,7 +3,7 @@ import { useDispatch } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
 import LoadingSpinner from '../onBoarding/LoadingSpinner';
 
-import { setUserName, setEmail } from '../../redux/userSlice';
+import { setUserName, setEmail, setUid } from '../../redux/userSlice';
 
 function GoogleCallback() {
   const location = useLocation();
@@ -31,6 +31,11 @@ function GoogleCallback() {
           if (data?.message === 'Authentication successful') {
             try {
               const apiUrl = process.env.REACT_APP_API_URL;
+              const spokenLanguage = localStorage.getItem('spokenLanguage');
+              const translationLanguage = localStorage.getItem(
+                'translationLanguagePreference',
+              );
+
               const response = await fetch(`${apiUrl}/api/login`, {
                 method: 'POST',
                 headers: {
@@ -43,6 +48,8 @@ function GoogleCallback() {
                   token: data?.sessionToken,
                   uid: userData?.at_hash,
                   source: 'google',
+                  spokenLanguage,
+                  translationLanguage,
                 }),
               });
 
@@ -57,6 +64,8 @@ function GoogleCallback() {
 
                 dispatch(setUserName(serverResponse?.user?.username));
                 dispatch(setEmail(serverResponse?.user?.email));
+                dispatch(setUid(serverResponse?.user?.uid));
+                dispatch(setUid(serverResponse?.user?.uid));
 
                 navigate('/meeting');
               }

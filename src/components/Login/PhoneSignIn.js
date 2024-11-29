@@ -247,6 +247,11 @@ const PhoneSignIn = forwardRef(
 
             try {
               const apiUrl = process.env.REACT_APP_API_URL;
+              const spokenLanguage = localStorage.getItem('spokenLanguage');
+              const translationLanguage = localStorage.getItem(
+                'translationLanguagePreference',
+              );
+
               const response = await fetch(`${apiUrl}/api/login`, {
                 method: 'POST',
                 headers: {
@@ -259,6 +264,8 @@ const PhoneSignIn = forwardRef(
                   token: user?.accessToken,
                   uid: user?.uid,
                   source: 'phone',
+                  spokenLanguage,
+                  translationLanguage,
                 }),
               });
 
