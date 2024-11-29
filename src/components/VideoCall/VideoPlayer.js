@@ -325,7 +325,7 @@ const VideoPlayer = ({
           ref={remoteVideoRef}
           autoPlay
           playsInline
-          muted={!callStarted}
+          // muted={!callStarted}
           onLoadedMetadata={() => {
             const currentStream = !callStarted ? remoteTrack : localStream;
             handleFaceTracking(currentStream, remoteVideoRef);

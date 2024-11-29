@@ -353,6 +353,7 @@ class ConnectionManager extends EventEmitter {
 
       await this.processPendingProducers();
 
+      //   this.mediaManager.setHDPreference(true);
       // Step 7: Get and start streaming media
       const stream = await this.mediaManager.acquireMedia();
       await this.startStreaming(stream);
