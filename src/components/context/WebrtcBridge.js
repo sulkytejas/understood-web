@@ -11,13 +11,17 @@ import ConnectionManager from '../rtc/ConnectionManager';
 import { cleanupState } from '../../redux/actions';
 import { setParticipantInfo } from '../../redux/meetingSlice';
 import { useSocket } from './SocketContext';
+import {
+  WebRTCDebugHelper,
+  // createDebugPeerConnection,
+} from '../utils/WebrtcDebuggerHelper';
 
 const WebRTCContext = createContext();
 
 export const useWebRTC = () => useContext(WebRTCContext);
 
 export const WebRTCBridge = ({ children }) => {
-  const { socket } = useSocket();
+  const { socket, isSocketConnected } = useSocket();
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -38,6 +42,7 @@ export const WebRTCBridge = ({ children }) => {
   const userSpokenLanguage = useSelector(
     (state) => state.translation.localSpokenLanguage,
   );
+  const uid = useSelector((state) => state.user.uid);
 
   // Connection Manager Reference
   const connectionManager = useRef(null);
@@ -48,7 +53,7 @@ export const WebRTCBridge = ({ children }) => {
       meetingId,
       connectionManagerExists: !!connectionManager.current,
     });
-    if (socket && !connectionManager.current) {
+    if (socket && !connectionManager.current && isSocketConnected) {
       // Initialize Connection Manager with all callbacks
 
       console.log('Initializing new ConnectionManager');
@@ -57,6 +62,7 @@ export const WebRTCBridge = ({ children }) => {
         socket,
         meetingId,
         userSpokenLanguage,
+        uid,
         onStateChange: (state) => {
           setConnectionState(state);
         },
@@ -79,16 +85,25 @@ export const WebRTCBridge = ({ children }) => {
         userAgent: navigator.userAgent,
         platform: navigator.platform,
       });
+    } else {
+      console.log('Conditions not met for initializing ConnectionManager');
     }
 
     return () => {
       console.log('WebRTCBridge cleanup triggered');
-      if (connectionManager.current) {
-        connectionManager.current.cleanup();
-        connectionManager.current = null;
+
+      if (socket && isSocketConnected) {
+        if (connectionManager.current) {
+          connectionManager.current.cleanup();
+          connectionManager.current = null;
+        }
+      } else {
+        console.log(
+          'Socket disconnected, but not cleaning up ConnectionManager',
+        );
       }
     };
-  }, [socket]);
+  }, [socket, isSocketConnected]);
 
   // Handle Redux state changes
   useEffect(() => {
@@ -99,9 +114,9 @@ export const WebRTCBridge = ({ children }) => {
 
   //meeting ended handler
   useEffect(() => {
-    const handleMeetingEnded = () => {
+    const handleMeetingEnded = async () => {
       console.log('meeting-ended triggered');
-      publicMethods.handleDisconnectCall(meetingId);
+      await publicMethods.handleDisconnectCall(meetingId);
     };
 
     if (socket) {
@@ -121,13 +136,29 @@ export const WebRTCBridge = ({ children }) => {
     }
   }, [isAudioPaused]);
 
+  // Debugger for webrtc
+
+  useEffect(() => {
+    if (socket && meetingId) {
+      const debugHelper = new WebRTCDebugHelper('WebRTCBridge');
+      debugHelper.log('Initializing connection', { meetingId });
+
+      // Clear webrtc-internals before new test
+      WebRTCDebugHelper.clearWebRTCInternals();
+
+      // ... rest of your code
+    }
+  }, [socket, meetingId]);
+
   // Maintain existing public methods with new implementation
   const publicMethods = {
     async joinRoom(enteredMeetingId) {
       try {
         await connectionManager.current.initializeEventListeners();
-        const result =
-          await connectionManager.current.connect(enteredMeetingId);
+        const result = await connectionManager.current.connect(
+          enteredMeetingId,
+          uid,
+        );
         // Use the result
         return {
           isHost: result.isHost,
@@ -149,9 +180,9 @@ export const WebRTCBridge = ({ children }) => {
       }
     },
 
-    handleDisconnectCall(meetingId) {
+    async handleDisconnectCall(meetingId) {
       if (connectionManager.current) {
-        connectionManager.current.cleanup();
+        await connectionManager.current.cleanup();
       }
 
       setLocalStream(null);
@@ -163,6 +194,11 @@ export const WebRTCBridge = ({ children }) => {
 
       dispatch(cleanupState());
       setCallStarted(false);
+
+      if (socket) {
+        socket.disconnect();
+      }
+
       navigate(`/meetingEnded?meetingId=${meetingId}`);
     },
   };

@@ -9,16 +9,6 @@ import { useSocket } from '../context/SocketContext';
 // import { useWebRTC } from '../context/WebrtcContext';
 import { useWebRTC } from '../context/WebrtcBridge';
 import { useSelector } from 'react-redux';
-import { motion } from 'framer-motion';
-
-const pageVariants = {
-  initial: { opacity: 0 },
-  in: { opacity: 1 },
-  out: { opacity: 0 },
-};
-const pageTransition = {
-  duration: 0.3,
-};
 
 const VideoCall = () => {
   const [detectedLanguage, setDetectedLanguage] = useState(null);
@@ -43,7 +33,7 @@ const VideoCall = () => {
     connectionState,
   } = useWebRTC();
 
-  const { socket } = useSocket();
+  const { socket, isSocketConnected } = useSocket();
 
   console.log(connectionState, 'connectionState');
 
@@ -80,7 +70,7 @@ const VideoCall = () => {
   // }, [remoteStream, callStarted, remoteVideoRef]);
 
   useEffect(() => {
-    if (socket) {
+    if (socket && isSocketConnected) {
       if (localTranslationLanguage) {
         socket.emit('updateLanguages', {
           uid: userUid,
@@ -88,46 +78,38 @@ const VideoCall = () => {
         });
       }
     }
-  }, [socket]);
+  }, [socket, isSocketConnected]);
 
   const handleClick = () => {
     handleDisconnectCall();
   };
 
   return (
-    <motion.div
-      initial="initial"
-      animate="in"
-      exit="out"
-      variants={pageVariants}
-      transition={pageTransition}
-    >
-      <div className="video-chat" ref={videoContainerRef}>
-        <VideoPlayer
-          localStream={localStream}
-          remoteTrack={remoteStream}
-          remoteVideoRef={remoteVideoRef}
-          videoContainerRef={videoContainerRef}
-          callStarted={callStarted}
-          connectionState={connectionState}
-          isRemoteConnected={isRemoteConnected}
-        />
-        <TranslationOverlay
-          detectedLanguage={detectedLanguage}
-          localTargetLanguage={localTranslationLanguage}
-          setTranslatedTexts={setTranslatedTexts}
-          socket={socket}
-          callStarted={callStarted}
-        />
+    <div className="video-chat" ref={videoContainerRef}>
+      <VideoPlayer
+        localStream={localStream}
+        remoteTrack={remoteStream}
+        remoteVideoRef={remoteVideoRef}
+        videoContainerRef={videoContainerRef}
+        callStarted={callStarted}
+        connectionState={connectionState}
+        isRemoteConnected={isRemoteConnected}
+      />
+      <TranslationOverlay
+        detectedLanguage={detectedLanguage}
+        localTargetLanguage={localTranslationLanguage}
+        setTranslatedTexts={setTranslatedTexts}
+        socket={socket}
+        callStarted={callStarted}
+      />
 
-        <VideoControls
-          callStarted={callStarted}
-          onCallToggle={handleClick}
-          translatedTexts={translatedTexts}
-          setTranslatedTexts={setTranslatedTexts}
-        />
-      </div>
-    </motion.div>
+      <VideoControls
+        callStarted={callStarted}
+        onCallToggle={handleClick}
+        translatedTexts={translatedTexts}
+        setTranslatedTexts={setTranslatedTexts}
+      />
+    </div>
   );
 };
 

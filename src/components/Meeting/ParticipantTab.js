@@ -100,6 +100,7 @@ const ParticipantTab = ({
   const reduxmeetingPhrase = useSelector(
     (state) => state.meeting.meetingPhrase,
   );
+
   const { joinRoom } = useWebRTC();
   const navigate = useNavigate();
   const dispatch = useDispatch();

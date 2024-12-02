@@ -10,24 +10,68 @@ import MediaManager from './MediaManager';
 import ConnectionPool from './ConnectionPool';
 import EventEmitter from './EventEmitter';
 
-class ConnectionState {
-  static States = {
-    NEW: 'new',
-    CONNECTING: 'connecting',
-    CONNECTED: 'connected',
-    RECONNECTING: 'reconnecting',
-    FAILED: 'failed',
-    CLOSED: 'closed',
-  };
+const CONNECTION_STATES = {
+  NEW: 'new',
+  CONNECTING: 'connecting',
+  CONNECTED: 'connected',
+  RECONNECTING: 'reconnecting',
+  FAILED: 'failed',
+  CLOSED: 'closed',
+  CLOSING: 'closing',
+};
 
+class ConnectionState {
   constructor(onStateChange) {
-    this.currentState = ConnectionState.States.NEW;
+    this.currentState = CONNECTION_STATES.NEW;
     this.onStateChange = onStateChange;
     this.stateHistory = [];
     this.lastStateChange = Date.now();
   }
 
+  isValidTransition(fromState, toState) {
+    const validTransitions = {
+      [CONNECTION_STATES.NEW]: [CONNECTION_STATES.CONNECTING],
+      [CONNECTION_STATES.CONNECTING]: [
+        CONNECTION_STATES.CONNECTED,
+        CONNECTION_STATES.FAILED,
+      ],
+      [CONNECTION_STATES.CONNECTED]: [
+        CONNECTION_STATES.RECONNECTING,
+        CONNECTION_STATES.CLOSING,
+        CONNECTION_STATES.FAILED,
+      ],
+      [CONNECTION_STATES.RECONNECTING]: [
+        CONNECTION_STATES.CONNECTED,
+        CONNECTION_STATES.FAILED,
+      ],
+      [CONNECTION_STATES.CLOSING]: [CONNECTION_STATES.CLOSED],
+      [CONNECTION_STATES.FAILED]: [
+        CONNECTION_STATES.CLOSING,
+        CONNECTION_STATES.RECONNECTING,
+      ],
+      [CONNECTION_STATES.CLOSED]: [], // No valid transitions from closed state
+    };
+
+    return validTransitions[fromState]?.includes(toState) ?? false;
+  }
+
   transition(newState) {
+    if (this.currentState === newState) {
+      return;
+    }
+    // Validate the state exists
+    if (!Object.values(CONNECTION_STATES).includes(newState)) {
+      throw new Error(`Invalid state transition attempted: ${newState}`);
+    }
+
+    // Validate the transition is allowed
+    if (!this.isValidTransition(this.currentState, newState)) {
+      console.warn(
+        `Invalid state transition from ${this.currentState} to ${newState}`,
+      );
+      return;
+    }
+
     if (this.currentState === newState) return;
 
     const transition = {
@@ -45,13 +89,14 @@ class ConnectionState {
   }
 
   isStable() {
-    return this.currentState === ConnectionState.States.CONNECTED;
+    return this.currentState === CONNECTION_STATES.CONNECTED;
   }
 
   canReconnect() {
     return ![
-      ConnectionState.States.CLOSED,
-      ConnectionState.States.FAILED,
+      CONNECTION_STATES.CLOSED,
+      CONNECTION_STATES.FAILED,
+      CONNECTION_STATES.CLOSING,
     ].includes(this.currentState);
   }
 }
@@ -158,6 +203,7 @@ class ConnectionManager extends EventEmitter {
     onStreamsUpdate,
     onError,
     onQualityChange,
+    uid,
   }) {
     super();
     // Validate required parameters
@@ -169,7 +215,7 @@ class ConnectionManager extends EventEmitter {
     this.meetingId = null;
     this.userSpokenLanguage = userSpokenLanguage;
     this.device = null;
-    this.connectionState = 'new';
+    this.uid = uid;
 
     // Callback handlers
     this.onStateChange = onStateChange;
@@ -245,6 +291,13 @@ class ConnectionManager extends EventEmitter {
       this.handleTransportFailure(data);
     });
 
+    this.signaling.socket.on('reconnect', () => {
+      console.log('Socket reconnected');
+      if (this.state.currentState === CONNECTION_STATES.RECONNECTING) {
+        this.attemptReconnect();
+      }
+    });
+
     // Setup signaling events
     this.signaling.setupListeners({
       onNewProducer: this.handleNewProducer.bind(this),
@@ -279,7 +332,17 @@ class ConnectionManager extends EventEmitter {
         this.handleError('Connection error', error);
       },
       onReconnected: () => {
-        this.updateState('connected');
+        if (
+          this.state.currentState === CONNECTION_STATES.FAILED ||
+          this.state.currentState === CONNECTION_STATES.RECONNECTING
+        ) {
+          if (this.state.currentState !== CONNECTION_STATES.RECONNECTING) {
+            this.state.transition(CONNECTION_STATES.RECONNECTING);
+          }
+          this.attemptReconnect();
+        } else {
+          this.updateState('connected');
+        }
       },
     });
   }
@@ -306,16 +369,17 @@ class ConnectionManager extends EventEmitter {
    * Establish connection and join meeting
    * @returns {Promise<void>}
    */
-  async connect(meetingId) {
+  async connect(meetingId, uid) {
     console.log('Consumer ready Connect start:', {
       isConsumerReady: this.isConsumerReady,
       isHost: this.isHost,
     });
     try {
       console.log('Starting connection with meetingId:', meetingId);
-      this.updateState('connecting');
+      this.state.transition(CONNECTION_STATES.CONNECTING);
       this.meetingId = meetingId;
       this.signaling.setMeetingId(meetingId);
+      this.signaling.setUid(uid);
 
       // Step 1: Join the room and get capabilities
       const joinResponse = await this.signaling.joinRoom();
@@ -358,7 +422,7 @@ class ConnectionManager extends EventEmitter {
       const stream = await this.mediaManager.acquireMedia();
       await this.startStreaming(stream);
 
-      this.updateState('connected');
+      this.state.transition(CONNECTION_STATES.CONNECTED);
       console.log(`Connection established - isHost: ${this.isHost}`);
 
       return {
@@ -379,53 +443,125 @@ class ConnectionManager extends EventEmitter {
     );
 
     switch (newState) {
-      case ConnectionState.States.RECONNECTING:
+      case CONNECTION_STATES.RECONNECTING:
         if (!this.isReconnecting) {
           this.attemptReconnect();
         }
         break;
 
-      case ConnectionState.States.CONNECTED:
+      case CONNECTION_STATES.CONNECTED:
         this.reconnectAttempts = 0;
-        this.startQualityMonitoring();
+        // this.startQualityMonitoring();
         break;
 
-      case ConnectionState.States.FAILED:
+      case CONNECTION_STATES.CLOSED:
+        // case CONNECTION_STATES.FAILED:
         this.cleanup();
         break;
     }
   }
 
   async attemptReconnect() {
+    // First, check max attempts to prevent infinite recursion
     if (this.reconnectionAttempts >= this.MAX_RECONNECTION_ATTEMPTS) {
-      this.handleError(
-        'Reconnection failed',
-        new Error('Max reconnection attempts reached'),
-      );
-      return false;
+      this.state.transition(CONNECTION_STATES.FAILED);
+      throw new Error('Max reconnection attempts reached');
     }
 
     try {
-      // Exponential backoff for reconnection delay
-      const delay = Math.min(
-        this.RECONNECTION_DELAY * Math.pow(2, this.reconnectionAttempts),
-        30000,
+      console.log(
+        `Attempt ${this.reconnectionAttempts + 1} of ${this.MAX_RECONNECTION_ATTEMPTS}`,
       );
-      await new Promise((resolve) => setTimeout(resolve, delay));
 
-      this.reconnectionAttempts++;
-      this.connectionState.transition('reconnecting');
+      // Reconnect socket first
+      const response = await this.signaling.emitWithTimeout('reconnect', {
+        uid: this.uid,
+        meetingId: this.meetingId,
+      });
 
-      // Try to reestablish connection
-      await this.setupTransports();
+      if (!response.success) {
+        throw new Error(response.error || 'Reconnection failed');
+      }
 
-      // If successful, reset attempts and update state
+      // Add delay before transport setup
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      try {
+        await this.setupTransports();
+      } catch (transportError) {
+        console.error('Transport setup failed:', transportError);
+        throw new Error(
+          `Failed to setup transports: ${transportError.message}`,
+        );
+      }
+
+      // Check if local media tracks are ended
+      const localStream = this.mediaManager.localStream;
+      if (localStream) {
+        const tracks = localStream.getTracks();
+        const anyEnded = tracks.some((track) => track.readyState === 'ended');
+        if (anyEnded) {
+          console.log(
+            'Re-acquiring media tracks because existing tracks have ended',
+          );
+          // Re-acquire media
+          await this.mediaManager.acquireMedia();
+        }
+      } else {
+        // If no local stream exists, acquire media
+        await this.mediaManager.acquireMedia();
+      }
+
+      // Restart streaming with the media stream
+      await this.startStreaming(this.mediaManager.localStream);
+
+      // Reset on success
       this.reconnectionAttempts = 0;
-      this.connectionState.transition('connected');
+      this.state.transition(CONNECTION_STATES.CONNECTED);
+      this.isReconnecting = false;
+
       return true;
     } catch (error) {
       console.error('Reconnection attempt failed:', error);
-      return this.attemptReconnect(); // Try again if attempts remain
+      this.reconnectionAttempts++;
+
+      // Add exponential backoff delay
+      const delay = Math.min(
+        1000 * Math.pow(2, this.reconnectionAttempts),
+        10000,
+      );
+      await new Promise((resolve) => setTimeout(resolve, delay));
+
+      // Only retry if under max attempts
+      if (this.reconnectionAttempts < this.MAX_RECONNECTION_ATTEMPTS) {
+        return this.attemptReconnect();
+      } else {
+        this.state.transition(CONNECTION_STATES.FAILED);
+        throw new Error('Max reconnection attempts reached');
+      }
+    }
+  }
+
+  async waitForServerReady() {
+    const response = await this.signaling.emitWithTimeout(
+      'checkServerStatus',
+      {},
+    );
+
+    if (response.isReady) {
+      return true;
+    } else {
+      return new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          this.signaling.off('server-ready');
+          reject(new Error('Server ready timeout'));
+        }, 10000); // 10 second timeout
+
+        this.signaling.once('server-ready', () => {
+          clearTimeout(timeout);
+          resolve(true);
+        });
+      });
     }
   }
 
@@ -435,6 +571,20 @@ class ConnectionManager extends EventEmitter {
    */
   async setupTransports() {
     try {
+      const isReconnecting =
+        this.state.currentState === CONNECTION_STATES.RECONNECTING;
+      console.log('Setting up transports, reconnecting:', isReconnecting);
+
+      if (isReconnecting) {
+        // Clear any existing transports first
+        if (this.producerTransportId) {
+          this.connectionPool.removeProducerTransport(this.producerTransportId);
+        }
+        if (this.consumerTransportId) {
+          this.connectionPool.removeConsumerTransport(this.consumerTransportId);
+        }
+      }
+
       // Setup producer transport
       const producerTransportOptions =
         await this.signaling.createProducerTransport();
@@ -461,6 +611,10 @@ class ConnectionManager extends EventEmitter {
         consumerTransport.id,
         consumerTransport,
       );
+
+      if (isReconnecting) {
+        console.log('Reconnection: Transports setup complete');
+      }
     } catch (error) {
       throw new Error(`Failed to setup transports: ${error.message}`);
     }
@@ -630,6 +784,14 @@ class ConnectionManager extends EventEmitter {
         throw new Error('Producer transport ID not found');
       }
 
+      let tracks = stream.getTracks();
+      const anyEnded = tracks.some((track) => track.readyState === 'ended');
+      if (anyEnded) {
+        console.log('Some tracks have ended, re-acquiring media');
+        stream = await this.mediaManager.acquireMedia();
+        tracks = stream.getTracks();
+      }
+
       const producerTransport = this.connectionPool.getProducerTransport(
         this.producerTransportId,
       );
@@ -638,7 +800,20 @@ class ConnectionManager extends EventEmitter {
         throw new Error('Producer transport not found');
       }
 
-      const tracks = stream.getTracks();
+      // Add delay to ensure consumer is ready
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // Wait for consumers to be ready
+      if (!this.isConsumerReady) {
+        await new Promise((resolve) => {
+          const checkReady = setInterval(() => {
+            if (this.isConsumerReady) {
+              clearInterval(checkReady);
+              resolve();
+            }
+          }, 100);
+        });
+      }
 
       console.log(
         'Processing tracks:',
@@ -685,13 +860,13 @@ class ConnectionManager extends EventEmitter {
    * @param {string} type - Transport type
    * @param {string} state - New state
    */
-  handleConnectionStateChange(transport, type, state) {
+  async handleConnectionStateChange(transport, type, state) {
     console.log(`${type} transport ${transport.id} state: ${state}`);
 
     switch (state) {
       case 'connected':
         if (this.isReconnecting) {
-          this.handleReconnectionSuccess();
+          this.state.transition(CONNECTION_STATES.CONNECTED);
         }
         break;
 
@@ -700,8 +875,23 @@ class ConnectionManager extends EventEmitter {
         break;
 
       case 'disconnected':
-        if (!this.isReconnecting) {
-          this.attemptReconnect();
+        try {
+          const currentParams = await transport.getIceParameters();
+          console.log('Current ICE params before restart:', currentParams);
+
+          await transport.restartIce();
+          console.log('ICE restart completed');
+          // Give it some time to reconnect
+          await new Promise((resolve) => setTimeout(resolve, 3000));
+        } catch (error) {
+          console.warn('ICE restart failed:', error);
+        }
+
+        if (!this.isReconnecting && this.state.canReconnect()) {
+          this.isReconnecting = true;
+          this.state.transition(CONNECTION_STATES.RECONNECTING);
+          await this.waitForServerReady(); // Wait for socket reconnection
+          await this.attemptReconnect();
         }
         break;
     }
@@ -722,8 +912,7 @@ class ConnectionManager extends EventEmitter {
    * @param {string} state - New state
    */
   updateState(state) {
-    this.connectionState = state;
-    this.onStateChange?.(state);
+    this.state.transition(state);
   }
 
   /**
@@ -734,7 +923,7 @@ class ConnectionManager extends EventEmitter {
    */
   handleError(context, error) {
     console.error(`${context}:`, error);
-    this.onError?.({ context, error: error.message });
+    this.onError?.({ context, error: error?.message });
     this.updateState('failed');
   }
 
@@ -742,20 +931,42 @@ class ConnectionManager extends EventEmitter {
    * Clean up all resources
    */
   async cleanup() {
-    this.updateState('closing');
+    // Prevent cleanup if already in closing or closed state
+    if (
+      this.state.currentState === CONNECTION_STATES.CLOSING ||
+      this.state.currentState === CONNECTION_STATES.CLOSED
+    ) {
+      try {
+        // Set to closing state
+        this.state.transition(CONNECTION_STATES.CLOSING);
 
-    // Stop quality monitoring
-    if (this.statsInterval) {
-      clearInterval(this.statsInterval);
-      this.statsInterval = null;
+        // Cleanup intervals
+        if (this.statsInterval) {
+          clearInterval(this.statsInterval);
+          this.statsInterval = null;
+        }
+
+        // Cleanup managers
+        const cleanupPromises = [
+          this.mediaManager.cleanup(),
+          this.connectionPool.cleanup(),
+          this.signaling.cleanup(),
+        ];
+
+        await Promise.all(cleanupPromises);
+
+        // Only transition to closed if we're still in closing state
+        if (this.state.currentState === CONNECTION_STATES.CLOSING) {
+          this.state.transition(CONNECTION_STATES.CLOSED);
+        }
+      } catch (error) {
+        console.error('Error during cleanup:', error);
+        // Ensure we reach closed state even if there's an error
+        if (this.state.currentState !== CONNECTION_STATES.CLOSED) {
+          this.state.transition(CONNECTION_STATES.CLOSED);
+        }
+      }
     }
-
-    // Clean up managers
-    this.mediaManager.cleanup();
-    this.connectionPool.cleanup();
-    this.signaling.cleanup();
-
-    this.updateState('closed');
   }
 
   // Public methods for external control
@@ -774,6 +985,134 @@ class ConnectionManager extends EventEmitter {
    */
   async setAudioEnabled(enabled) {
     await this.mediaManager.setTrackEnabled('audio', enabled);
+  }
+
+  startQualityMonitoring() {
+    if (this.statsInterval) {
+      clearInterval(this.statsInterval);
+    }
+
+    this.statsInterval = setInterval(async () => {
+      try {
+        // Get stats from all active producers and consumers
+        const producerStats = await this.getProducerStats();
+        const consumerStats = await this.getConsumerStats();
+
+        // Aggregate stats
+        const aggregatedStats = this.aggregateStats(
+          producerStats,
+          consumerStats,
+        );
+
+        // Update quality monitor
+        const qualityReport = this.qualityMonitor.update(aggregatedStats);
+
+        // Log quality metrics if significant time has passed
+        const now = Date.now();
+        if (now - this.lastQualityCheck > 10000) {
+          // Log every 10 seconds
+          console.log('Connection quality report:', qualityReport);
+          this.lastQualityCheck = now;
+        }
+      } catch (error) {
+        console.error('Error monitoring connection quality:', error);
+      }
+    }, this.QUALITY_CHECK_INTERVAL);
+  }
+
+  async getProducerStats() {
+    const stats = {
+      rtt: [],
+      packetLoss: [],
+      bitrate: [],
+    };
+
+    for (const producer of this.mediaManager.producers.values()) {
+      try {
+        const producerStats = await producer.getStats();
+        for (const stat of producerStats) {
+          if (stat.type === 'outbound-rtp') {
+            if (stat.roundTripTime) stats.rtt.push(stat.roundTripTime * 1000);
+            if (stat.packetsLost && stat.packetsSent) {
+              stats.packetLoss.push(stat.packetsLost / stat.packetsSent);
+            }
+            if (stat.bytesSent && stat.timestamp) {
+              stats.bitrate.push(
+                (stat.bytesSent * 8) / (stat.timestamp / 1000),
+              );
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error getting producer stats:', error);
+      }
+    }
+
+    return stats;
+  }
+
+  async getConsumerStats() {
+    const stats = {
+      rtt: [],
+      packetLoss: [],
+      bitrate: [],
+    };
+
+    for (const consumer of this.mediaManager.consumers.values()) {
+      try {
+        const consumerStats = await consumer.getStats();
+        for (const stat of consumerStats) {
+          if (stat.type === 'inbound-rtp') {
+            if (stat.roundTripTime) stats.rtt.push(stat.roundTripTime * 1000);
+            if (stat.packetsLost && stat.packetsReceived) {
+              stats.packetLoss.push(
+                stat.packetsLost / (stat.packetsLost + stat.packetsReceived),
+              );
+            }
+            if (stat.bytesReceived && stat.timestamp) {
+              stats.bitrate.push(
+                (stat.bytesReceived * 8) / (stat.timestamp / 1000),
+              );
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error getting consumer stats:', error);
+      }
+    }
+
+    return stats;
+  }
+
+  aggregateStats(producerStats, consumerStats) {
+    const aggregate = {
+      rtt: 0,
+      packetLoss: 0,
+      bitrate: 0,
+    };
+
+    // Combine all RTT measurements
+    const allRtt = [...producerStats.rtt, ...consumerStats.rtt];
+    aggregate.rtt =
+      allRtt.length > 0 ? allRtt.reduce((a, b) => a + b, 0) / allRtt.length : 0;
+
+    // Combine all packet loss measurements
+    const allPacketLoss = [
+      ...producerStats.packetLoss,
+      ...consumerStats.packetLoss,
+    ];
+    aggregate.packetLoss =
+      allPacketLoss.length > 0
+        ? allPacketLoss.reduce((a, b) => a + b, 0) / allPacketLoss.length
+        : 0;
+
+    // Sum all bitrates
+    aggregate.bitrate = [
+      ...producerStats.bitrate,
+      ...consumerStats.bitrate,
+    ].reduce((a, b) => a + b, 0);
+
+    return aggregate;
   }
 
   handleQualityChange(newLevel, oldLevel) {

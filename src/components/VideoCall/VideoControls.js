@@ -438,7 +438,7 @@ const VideoControls = ({
             open={openSnackbar}
             onClose={handleCloseSnackbar}
             message="Feature available early 2025"
-            key={'bottom' + 'center'}
+            key={'bottom' + 'center Settings'}
             autoHideDuration={500}
           />
 
@@ -447,7 +447,7 @@ const VideoControls = ({
             open={openSnackbarMeetingNotes}
             onClose={handleCloseSnackbarMeetingNotes}
             message={`Meeting notes ${isMeetingNotes ? 'enabled' : 'disabled'}`}
-            key={'bottom' + 'center'}
+            key={'bottom' + 'center Meeting Notes'}
             autoHideDuration={500}
           />
         </BottomNavigation>

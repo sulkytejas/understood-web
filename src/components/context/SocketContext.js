@@ -15,17 +15,24 @@ export const SocketProvider = ({ children }) => {
   useEffect(() => {
     const apiUrl = process.env.REACT_APP_API_URL;
     const newSocket = io(apiUrl);
+    setSocket(newSocket);
+
     newSocket.on('connect', () => {
       const deviceId = generateDeviceId();
 
       newSocket.emit('registerDevice', deviceId);
       console.log('Connected to server with socket ID:', newSocket.id);
-      setSocket(newSocket); // Set the socket after connection
-      setSocketIsConnected(true);
+      // setSocket(newSocket); // Set the socket after connection
+      setSocketIsConnected(true); //
+    });
+
+    newSocket.on('disconnect', () => {
+      console.log('Disconnected from server');
+      setSocketIsConnected(false); //
     });
 
     return () => {
-      newSocket.disconnect();
+      newSocket.disconnect(); //
     };
   }, []);
 

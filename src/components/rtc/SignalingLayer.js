@@ -10,6 +10,7 @@ class SignalingLayer {
 
     this.socket = socket;
     this.meetingId = null;
+    this.uid = null;
     this.eventHandlers = new Map();
     this.pendingRequests = new Map();
     this.timeouts = {
@@ -81,6 +82,13 @@ class SignalingLayer {
     this.meetingId = meetingId;
   }
 
+  setUid(uid) {
+    if (!uid) {
+      throw new Error('Uid  is required');
+    }
+    this.uid = uid;
+  }
+
   /**
    * Join meeting room
    * @returns {Promise<Object>} Router capabilities and role information
@@ -91,7 +99,10 @@ class SignalingLayer {
     }
 
     console.log('Joining room with meeting ID:', this.meetingId);
-    return this.emitWithTimeout('joinMeeting', { meetingId: this.meetingId });
+    return this.emitWithTimeout('joinMeeting', {
+      meetingId: this.meetingId,
+      uid: this.uid,
+    });
   }
 
   async createProducerTransport() {
@@ -183,6 +194,36 @@ class SignalingLayer {
       },
       15000, // passing custom timeout for reconnection
     );
+  }
+
+  once(event, handler) {
+    // Use socket.once directly
+    this.socket.once(event, handler);
+
+    // Track it in eventHandlers for cleanup
+    this.eventHandlers.set(`once:${event}`, handler);
+  }
+
+  off(event, handler) {
+    // If handler provided, remove specific handler
+    if (handler) {
+      this.socket.off(event, handler);
+      // Remove from tracked handlers
+      for (const [key, trackedHandler] of this.eventHandlers) {
+        if (key.endsWith(event) && trackedHandler === handler) {
+          this.eventHandlers.delete(key);
+        }
+      }
+    } else {
+      // If no handler, remove all handlers for this event
+      this.socket.off(event);
+      // Remove all tracked handlers for this event
+      for (const [key] of this.eventHandlers) {
+        if (key.endsWith(event)) {
+          this.eventHandlers.delete(key);
+        }
+      }
+    }
   }
 
   /**

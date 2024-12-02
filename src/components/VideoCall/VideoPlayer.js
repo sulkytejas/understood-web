@@ -254,13 +254,6 @@ const VideoPlayer = ({
     if (remoteVideoRef.current) {
       const stream = callStarted ? remoteTrack : localStream;
       remoteVideoRef.current.srcObject = stream;
-
-      // Chrome sometimes needs a push to play audio
-      if (callStarted && stream?.getAudioTracks().length > 0) {
-        remoteVideoRef.current
-          .play()
-          .catch((e) => console.error('Error playing audio:', e));
-      }
     }
 
     if (pipVideoRef.current) {

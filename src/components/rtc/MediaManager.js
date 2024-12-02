@@ -184,7 +184,7 @@ class MediaManager {
         }
       }
 
-      // Advanced camera features
+      // Standard camera features
       if (supportedConstraints.focusMode) {
         cameraConstraints.focusMode = 'continuous';
       }
@@ -194,19 +194,35 @@ class MediaManager {
       if (supportedConstraints.whiteBalanceMode) {
         cameraConstraints.whiteBalanceMode = 'continuous';
       }
-      if (supportedConstraints.videoStabilizationMode) {
-        cameraConstraints.videoStabilizationMode = 'auto';
-      }
-      if (supportedConstraints.hdrEnabled) {
-        cameraConstraints.hdrEnabled = true;
-      }
-      if (supportedConstraints.noiseReduction) {
-        cameraConstraints.noiseReduction =
-          this.lastQuality === 'low' ? 'high' : 'medium';
-      }
 
+      // Apply constraints if any are supported
       if (Object.keys(cameraConstraints).length > 0) {
-        await videoTrack.applyConstraints(cameraConstraints);
+        try {
+          await videoTrack.applyConstraints(cameraConstraints);
+
+          // Log applied settings
+          const settings = videoTrack.getSettings();
+          console.log('Applied camera settings:', {
+            width: settings.width,
+            height: settings.height,
+            frameRate: settings.frameRate,
+            focusMode: settings.focusMode,
+            exposureMode: settings.exposureMode,
+            whiteBalanceMode: settings.whiteBalanceMode,
+          });
+        } catch (error) {
+          // Try applying constraints individually if bulk application fails
+          for (const [key, value] of Object.entries(cameraConstraints)) {
+            try {
+              await videoTrack.applyConstraints({ [key]: value });
+            } catch (constraintError) {
+              console.warn(
+                `Failed to apply camera constraint ${key}:`,
+                constraintError,
+              );
+            }
+          }
+        }
       }
 
       return true;

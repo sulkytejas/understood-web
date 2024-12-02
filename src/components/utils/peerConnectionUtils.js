@@ -52,12 +52,6 @@ export const isBrowserSupportingL3T3 = () => {
   return false; // Doesn't support L3T3
 };
 
-// Example usage
-if (!isBrowserSupportingL3T3()) {
-  console.log('The browser does not support L3T3 for VP9 SVC.');
-  // Fallback to another scalability mode or codec
-}
-
 export const getVideoConstraints = async (
   browserName,
   connectionQuality = 'good',

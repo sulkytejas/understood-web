@@ -26,7 +26,7 @@ import { AsYouType } from 'libphonenumber-js';
 import { useDispatch } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 
-import { setUserPhoneNumber, setUserName } from '../../redux/userSlice';
+import { setUserPhoneNumber, setUserName, setUid } from '../../redux/userSlice';
 import OtpVerification from './OtpVerification';
 
 const CustomTextField = styled(TextField)({
@@ -282,6 +282,7 @@ const PhoneSignIn = forwardRef(
 
                 dispatch(setUserPhoneNumber(serverResponse?.user?.phoneNumber));
                 dispatch(setUserName(serverResponse?.user?.username));
+                dispatch(setUid(serverResponse?.user?.uid));
 
                 const redirectQuery = new URLSearchParams(location.search);
                 const meetingId = redirectQuery.get('meetingId');

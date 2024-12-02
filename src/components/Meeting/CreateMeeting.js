@@ -4,7 +4,6 @@ import { styled } from '@mui/system';
 import { useSelector, useDispatch } from 'react-redux';
 import { useSocket } from '../context/SocketContext';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
 
 import HostControl from './HostControl';
 // import UserAvatar from './UserAvatar';
@@ -31,15 +30,6 @@ const CustomTabs = styled(Tabs)({
     padding: '0 5px', // Add padding to the scroller
   },
 });
-
-const pageVariants = {
-  initial: { opacity: 0 },
-  in: { opacity: 1 },
-  out: { opacity: 0 },
-};
-const pageTransition = {
-  duration: 0.3,
-};
 
 const CustomTab = styled(Tab)({
   backgroundColor: '#F1F0F0',
@@ -104,6 +94,8 @@ const CreateMeetingPage = () => {
   const localSpokenLanguage = useSelector(
     (state) => state.translation.localSpokenLanguage,
   );
+  const userUid = useSelector((state) => state.user.uid);
+
   const email = useSelector((state) => state.user.email);
   const [openSettingMenu, setOpenSettingMenu] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -154,76 +146,74 @@ const CreateMeetingPage = () => {
     }
   }, [socket, isSocketConnected, dispatch, urlMeetingId, navigate]);
 
+  useEffect(() => {
+    if (socket && isSocketConnected) {
+      socket.emit('registerUid', userUid);
+    }
+  }, [userUid, socket]);
+
   if (loading) {
     console.log('Loading spinner on create meeting page');
     return <LoadingSpinner />;
   }
 
   return (
-    <motion.div
-      initial="initial"
-      animate="in"
-      exit="out"
-      variants={pageVariants}
-      transition={pageTransition}
+    <Box
+      sx={{
+        margin: '16px',
+      }}
     >
-      <Box
-        sx={{
-          margin: '16px',
-        }}
+      <StyledLogoBox>
+        <LogoIcon style={{ width: 40, height: 40 }} />
+        {/* Adjust size as needed */}
+      </StyledLogoBox>
+
+      <CustomTabs
+        value={activeTab}
+        onChange={(e, newValue) => setActiveTab(newValue)}
+        indicatorColor="primary"
+        textColor="primary"
+        variant="fullWidth"
       >
-        <StyledLogoBox>
-          <LogoIcon style={{ width: 40, height: 40 }} />
-          {/* Adjust size as needed */}
-        </StyledLogoBox>
+        <CustomTab label={t('Host ')} />
+        <CustomTab label={t('Join')} />
+        <CustomTabDark label={t('Vibe')} />
+      </CustomTabs>
+      <div className="create-meeting-content">{/* <UserAvatar /> */}</div>
 
-        <CustomTabs
-          value={activeTab}
-          onChange={(e, newValue) => setActiveTab(newValue)}
-          indicatorColor="primary"
-          textColor="primary"
-          variant="fullWidth"
-        >
-          <CustomTab label={t('Host ')} />
-          <CustomTab label={t('Join')} />
-          <CustomTabDark label={t('Vibe')} />
-        </CustomTabs>
-        <div className="create-meeting-content">{/* <UserAvatar /> */}</div>
-
-        {activeTab === 0 && (
-          <HostControl
-            onSetOpenSettingMenu={setOpenSettingMenu}
-            persistedUserName={persistedUserName}
-            phoneNumber={phoneNumber}
-            email={email}
-            setActiveTab={setActiveTab}
-          />
-        )}
-
-        {activeTab === 1 && (
-          <ParticipantTab
-            onSetOpenSettingMenu={setOpenSettingMenu}
-            persistedUserName={persistedUserName}
-            phoneNumber={phoneNumber}
-            email={email}
-          />
-        )}
-
-        {activeTab === 2 && (
-          <VibeModeTab
-            onSetOpenSettingMenu={setOpenSettingMenu}
-            persistedUserName={persistedUserName}
-            phoneNumber={phoneNumber}
-            email={email}
-          />
-        )}
-
-        <AccountSeetingDialog
-          open={openSettingMenu}
-          onClose={handleSettingClose}
+      {activeTab === 0 && (
+        <HostControl
+          onSetOpenSettingMenu={setOpenSettingMenu}
+          persistedUserName={persistedUserName}
+          phoneNumber={phoneNumber}
+          email={email}
+          setActiveTab={setActiveTab}
         />
-      </Box>
-    </motion.div>
+      )}
+
+      {activeTab === 1 && (
+        <ParticipantTab
+          onSetOpenSettingMenu={setOpenSettingMenu}
+          persistedUserName={persistedUserName}
+          phoneNumber={phoneNumber}
+          email={email}
+        />
+      )}
+
+      {activeTab === 2 && (
+        <VibeModeTab
+          onSetOpenSettingMenu={setOpenSettingMenu}
+          persistedUserName={persistedUserName}
+          phoneNumber={phoneNumber}
+          email={email}
+        />
+      )}
+
+      <AccountSeetingDialog
+        open={openSettingMenu}
+        onClose={handleSettingClose}
+      />
+    </Box>
   );
 };
 

@@ -96,6 +96,8 @@ const HostControl = ({
     (state) => state.meeting.meetingPhrase,
   );
 
+  const uid = useSelector((state) => state.user.uid);
+
   // const navigate = useNavigate();
 
   const [meetingId, setMeetingId] = useState('');
@@ -123,6 +125,7 @@ const HostControl = ({
           phoneNumber,
           email,
           userSpokenLanguage,
+          uid,
         },
         ({ meetingId, hostSocketId, error, meetingPhrase }) => {
           if (error) {

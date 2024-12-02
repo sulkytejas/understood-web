@@ -21,7 +21,7 @@ import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined';
 import ExpandLessOutlinedIcon from '@mui/icons-material/ExpandLessOutlined';
 import BluetoothAudioIcon from '@mui/icons-material/BluetoothAudio';
 
-import { useTranslation } from 'react-i18next';
+// import { useTranslation } from 'react-i18next';
 
 import { setCallMenuOpen, setCallSideMenu } from '../../redux/uiSlice';
 import { setVideoPause, setAudioPause } from '../../redux/videoPlayerSlice';
@@ -36,7 +36,9 @@ const SideMenu = () => {
   const [openModal, setOpenModal] = useState(false);
   const [openTooltip, setOpenTooltip] = useState(true);
 
-  const { t } = useTranslation();
+  // const { t } = useTranslation();
+
+  // console.log(t);
 
   // // Fetch available audio output devices
   // useEffect(() => {
@@ -142,7 +144,9 @@ const SideMenu = () => {
     return () => clearTimeout(timer); // Clean up the timer on unmount
   }, []);
 
-  const tooltipTitle = t('Control your video and audio settings.');
+  const tooltipTitle = 'Control your video and audio settings.';
+
+  // const tooltipTitle = t('Control your video and audio settings.');
 
   return (
     <Box
@@ -234,9 +238,11 @@ const SideMenu = () => {
                 wordWrap: 'break-word', // Break long words if needed
               }}
             >
-              {t(
+              Use your Phone control center to change audio output after
+              connecting the call.
+              {/* {t(
                 'Use your Phone control center to change audio output after connecting the call.',
-              )}
+              )} */}
             </Typography>
           </MenuItem>
 

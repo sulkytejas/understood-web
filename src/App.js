@@ -154,13 +154,29 @@ function App() {
     duration: 0.3,
   };
 
+  const AnimatedRoute = ({ element }) => {
+    const location = useLocation();
+    return (
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={location.pathname}
+          initial="initial"
+          animate="in"
+          exit="out"
+          variants={pageVariants}
+          transition={pageTransition}
+        >
+          {element}
+        </motion.div>
+      </AnimatePresence>
+    );
+  };
+
   return (
     <Box
       sx={{
         width: '100%',
         maxWidth: { xs: '100vw', md: '430px' },
-        // height: '100vh',
-        // overflow: 'hidden',
         margin: '0 auto',
         boxSizing: 'border-box',
       }}
@@ -168,96 +184,68 @@ function App() {
       <SocketProvider>
         <WebRTCBridge>
           <AudioTranscriptionProvider>
-            <AnimatePresence mode="wait">
-              <Routes location={location}>
-                <Route
-                  path="/"
-                  element={
-                    !isLocaleAndSpokenSet ? (
-                      <motion.div
-                        initial="initial"
-                        animate="in"
-                        exit="out"
-                        variants={pageVariants}
-                        transition={pageTransition}
-                      >
-                        <WelcomeScreen />
-                      </motion.div>
-                    ) : userDetails?.username ? (
-                      <Navigate to="/meeting" />
-                    ) : (
-                      <Navigate to="/login" />
-                    )
-                  }
-                />
-                <Route
-                  path="/login"
-                  element={
-                    !userData?.username ? (
-                      <UserLogin />
-                    ) : (
-                      <Navigate to="/meeting" />
-                    )
-                  }
-                />
-                <Route path="/googleCallback" element={<GoogleCallback />} />
-                <Route
-                  path="/meeting"
-                  element={
+            <Routes location={location}>
+              <Route
+                path="/"
+                element={
+                  !isLocaleAndSpokenSet ? (
+                    <AnimatedRoute element={<WelcomeScreen />} />
+                  ) : userDetails?.username ? (
+                    <Navigate to="/meeting" />
+                  ) : (
+                    <Navigate to="/login" />
+                  )
+                }
+              />
+              <Route
+                path="/login"
+                element={
+                  !userData?.username ? (
+                    <AnimatedRoute element={<UserLogin />} />
+                  ) : (
+                    <Navigate to="/meeting" />
+                  )
+                }
+              />
+              <Route path="/googleCallback" element={<GoogleCallback />} />
+              <Route
+                path="/meeting"
+                element={
+                  <ProtectedRoute>
+                    <AnimatedRoute element={<CreateMeetingPage />} />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/videocall/:meetingId"
+                element={
+                  meetingId ? (
                     <ProtectedRoute>
-                      <CreateMeetingPage />
+                      <AnimatedRoute element={<VideoCall />} />
                     </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/videocall/:meetingId"
-                  element={
-                    meetingId ? (
-                      <ProtectedRoute>
-                        <VideoCall />
-                      </ProtectedRoute>
-                    ) : (
-                      <Navigate to="/meetingEnded" />
-                    )
-                  }
-                />
-                <Route
-                  path="/vibe/:practiceSessionId"
-                  element={
-                    <ProtectedRoute>
-                      <motion.div
-                        initial="initial"
-                        animate="in"
-                        exit="out"
-                        variants={pageVariants}
-                        transition={pageTransition}
-                      >
-                        <PracticeMain />
-                      </motion.div>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/meetingEnded"
-                  element={
-                    <motion.div
-                      initial="initial"
-                      animate="in"
-                      exit="out"
-                      variants={pageVariants}
-                      transition={pageTransition}
-                    >
-                      <MeetingEnded />
-                    </motion.div>
-                  }
-                />
-                <Route path="/privacyPolicy" element={<PrivacyPolicy />} />
-                <Route
-                  path="/termsAndConditions"
-                  element={<TermsAndCondition />}
-                />
-              </Routes>
-            </AnimatePresence>
+                  ) : (
+                    <Navigate to="/meetingEnded" />
+                  )
+                }
+              />
+              <Route
+                path="/vibe/:practiceSessionId"
+                element={
+                  <ProtectedRoute>
+                    <AnimatedRoute element={<PracticeMain />} />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/meetingEnded"
+                element={<AnimatedRoute element={<MeetingEnded />} />}
+              />
+              <Route path="/privacyPolicy" element={<PrivacyPolicy />} />
+              <Route
+                path="/termsAndConditions"
+                element={<TermsAndCondition />}
+              />
+            </Routes>
           </AudioTranscriptionProvider>
         </WebRTCBridge>
       </SocketProvider>
