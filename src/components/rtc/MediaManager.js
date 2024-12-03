@@ -635,11 +635,65 @@ class MediaManager {
       console.log('No consumers available yet');
       return null;
     }
-    const stream = new MediaStream();
-    this.consumers.forEach((consumer) => {
-      stream.addTrack(consumer.track);
+
+    // Create new MediaStream only if needed
+    if (!this._remoteStream) {
+      this._remoteStream = new MediaStream();
+    }
+
+    // Get current tracks in stream
+    const currentTracks = this._remoteStream.getTracks();
+    const currentTrackIds = new Set(currentTracks.map((track) => track.id));
+
+    // Get all available tracks from consumers
+    const consumerTracks = Array.from(this.consumers.values())
+      .filter((consumer) => !consumer.closed && consumer.track)
+      .map((consumer) => ({
+        track: consumer.track,
+        kind: consumer.kind,
+        id: consumer.id,
+      }));
+
+    // Remove tracks that are no longer present
+    currentTracks.forEach((track) => {
+      if (!consumerTracks.some((ct) => ct.track.id === track.id)) {
+        this._remoteStream.removeTrack(track);
+      }
     });
-    return stream.getTracks().length > 0 ? stream : null;
+
+    // Add new tracks
+    consumerTracks.forEach(({ track }) => {
+      if (!currentTrackIds.has(track.id)) {
+        // Check if we're replacing a track of the same kind
+        const existingTrack = this._remoteStream
+          .getTracks()
+          .find((t) => t.kind === track.kind);
+
+        if (existingTrack) {
+          this._remoteStream.removeTrack(existingTrack);
+        }
+
+        try {
+          this._remoteStream.addTrack(track);
+        } catch (error) {
+          console.warn(`Failed to add ${track.kind} track:`, error);
+          // For Safari: try alternative approach
+          if (error.name === 'InvalidAccessError') {
+            this._remoteStream = new MediaStream([track]);
+          }
+        }
+      }
+    });
+
+    // Verify stream state
+    console.log('Remote stream state:', {
+      id: this._remoteStream.id,
+      audioTracks: this._remoteStream.getAudioTracks().length,
+      videoTracks: this._remoteStream.getVideoTracks().length,
+      active: this._remoteStream.active,
+    });
+
+    return this._remoteStream;
   }
 
   /**

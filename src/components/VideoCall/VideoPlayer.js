@@ -213,56 +213,55 @@ const VideoPlayer = ({
     }
   }, [remoteTrack, animationFrameRef, stopTrackRef]);
 
-  // Effect to handle stream switching
   useEffect(() => {
-    const currentStream = callStarted ? remoteTrack : localStream;
-
-    // Stop face tracking before switching streams
-    stopFaceTracking();
-
-    if (remoteVideoRef.current) {
-      remoteVideoRef.current.srcObject = currentStream;
-    } else {
-      setShowAlert(true);
-    }
-
-    // Handle PiP video stream
-    if (pipVideoRef.current) {
-      pipVideoRef.current.srcObject = callStarted ? localStream : null;
-    }
-  }, [callStarted, localStream, remoteTrack]);
-
-  useEffect(() => {
-    console.log('Stream status:', {
-      callStarted,
+    console.log('Before stream state:', {
       hasLocalStream: !!localStream,
-      localAudioTracks: localStream?.getAudioTracks().map((t) => ({
-        kind: t.kind,
-        enabled: t.enabled,
-        muted: t.muted,
-        readyState: t.readyState,
-      })),
+      localTracks: localStream
+        ?.getTracks()
+        .map((t) => ({ kind: t.kind, enabled: t.enabled })),
       hasRemoteStream: !!remoteTrack,
-      remoteAudioTracks: remoteTrack?.getAudioTracks().map((t) => ({
-        kind: t.kind,
-        enabled: t.enabled,
-        muted: t.muted,
-        readyState: t.readyState,
-      })),
+      remoteTracks: remoteTrack
+        ?.getTracks()
+        .map((t) => ({ kind: t.kind, enabled: t.enabled })),
+      connectionState,
+      callStarted,
     });
 
-    if (remoteVideoRef.current) {
-      const stream = callStarted ? remoteTrack : localStream;
-      remoteVideoRef.current.srcObject = stream;
-    }
+    const handleSwitchStreams = async () => {
+      // Stop face tracking before switching streams
+      stopFaceTracking();
 
-    if (pipVideoRef.current) {
-      pipVideoRef.current.srcObject = callStarted ? localStream : null;
-    }
+      if (remoteVideoRef.current) {
+        const stream = callStarted ? remoteTrack : localStream;
+        remoteVideoRef.current.srcObject = stream;
 
-    // Only enhance container when showing local stream
-    enhanceVideoContainer(videoContainerRef, !callStarted);
+        // Ensure playback starts
+        try {
+          await remoteVideoRef.current.play();
+        } catch (error) {
+          console.warn('Playback start failed:', error);
+        }
+      } else {
+        setShowAlert(true);
+      }
 
+      if (pipVideoRef.current) {
+        pipVideoRef.current.srcObject = callStarted ? localStream : null;
+
+        if (callStarted && localStream) {
+          try {
+            await pipVideoRef.current.play();
+          } catch (error) {
+            console.warn('PiP playback start failed:', error);
+          }
+        }
+      }
+
+      // Only enhance container when showing local stream
+      enhanceVideoContainer(videoContainerRef, !callStarted);
+    };
+
+    handleSwitchStreams();
     // Studio light is handled by the hook
   }, [callStarted, localStream, remoteTrack]);
 
@@ -310,6 +309,8 @@ const VideoPlayer = ({
     callStarted,
   });
 
+  console.log(handleFaceTracking);
+
   return (
     <div className="video-player" style={containerStyle}>
       <Box sx={videoWrapperStyle}>
@@ -319,10 +320,10 @@ const VideoPlayer = ({
           autoPlay
           playsInline
           // muted={!callStarted}
-          onLoadedMetadata={() => {
-            const currentStream = !callStarted ? remoteTrack : localStream;
-            handleFaceTracking(currentStream, remoteVideoRef);
-          }}
+          // onLoadedMetadata={() => {
+          //   const currentStream = !callStarted ? remoteTrack : localStream;
+          //   handleFaceTracking(currentStream, remoteVideoRef);
+          // }}
           style={{ width: '100%', height: '100%' }}
         />
       </Box>

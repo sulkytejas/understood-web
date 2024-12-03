@@ -11,10 +11,6 @@ import ConnectionManager from '../rtc/ConnectionManager';
 import { cleanupState } from '../../redux/actions';
 import { setParticipantInfo } from '../../redux/meetingSlice';
 import { useSocket } from './SocketContext';
-import {
-  WebRTCDebugHelper,
-  // createDebugPeerConnection,
-} from '../utils/WebrtcDebuggerHelper';
 
 const WebRTCContext = createContext();
 
@@ -137,18 +133,6 @@ export const WebRTCBridge = ({ children }) => {
   }, [isAudioPaused]);
 
   // Debugger for webrtc
-
-  useEffect(() => {
-    if (socket && meetingId) {
-      const debugHelper = new WebRTCDebugHelper('WebRTCBridge');
-      debugHelper.log('Initializing connection', { meetingId });
-
-      // Clear webrtc-internals before new test
-      WebRTCDebugHelper.clearWebRTCInternals();
-
-      // ... rest of your code
-    }
-  }, [socket, meetingId]);
 
   // Maintain existing public methods with new implementation
   const publicMethods = {
