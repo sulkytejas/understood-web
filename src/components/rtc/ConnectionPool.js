@@ -100,7 +100,9 @@ class ConnectionPool extends EventEmitter {
    * @param {string} state - New connection state
    */
   handleConnectionStateChange(type, transportId, state) {
-    const transportData = this.getTransportData(type, transportId);
+    const transportMap =
+      type === 'producer' ? this.producerTransports : this.consumerTransports;
+    const transportData = transportMap.get(transportId);
     if (!transportData) return;
 
     const now = Date.now();
@@ -140,7 +142,9 @@ class ConnectionPool extends EventEmitter {
   }
 
   attemptTransportRecovery(type, transportId) {
-    const transportData = this.getTransportData(type, transportId);
+    const transportMap =
+      type === 'producer' ? this.producerTransports : this.consumerTransports;
+    const transportData = transportMap.get(transportId);
     if (!transportData) return;
 
     transportData.stats.failures++;
@@ -205,6 +209,7 @@ class ConnectionPool extends EventEmitter {
    * @param {string} type - Transport type
    * @param {string} transportId - Transport identifier
    */
+
   startStatsMonitoring(transport, type, transportId) {
     const statsInterval = setInterval(async () => {
       if (!this.isTransportValid(type, transportId)) {
@@ -214,6 +219,7 @@ class ConnectionPool extends EventEmitter {
 
       try {
         const stats = await transport._handler._pc.getStats();
+
         this.updateTransportStats(type, transportId, stats);
       } catch (error) {
         console.warn(

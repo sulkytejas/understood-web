@@ -41,6 +41,7 @@ class ConnectionState {
         CONNECTION_STATES.FAILED,
       ],
       [CONNECTION_STATES.RECONNECTING]: [
+        CONNECTION_STATES.CONNECTING,
         CONNECTION_STATES.CONNECTED,
         CONNECTION_STATES.FAILED,
       ],
@@ -216,6 +217,8 @@ class ConnectionManager extends EventEmitter {
     this.userSpokenLanguage = userSpokenLanguage;
     this.device = null;
     this.uid = uid;
+    this.producerTransportId = null;
+    this.consumerTransportId = null;
 
     // Callback handlers
     this.onStateChange = onStateChange;
@@ -229,7 +232,7 @@ class ConnectionManager extends EventEmitter {
 
     // Connection state
     this.isReconnecting = false;
-    this.reconnectAttempts = 0;
+    this.reconnectionAttempts = 0;
     this.MAX_RECONNECT_ATTEMPTS = 5;
     this.isHost = false;
     this.hostSocketId = null;
@@ -241,8 +244,9 @@ class ConnectionManager extends EventEmitter {
     this.QUALITY_CHECK_INTERVAL = 2000;
 
     // Bind methods
-
-    // this.handleTransportFailure = this.handleTransportFailure.bind(this);
+    this.attemptReconnect = this.attemptReconnect.bind(this);
+    this.handleConnectTransportFailure =
+      this.handleConnectTransportFailure.bind(this);
     this.handleConnectionStateChange =
       this.handleConnectionStateChange.bind(this);
     this.handleError = this.handleError.bind(this);
@@ -288,7 +292,12 @@ class ConnectionManager extends EventEmitter {
   initializeEventListeners() {
     // Use arrow function to preserve 'this' context
     this.connectionPool.on('transportFailed', (data) => {
-      this.handleTransportFailure(data);
+      this.handleConnectTransportFailure(data);
+    });
+
+    this.connectionPool.on('transportWarning', (data) => {
+      console.warn(`Transport warning: ${data.message}`, data);
+      // Potentially trigger some UI warning or prepare for recovery
     });
 
     this.signaling.socket.on('reconnect', () => {
@@ -329,7 +338,13 @@ class ConnectionManager extends EventEmitter {
         this.cleanup();
       },
       onConnectionError: (error) => {
-        this.handleError('Connection error', error);
+        console.error('Connection error', error);
+        // Trigger the state machine to attempt reconnect
+        if (this.state.canReconnect()) {
+          this.isReconnecting = true;
+          this.state.transition(CONNECTION_STATES.RECONNECTING);
+          this.attemptReconnect();
+        }
       },
       onReconnected: () => {
         if (
@@ -423,6 +438,8 @@ class ConnectionManager extends EventEmitter {
       await this.startStreaming(stream);
 
       this.state.transition(CONNECTION_STATES.CONNECTED);
+      this.isReconnecting = false;
+      this.reconnectionAttempts = 0;
       console.log(`Connection established - isHost: ${this.isHost}`);
 
       return {
@@ -450,7 +467,7 @@ class ConnectionManager extends EventEmitter {
         break;
 
       case CONNECTION_STATES.CONNECTED:
-        this.reconnectAttempts = 0;
+        this.reconnectionAttempts = 0;
         // this.startQualityMonitoring();
         break;
 
@@ -463,7 +480,10 @@ class ConnectionManager extends EventEmitter {
 
   async attemptReconnect() {
     // First, check max attempts to prevent infinite recursion
-    if (this.reconnectionAttempts >= this.MAX_RECONNECTION_ATTEMPTS) {
+    if (
+      this.reconnectionAttempts >= this.MAX_RECONNECTION_ATTEMPTS &&
+      this.state.currentState !== CONNECTION_STATES.CONNECTED
+    ) {
       this.state.transition(CONNECTION_STATES.FAILED);
       throw new Error('Max reconnection attempts reached');
     }
@@ -517,8 +537,8 @@ class ConnectionManager extends EventEmitter {
 
       // Reset on success
       this.reconnectionAttempts = 0;
-      this.state.transition(CONNECTION_STATES.CONNECTED);
       this.isReconnecting = false;
+      this.state.transition(CONNECTION_STATES.CONNECTED);
 
       return true;
     } catch (error) {
@@ -867,11 +887,13 @@ class ConnectionManager extends EventEmitter {
       case 'connected':
         if (this.isReconnecting) {
           this.state.transition(CONNECTION_STATES.CONNECTED);
+          this.isReconnecting = false;
+          this.reconnectionAttempts = 0;
         }
         break;
 
       case 'failed':
-        this.handleTransportFailure(transport);
+        this.handleConnectTransportFailure(transport);
         break;
 
       case 'disconnected':
@@ -888,18 +910,24 @@ class ConnectionManager extends EventEmitter {
         }
 
         if (!this.isReconnecting && this.state.canReconnect()) {
-          this.isReconnecting = true;
-          this.state.transition(CONNECTION_STATES.RECONNECTING);
+          // this.isReconnecting = true;
+          // this.state.transition(CONNECTION_STATES.RECONNECTING);
           await this.waitForServerReady(); // Wait for socket reconnection
-          await this.attemptReconnect();
+          this.handleConnectTransportFailure(transport);
+
+          // await this.attemptReconnect();
         }
         break;
     }
   }
 
-  handleTransportFailure(transport) {
+  handleConnectTransportFailure(transport) {
     console.log('Transport failure:', transport);
-    if (this.state.canReconnect()) {
+    if (this.state.canReconnect() && !this.isReconnecting) {
+      this.isReconnecting = true;
+      if (this.state.currentState !== CONNECTION_STATES.RECONNECTING) {
+        this.state.transition(CONNECTION_STATES.RECONNECTING);
+      }
       this.attemptReconnect();
     } else {
       this.handleError('Transport failure', new Error('Transport failed'));
@@ -967,6 +995,35 @@ class ConnectionManager extends EventEmitter {
         }
       }
     }
+  }
+
+  async resetTransports() {
+    console.log(
+      'Resetting transports and media state for a fresh reconnection attempt',
+    );
+
+    // Stop quality monitoring if running
+    if (this.statsInterval) {
+      clearInterval(this.statsInterval);
+      this.statsInterval = null;
+    }
+
+    // Cleanup ConnectionPool to remove all transports
+    this.connectionPool.cleanup();
+
+    // Reset transport IDs
+    this.producerTransportId = null;
+    this.consumerTransportId = null;
+
+    // Cleanup MediaManager: remove all producers/consumers, etc.
+    // Assuming mediaManager has a method reset or add it:
+    this.mediaManager.reset();
+
+    // Clear pending producers array
+    this.pendingProducers = [];
+
+    // Reset any consumer readiness flags
+    this.isConsumerReady = false;
   }
 
   // Public methods for external control

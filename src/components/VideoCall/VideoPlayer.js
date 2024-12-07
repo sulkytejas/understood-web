@@ -6,8 +6,9 @@ import LoadingSpinner from '../onBoarding/LoadingSpinner';
 import useListTracker from '../hooks/useListTracker';
 import ListOverlay from './ListOverlay';
 import useStudioLight from '../hooks/useStudioLight';
+import useStreamAttachment from '../hooks/useStreamAttachment';
+import useFaceTracking from '../hooks/useFaceTracking';
 
-import { trackFace } from '../utils/tensorFlowUtils';
 import { enhanceVideoContainer } from '../utils/videoPlayerUtils';
 
 const circularRemoteVideo = {
@@ -68,209 +69,99 @@ const VideoPlayer = ({
   remoteTrack,
   videoContainerRef,
   callStarted,
+  onNoMediaFlow,
 }) => {
-  console.log('connectionState check before call', connectionState);
-
   const isMainMenuOpen = useSelector((state) => state.ui.callMenuOpen);
   const localTranslationLanguage = useSelector(
     (state) => state.translation.localTranslationLanguage,
   );
-
-  const { listItems, showList, title } = useListTracker();
-  const { t } = useTranslation();
-  // Check if the srcObject is available or not
-
-  const showConnectionAlert = connectionState !== 'connected';
   const otherParticipantInfo = useSelector(
     (state) => state.meeting.participantInfo,
   );
-  const animationFrameRef = useRef(null);
-  const stopTrackRef = useRef(null);
+
+  const { listItems, showList, title } = useListTracker();
+  const { t } = useTranslation();
+
+  // Check if the srcObject is available or not
+
+  const showConnectionAlert = connectionState !== 'connected';
+
   const pipVideoRef = useRef(null);
-  const faceTrackingRef = useRef({
-    isTracking: false,
-    currentStreamId: null,
-    stopTrack: null,
-  });
+
   const [showAlert, setShowAlert] = useState(false);
+  const [streamError, setStreamError] = useState(null);
+  const [hasMediaFlow, setHasMediaFlow] = useState(false);
+  const maxAttempts = 5;
+  const baseDelay = 1000; // 1s between checks
+  const attemptRef = useRef(0);
 
   const { applyStudioLight } = useStudioLight(remoteVideoRef, !callStarted);
 
-  console.log('otherParticipantInfo', otherParticipantInfo);
-
-  const stopFaceTracking = async () => {
-    if (faceTrackingRef.current.stopTrack) {
-      await faceTrackingRef.current.stopTrack();
-      faceTrackingRef.current = {
-        isTracking: false,
-        currentStreamId: null,
-        stopTrack: null,
-      };
-    }
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
-      animationFrameRef.current = null;
+  const handlePiPError = (error) => {
+    if (error.name === 'AbortError') {
+      // Just log AbortErrors as they're expected during switches
+      console.log('PiP stream switch in progress');
+    } else {
+      console.warn('PiP playback error:', error);
+      // Only show error for non-abort errors
+      setStreamError(error);
     }
   };
 
-  const handleFaceTracking = async (stream, videoRef) => {
-    if (
-      !stream?.getVideoTracks?.()?.length ||
-      !videoRef?.current ||
-      !videoContainerRef?.current
-    ) {
-      return;
-    }
+  // Add stream attachment hooks
+  useStreamAttachment(
+    remoteVideoRef,
+    callStarted ? remoteTrack : localStream,
+    setStreamError,
+  );
+  useStreamAttachment(
+    pipVideoRef,
+    callStarted ? localStream : null,
+    handlePiPError,
+  );
 
-    const videoTrack = stream.getVideoTracks()[0];
-    const settings = videoTrack.getSettings();
-    const streamId = videoTrack.id;
+  const { startFaceTracking, stopFaceTracking } = useFaceTracking({
+    stream: callStarted ? remoteTrack : localStream,
+    videoRef: remoteVideoRef,
+    videoContainerRef,
+    otherParticipantInfo,
+    applyStudioLight,
+    enabled: true,
+  });
 
-    console.log('Stream settings:', {
-      width: settings.width,
-      height: settings.height,
-      containerWidth: videoContainerRef.current?.clientWidth,
-    });
-
-    if (
-      !settings?.width ||
-      settings.width < videoContainerRef.current.clientWidth
-    ) {
-      return;
-    }
-
-    try {
-      // Stop existing face tracking if any
-      // if (stopTrackRef.current) {
-      //   stopTrackRef.current();
-      //   stopTrackRef.current = null;
-      // }
-      console.log(remoteVideoRef.current, 'remoteVideoRef');
+  // Handle stream switching with face tracking
+  useEffect(() => {
+    const handleSwitchStreams = async () => {
       await stopFaceTracking();
 
-      let remoteStreamInfo = null;
-      if (otherParticipantInfo) {
-        const values = Object.values(otherParticipantInfo)[0];
-        console.log('otherParticipantInfo values', values);
-
-        const { isIOS, userAgent, isLocalDevice, sourceIsIOS } = values;
-
-        remoteStreamInfo = {
-          isIOS,
-          userAgent,
-          isLocalDevice,
-          sourceIsIOS,
-        };
-      }
-
-      const { stopTrack } = await trackFace(
-        videoRef.current,
-        videoContainerRef.current,
-        stream,
-        animationFrameRef,
-        remoteStreamInfo,
-        applyStudioLight,
-      );
-
-      // Update tracking state
-      faceTrackingRef.current = {
-        isTracking: true,
-        currentStreamId: streamId,
-        stopTrack,
-      };
-    } catch (error) {
-      console.error('Error in face tracking:', error);
-
-      faceTrackingRef.current = {
-        isTracking: false,
-        currentStreamId: null,
-        stopTrack: null,
-      };
-    }
-  };
-
-  // Cleanup effect
-  useEffect(() => {
-    return () => {
-      stopFaceTracking();
-    };
-  }, []);
-
-  useEffect(() => {
-    // if (localStream && remoteTrack) {
-    //   console.log(
-    //     ' local stream settings',
-    //     localStream.getVideoTracks()[0].getSettings().width,
-    //     localStream.getVideoTracks()[0].getSettings().height,
-    //     'remostream settings',
-    //     remoteTrack.getVideoTracks()[0].getSettings().width,
-    //     remoteTrack.getVideoTracks()[0].getSettings().height,
-    //   );
-    // }
-
-    if (!remoteTrack && animationFrameRef.current && stopTrackRef.current) {
-      stopTrackRef.current();
-    }
-  }, [remoteTrack, animationFrameRef, stopTrackRef]);
-
-  useEffect(() => {
-    console.log('Before stream state:', {
-      hasLocalStream: !!localStream,
-      localTracks: localStream
-        ?.getTracks()
-        .map((t) => ({ kind: t.kind, enabled: t.enabled })),
-      hasRemoteStream: !!remoteTrack,
-      remoteTracks: remoteTrack
-        ?.getTracks()
-        .map((t) => ({ kind: t.kind, enabled: t.enabled })),
-      connectionState,
-      callStarted,
-    });
-
-    const handleSwitchStreams = async () => {
-      // Stop face tracking before switching streams
-      stopFaceTracking();
+      // Ensure a small delay between switches
+      await new Promise((r) => setTimeout(r, 100));
 
       if (remoteVideoRef.current) {
-        const stream = callStarted ? remoteTrack : localStream;
-        remoteVideoRef.current.srcObject = stream;
-
-        // Ensure playback starts
+        // Don't need to manually set srcObject here as useStreamAttachment handles it
         try {
-          await remoteVideoRef.current.play();
+          await startFaceTracking();
         } catch (error) {
-          console.warn('Playback start failed:', error);
+          console.warn('Face tracking failed:', error);
         }
       } else {
         setShowAlert(true);
       }
 
-      if (pipVideoRef.current) {
-        pipVideoRef.current.srcObject = callStarted ? localStream : null;
-
-        if (callStarted && localStream) {
-          try {
-            await pipVideoRef.current.play();
-          } catch (error) {
-            console.warn('PiP playback start failed:', error);
-          }
+      if (pipVideoRef.current && callStarted) {
+        // Let useStreamAttachment handle PiP video too
+        try {
+          await new Promise((r) => setTimeout(r, 100)); // Small delay after main video
+        } catch (error) {
+          console.warn('PiP setup failed:', error);
         }
       }
 
-      // Only enhance container when showing local stream
       enhanceVideoContainer(videoContainerRef, !callStarted);
     };
 
     handleSwitchStreams();
-    // Studio light is handled by the hook
   }, [callStarted, localStream, remoteTrack]);
-
-  // Effect to handle remote track changes
-  useEffect(() => {
-    if (!remoteTrack && faceTrackingRef.current.isTracking) {
-      stopFaceTracking();
-    }
-  }, [remoteTrack]);
 
   const videoWrapperStyle = {
     position: 'relative',
@@ -309,21 +200,93 @@ const VideoPlayer = ({
     callStarted,
   });
 
-  console.log(handleFaceTracking);
+  let canceled = false;
+  const checkVideoLoaded = async () => {
+    if (!remoteVideoRef.current || canceled) {
+      console.log('No remote track');
+      return;
+    }
+
+    const video = remoteVideoRef.current;
+
+    console.log(
+      'Media flow detected:',
+      remoteTrack,
+      video,
+      video.videoWidth,
+      video.videoHeight,
+    );
+    if (video.videoWidth > 0 && video.videoHeight > 0) {
+      console.log('Media flow detected:', video.videoWidth, video.videoHeight);
+      setHasMediaFlow(true);
+      return;
+    }
+
+    if (attemptRef.current < maxAttempts) {
+      attemptRef.current++;
+      console.log(
+        `Attempt ${attemptRef.current}/${maxAttempts} - no media yet, attempting reconnect...`,
+      );
+
+      try {
+        await onNoMediaFlow();
+        // After attempting reconnect, wait a bit, then check again
+      } catch (err) {
+        console.error('Reconnect attempt failed:', err);
+        // Even if reconnect fails, we can still retry after delay
+      }
+
+      if (video.videoWidth > 0 && video.videoHeight > 0) {
+        console.log(
+          'Media flow detected:',
+          video.videoWidth,
+          video.videoHeight,
+        );
+        setHasMediaFlow(true);
+        return;
+      }
+
+      setTimeout(() => {
+        if (!canceled) {
+          checkVideoLoaded();
+        }
+      }, baseDelay * attemptRef.current);
+    } else {
+      console.error(
+        'No media flow detected after max attempts and reconnect attempts.',
+      );
+    }
+  };
+
+  console.log(hasMediaFlow, checkVideoLoaded);
 
   return (
     <div className="video-player" style={containerStyle}>
+      <button
+        onClick={() => {
+          console.log('User initiated playback');
+          remoteVideoRef.current.play().catch((e) => console.error(e));
+        }}
+      >
+        Start Remote Video
+      </button>
       <Box sx={videoWrapperStyle}>
         <video
           className="local-video"
           ref={remoteVideoRef}
           autoPlay
           playsInline
+          muted
           // muted={!callStarted}
-          // onLoadedMetadata={() => {
-          //   const currentStream = !callStarted ? remoteTrack : localStream;
-          //   handleFaceTracking(currentStream, remoteVideoRef);
-          // }}
+          onLoadedMetadata={async () => {
+            const currentStream = callStarted ? remoteTrack : localStream;
+
+            if (currentStream) {
+              await startFaceTracking();
+            }
+
+            // await checkVideoLoaded();
+          }}
           style={{ width: '100%', height: '100%' }}
         />
       </Box>
@@ -425,6 +388,24 @@ const VideoPlayer = ({
               {t('Attempting to reconnect...')}
             </Box>
           </Box>
+        </Box>
+      )}
+
+      {streamError && (
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          }}
+        >
+          <Alert severity="error">{t('Video stream error occurred')}</Alert>
         </Box>
       )}
     </div>

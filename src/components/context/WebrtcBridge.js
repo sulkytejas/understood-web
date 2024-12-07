@@ -164,6 +164,15 @@ export const WebRTCBridge = ({ children }) => {
       }
     },
 
+    async attemptReconnect() {
+      try {
+        await connectionManager.current.attemptReconnect();
+      } catch (error) {
+        console.error('Failed to reconnect:', error);
+        throw error;
+      }
+    },
+
     async handleDisconnectCall(meetingId) {
       if (connectionManager.current) {
         await connectionManager.current.cleanup();

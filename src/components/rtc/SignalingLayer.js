@@ -171,13 +171,30 @@ class SignalingLayer {
     });
 
     // Setup reconnection handling
-    this.socket.on('connect_error', () => {
-      handlers.onConnectionError?.();
+    this.socket.on('connect_error', (error) => {
+      console.warn('Socket connection error from server:', error);
+      handlers.onConnectionError?.(error);
     });
 
-    this.socket.on('connect', () => {
-      handlers.onReconnected?.();
+    this.socket.on('disconnect', (reason) => {
+      console.warn('Socket disconnected from server:', reason);
+      // Trigger onConnectionError callback
+
+      const possibleReasons = [
+        'io server disconnect',
+        'transport close',
+        'ping timeout',
+        'transport error',
+      ];
+
+      if (possibleReasons.includes(reason)) {
+        handlers.onConnectionError?.(new Error(reason));
+      }
     });
+
+    // this.socket.on('reconnect', () => {
+    //   handlers.onReconnected?.();
+    // });
   }
 
   /**
@@ -185,16 +202,16 @@ class SignalingLayer {
    * @param {Object} params - Reconnection parameters
    * @returns {Promise<Object>} Reconnection result
    */
-  async requestReconnection(params) {
-    return this.emitWithTimeout(
-      'reconnecting',
-      {
-        ...params,
-        meetingId: this.meetingId,
-      },
-      15000, // passing custom timeout for reconnection
-    );
-  }
+  // async requestReconnection(params) {
+  //   return this.emitWithTimeout(
+  //     'reconnecting',
+  //     {
+  //       ...params,
+  //       meetingId: this.meetingId,
+  //     },
+  //     15000, // passing custom timeout for reconnection
+  //   );
+  // }
 
   once(event, handler) {
     // Use socket.once directly
