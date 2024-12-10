@@ -5,7 +5,7 @@ import { React, useState, useEffect, useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Box, Typography, useMediaQuery } from '@mui/material';
 import Bowser from 'bowser';
-import { SocketProvider } from './components/context/SocketContext';
+import { useSocket } from './components/context/SocketContext';
 // import { WebRTCProvider } from './components/context/WebrtcContext';
 import { WebRTCBridge } from './components/context/WebrtcBridge';
 import { AudioTranscriptionProvider } from './components/context/AudioTranscriptionContext';
@@ -47,7 +47,8 @@ function App() {
   const [isChrome, setIsChrome] = useState(true);
   const [userDetails, setUserDetails] = useState(null);
   const isDeviceSupported = useMediaQuery('(max-width:430px)');
-  const meetingId = useSelector((state) => state.meeting.meetingId);
+  const { socket, isSocketConnected } = useSocket();
+  const uid = useSelector((state) => state.user.uid);
 
   useEffect(() => {
     const browser = Bowser.getParser(window.navigator.userAgent);
@@ -140,6 +141,13 @@ function App() {
   //   return <UnsupportedBrowser variant="device" />;
   // }
 
+  useEffect(() => {
+    if (socket && isSocketConnected && uid) {
+      console.log('Registering UID on socket:', uid);
+      socket.emit('registerUid', uid);
+    }
+  }, [socket, isSocketConnected, uid]);
+
   if (loading) {
     console.log('Loading spinner on app page');
     return <LoadingSpinner />; // Render a loading indicator while waiting for user data
@@ -181,74 +189,65 @@ function App() {
         boxSizing: 'border-box',
       }}
     >
-      <SocketProvider>
-        <WebRTCBridge>
-          <AudioTranscriptionProvider>
-            <Routes location={location}>
-              <Route
-                path="/"
-                element={
-                  !isLocaleAndSpokenSet ? (
-                    <AnimatedRoute element={<WelcomeScreen />} />
-                  ) : userDetails?.username ? (
-                    <Navigate to="/meeting" />
-                  ) : (
-                    <Navigate to="/login" />
-                  )
-                }
-              />
-              <Route
-                path="/login"
-                element={
-                  !userData?.username ? (
-                    <AnimatedRoute element={<UserLogin />} />
-                  ) : (
-                    <Navigate to="/meeting" />
-                  )
-                }
-              />
-              <Route path="/googleCallback" element={<GoogleCallback />} />
-              <Route
-                path="/meeting"
-                element={
-                  <ProtectedRoute>
-                    <AnimatedRoute element={<CreateMeetingPage />} />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/videocall/:meetingId"
-                element={
-                  meetingId ? (
-                    <ProtectedRoute>
-                      <AnimatedRoute element={<VideoCall />} />
-                    </ProtectedRoute>
-                  ) : (
-                    <Navigate to="/meetingEnded" />
-                  )
-                }
-              />
-              <Route
-                path="/vibe/:practiceSessionId"
-                element={
-                  <ProtectedRoute>
-                    <AnimatedRoute element={<PracticeMain />} />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/meetingEnded"
-                element={<AnimatedRoute element={<MeetingEnded />} />}
-              />
-              <Route path="/privacyPolicy" element={<PrivacyPolicy />} />
-              <Route
-                path="/termsAndConditions"
-                element={<TermsAndCondition />}
-              />
-            </Routes>
-          </AudioTranscriptionProvider>
-        </WebRTCBridge>
-      </SocketProvider>
+      <WebRTCBridge>
+        <AudioTranscriptionProvider>
+          <Routes location={location}>
+            <Route
+              path="/"
+              element={
+                !isLocaleAndSpokenSet ? (
+                  <AnimatedRoute element={<WelcomeScreen />} />
+                ) : userDetails?.username ? (
+                  <Navigate to="/meeting" />
+                ) : (
+                  <Navigate to="/login" />
+                )
+              }
+            />
+            <Route
+              path="/login"
+              element={
+                !userData?.username ? (
+                  <AnimatedRoute element={<UserLogin />} />
+                ) : (
+                  <Navigate to="/meeting" />
+                )
+              }
+            />
+            <Route path="/googleCallback" element={<GoogleCallback />} />
+            <Route
+              path="/meeting"
+              element={
+                <ProtectedRoute>
+                  <AnimatedRoute element={<CreateMeetingPage />} />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/videocall/:meetingId"
+              element={
+                <ProtectedRoute>
+                  <AnimatedRoute element={<VideoCall />} />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/vibe/:practiceSessionId"
+              element={
+                <ProtectedRoute>
+                  <AnimatedRoute element={<PracticeMain />} />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/meetingEnded"
+              element={<AnimatedRoute element={<MeetingEnded />} />}
+            />
+            <Route path="/privacyPolicy" element={<PrivacyPolicy />} />
+            <Route path="/termsAndConditions" element={<TermsAndCondition />} />
+          </Routes>
+        </AudioTranscriptionProvider>
+      </WebRTCBridge>
     </Box>
   );
 }

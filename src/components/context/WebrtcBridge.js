@@ -25,6 +25,8 @@ export const WebRTCBridge = ({ children }) => {
   const [localStream, setLocalStream] = useState(null);
   const [remoteStream, setRemoteStream] = useState(null);
   const [callStarted, setCallStarted] = useState(false);
+  const [isConnectionManagerReady, setIsConnectionManagerReady] =
+    useState(false);
   const [connectionState, setConnectionState] = useState('new');
   const [connectionQuality, setConnectionQuality] = useState('good');
   const [joined, setJoined] = useState(false);
@@ -81,6 +83,8 @@ export const WebRTCBridge = ({ children }) => {
         userAgent: navigator.userAgent,
         platform: navigator.platform,
       });
+
+      setIsConnectionManagerReady(true);
     } else {
       console.log('Conditions not met for initializing ConnectionManager');
     }
@@ -165,15 +169,42 @@ export const WebRTCBridge = ({ children }) => {
     },
 
     async attemptReconnect() {
+      if (!connectionManager.current) {
+        console.warn('ConnectionManager not ready to attempt reconnect');
+        return;
+      }
       try {
         await connectionManager.current.attemptReconnect();
       } catch (error) {
         console.error('Failed to reconnect:', error);
-        throw error;
+      }
+    },
+
+    async intializeMeeting(meetingId, uid) {
+      if (!connectionManager.current) {
+        console.warn('ConnectionManager not ready to intialize meeting');
+        return;
+      }
+      try {
+        await connectionManager.current.initializeEventListeners();
+        const response = await connectionManager.current.initialize(
+          meetingId,
+          uid,
+        );
+
+        return response;
+      } catch (error) {
+        console.error('Failed to reconnect:', error);
       }
     },
 
     async handleDisconnectCall(meetingId) {
+      socket.emit('endMeeting', { meetingId }, ({ error }) => {
+        if (error) {
+          console.error('Error ending meeting:', error);
+        }
+      });
+
       if (connectionManager.current) {
         await connectionManager.current.cleanup();
       }
@@ -187,10 +218,7 @@ export const WebRTCBridge = ({ children }) => {
 
       dispatch(cleanupState());
       setCallStarted(false);
-
-      if (socket) {
-        socket.disconnect();
-      }
+      localStorage.removeItem('meetingData');
 
       navigate(`/meetingEnded?meetingId=${meetingId}`);
     },
@@ -234,7 +262,7 @@ export const WebRTCBridge = ({ children }) => {
     const handleParticipantLeft = (participantID) => {
       if (participantID === hostSocketId.current) {
         // Handle host leaving
-        publicMethods.handleDisconnectCall(meetingId);
+        console.log('Host disconnected, waiting for possible reconnect...');
       }
       // Clear remote stream if participant left
       setRemoteStream(null);
@@ -262,6 +290,7 @@ export const WebRTCBridge = ({ children }) => {
     isHost: isHost.current,
     joined,
     hostSocketId: hostSocketId.current,
+    isConnectionManagerReady,
   };
 
   return (

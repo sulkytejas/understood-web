@@ -9,6 +9,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import theme from './theme';
 import { BrowserRouter } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
+import { SocketProvider } from './components/context/SocketContext';
 
 const CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID;
 
@@ -19,7 +20,9 @@ root.render(
     <BrowserRouter>
       <ThemeProvider theme={theme}>
         <GoogleOAuthProvider clientId={CLIENT_ID}>
-          <App />
+          <SocketProvider>
+            <App />
+          </SocketProvider>
         </GoogleOAuthProvider>
       </ThemeProvider>
     </BrowserRouter>

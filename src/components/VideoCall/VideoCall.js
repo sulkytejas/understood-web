@@ -1,6 +1,6 @@
 /* eslint-disable */
 import React, { useEffect, useState, useRef } from 'react';
-
+import { useParams } from 'react-router-dom';
 import TranslationOverlay from './TranslationOverlay';
 import VideoControls from './VideoControls';
 
@@ -8,7 +8,13 @@ import VideoPlayer from './VideoPlayer';
 import { useSocket } from '../context/SocketContext';
 // import { useWebRTC } from '../context/WebrtcContext';
 import { useWebRTC } from '../context/WebrtcBridge';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
+import {
+  joinMeeting,
+  setHostSocketId,
+  setIsHost,
+  setMeetingPhrase,
+} from '../../redux/meetingSlice';
 
 const VideoCall = () => {
   const [detectedLanguage, setDetectedLanguage] = useState(null);
@@ -23,6 +29,9 @@ const VideoCall = () => {
   );
 
   const userUid = useSelector((state) => state.user.uid);
+  const meetingIdRedux = useSelector((state) => state.meeting.meetingId);
+  const { meetingId } = useParams();
+  const dispatch = useDispatch();
 
   const {
     // startStreaming,
@@ -32,57 +41,58 @@ const VideoCall = () => {
     callStarted,
     connectionState,
     attemptReconnect,
+    intializeMeeting,
+    isConnectionManagerReady,
   } = useWebRTC();
 
-  const { socket, isSocketConnected } = useSocket();
-
-  console.log(connectionState, 'connectionState');
+  const { socket } = useSocket();
 
   useEffect(() => {
-    const handleBeforeUnload = () => {
-      if (socket) {
-        handleDisconnectCall();
+    const handleClientReconnect = async () => {
+      if (!meetingIdRedux) {
+        const storedData = localStorage.getItem('meetingData');
+        if (!storedData) return; // No stored data, do nothing
+
+        const meetingDataLocalStorage = JSON.parse(storedData);
+        if (
+          meetingDataLocalStorage &&
+          meetingDataLocalStorage.meetingId === meetingId
+        ) {
+          await Promise.all([
+            dispatch(joinMeeting(meetingDataLocalStorage.meetingId)),
+            dispatch(setIsHost(meetingDataLocalStorage.isHost)),
+            dispatch(setMeetingPhrase(meetingDataLocalStorage.meetingPhrase)),
+          ]).then(() => {
+            console.log(
+              'Meeting data restored from local storage and initializing meeting',
+            );
+            intializeMeeting(meetingDataLocalStorage.meetingId, userUid)
+              .then((response) => {
+                console.log('Meeting re-initialized:', response);
+                dispatch(setHostSocketId(response.hostSocketId));
+              })
+              .catch((error) => {
+                console.error('Error re-initializing meeting:', error);
+              });
+          });
+        }
       }
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
-
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, [socket]);
-  console.log(remoteStream, 'remoteTrack');
-
-  // useEffect(() => {
-  //   if (remoteVideoRef.current) {
-  //     if (remoteStream && remoteStream.getTracks().length > 0 && callStarted) {
-  //       console.log(
-  //         'Setting remote stream with tracks:',
-  //         remoteStream.getTracks(),
-  //       );
-  //       remoteVideoRef.current.srcObject = remoteStream;
-  //       setIsRemoteConnected(true);
-  //     } else {
-  //       console.log('No remote stream or tracks yet');
-  //       remoteVideoRef.current.srcObject = null;
-  //       setIsRemoteConnected(false);
-  //     }
-  //   }
-  // }, [remoteStream, callStarted, remoteVideoRef]);
-
-  useEffect(() => {
-    if (socket && isSocketConnected) {
-      if (localTranslationLanguage) {
-        socket.emit('updateLanguages', {
-          uid: userUid,
-          translationLanguage: localTranslationLanguage,
-        });
-      }
+    if (socket && isConnectionManagerReady) {
+      handleClientReconnect();
     }
-  }, [socket, isSocketConnected]);
+  }, [
+    intializeMeeting,
+    dispatch,
+    meetingId,
+    isConnectionManagerReady,
+    userUid,
+    socket,
+  ]);
 
   const handleClick = () => {
-    handleDisconnectCall();
+    handleDisconnectCall(meetingIdRedux);
   };
 
   return (

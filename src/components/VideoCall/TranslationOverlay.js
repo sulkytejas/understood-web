@@ -19,11 +19,15 @@ const TranslationOverlay = ({
       addOrUpdateTranslatedText(text, isFinal);
     };
 
-    // Listen to translatedText events from the socket
-    socket.on('translatedText', handleTranslatedText);
+    if (socket) {
+      // Listen to translatedText events from the socket
+      socket.on('translatedText', handleTranslatedText);
+    }
 
     return () => {
-      socket.off('translatedText', handleTranslatedText);
+      if (socket) {
+        socket.off('translatedText', handleTranslatedText);
+      }
     };
   }, [socket, setTranslatedTexts]);
 

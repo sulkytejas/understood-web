@@ -191,10 +191,6 @@ class SignalingLayer {
         handlers.onConnectionError?.(new Error(reason));
       }
     });
-
-    // this.socket.on('reconnect', () => {
-    //   handlers.onReconnected?.();
-    // });
   }
 
   /**

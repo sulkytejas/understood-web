@@ -94,7 +94,6 @@ const CreateMeetingPage = () => {
   const localSpokenLanguage = useSelector(
     (state) => state.translation.localSpokenLanguage,
   );
-  const userUid = useSelector((state) => state.user.uid);
 
   const email = useSelector((state) => state.user.email);
   const [openSettingMenu, setOpenSettingMenu] = useState(false);
@@ -145,12 +144,6 @@ const CreateMeetingPage = () => {
       setLoading(false);
     }
   }, [socket, isSocketConnected, dispatch, urlMeetingId, navigate]);
-
-  useEffect(() => {
-    if (socket && isSocketConnected) {
-      socket.emit('registerUid', userUid);
-    }
-  }, [userUid, socket]);
 
   if (loading) {
     console.log('Loading spinner on create meeting page');

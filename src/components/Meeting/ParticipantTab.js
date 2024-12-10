@@ -215,6 +215,14 @@ const ParticipantTab = ({
             dispatch(setMeetingPhrase(meetingPhraseLocal));
           }
 
+          const serializedData = JSON.stringify({
+            meetingId: meetingIDToJoin,
+            hostSocketId,
+            isHost,
+            meetingPhrase: meetingPhraseLocal,
+          });
+
+          localStorage.setItem('meetingData', serializedData);
           // Add a small delay before navigation to ensure state updates complete
           setTimeout(() => {
             navigate(`/videocall/${meetingIDToJoin}`);

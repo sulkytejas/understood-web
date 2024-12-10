@@ -584,7 +584,8 @@ class MediaManager {
    * Add a consumer
    * @param {Object} consumer - Mediasoup consumer
    */
-  addConsumer(consumer) {
+  addConsumer(consumer, participantId) {
+    consumer.participantId = participantId;
     this.consumers.set(consumer.producerId, consumer);
 
     consumer.on('transportclose', () => {
@@ -765,6 +766,15 @@ class MediaManager {
         }
       }
     }
+    this.consumers.clear();
+  }
+
+  reset() {
+    // Close and remove all remote consumers and producers
+    for (const producer of this.producers.values()) producer.close();
+    this.producers.clear();
+
+    for (const consumer of this.consumers.values()) consumer.close();
     this.consumers.clear();
   }
 

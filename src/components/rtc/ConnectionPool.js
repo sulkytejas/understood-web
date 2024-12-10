@@ -190,7 +190,11 @@ class ConnectionPool extends EventEmitter {
 
     if (state === 'disconnected') {
       setTimeout(() => {
-        const currentData = transportMap.get(transportId);
+        const currentMap =
+          type === 'producer'
+            ? this.producerTransports
+            : this.consumerTransports;
+        const currentData = currentMap.get(transportId);
         if (
           currentData &&
           currentData.transport._handler._pc.iceConnectionState ===
@@ -422,17 +426,27 @@ class ConnectionPool extends EventEmitter {
     this.producerTransports.forEach((data, id) => {
       this.removeProducerTransport(id);
     });
+    this.producerTransports.clear();
 
     // Clean up consumer transports
     this.consumerTransports.forEach((data, id) => {
       this.removeConsumerTransport(id);
     });
+    this.consumerTransports.clear();
 
     // Clear all stats intervals
     this.transportStats.forEach((interval) => {
       clearInterval(interval);
     });
     this.transportStats.clear();
+
+    for (const [id, timer] of this.transportWarnings) {
+      console.log('Clearing transport warning timer:', id);
+      clearTimeout(timer);
+    }
+    this.transportWarnings.clear();
+
+    this.lastCleanup = Date.now();
   }
 }
 

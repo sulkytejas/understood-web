@@ -1,3 +1,5 @@
+// Disable es in this file
+/* eslint-disable */
 import { useEffect, useRef, useState } from 'react';
 import { Box, Alert, Typography } from '@mui/material';
 import { useSelector } from 'react-redux';
@@ -91,6 +93,7 @@ const VideoPlayer = ({
   const [showAlert, setShowAlert] = useState(false);
   const [streamError, setStreamError] = useState(null);
   const [hasMediaFlow, setHasMediaFlow] = useState(false);
+  const [opacity, setOpacity] = useState(0);
   const maxAttempts = 5;
   const baseDelay = 1000; // 1s between checks
   const attemptRef = useRef(0);
@@ -120,6 +123,11 @@ const VideoPlayer = ({
     handlePiPError,
   );
 
+  useEffect(() => {
+    // Reset opacity when stream changes
+    setOpacity(0);
+  }, [localStream, remoteTrack]);
+
   const { startFaceTracking, stopFaceTracking } = useFaceTracking({
     stream: callStarted ? remoteTrack : localStream,
     videoRef: remoteVideoRef,
@@ -140,7 +148,7 @@ const VideoPlayer = ({
       if (remoteVideoRef.current) {
         // Don't need to manually set srcObject here as useStreamAttachment handles it
         try {
-          await startFaceTracking();
+          // await startFaceTracking();
         } catch (error) {
           console.warn('Face tracking failed:', error);
         }
@@ -262,14 +270,6 @@ const VideoPlayer = ({
 
   return (
     <div className="video-player" style={containerStyle}>
-      <button
-        onClick={() => {
-          console.log('User initiated playback');
-          remoteVideoRef.current.play().catch((e) => console.error(e));
-        }}
-      >
-        Start Remote Video
-      </button>
       <Box sx={videoWrapperStyle}>
         <video
           className="local-video"
@@ -280,14 +280,20 @@ const VideoPlayer = ({
           // muted={!callStarted}
           onLoadedMetadata={async () => {
             const currentStream = callStarted ? remoteTrack : localStream;
-
-            if (currentStream) {
-              await startFaceTracking();
-            }
+            setOpacity(1);
+            // if (currentStream) {
+            //   await startFaceTracking();
+            // }
 
             // await checkVideoLoaded();
           }}
-          style={{ width: '100%', height: '100%' }}
+          style={{
+            width: '100%',
+            height: '100%',
+            opacity: opacity,
+            transition: 'opacity 0.5s ease-in-out',
+            objectFit: 'cover',
+          }}
         />
       </Box>
 
