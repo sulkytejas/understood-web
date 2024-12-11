@@ -263,26 +263,36 @@ class ConnectionManager extends EventEmitter {
       onStateChange?.(newState);
     });
 
-    // this.qualityMonitor = new QualityMonitor({
-    //   onQualityChange: this.handleQualityChange.bind(this),
-    // });
+    this.qualityMonitor = new QualityMonitor({
+      onQualityChange: this.handleQualityChange.bind(this),
+    });
 
     this.onQualityChange = onQualityChange;
 
-    this.qualityMonitor = new QualityMonitor({
-      onQualityChange: (newLevel, oldLevel) => {
-        console.log(`Connection quality changed: ${oldLevel} -> ${newLevel}`);
-        this.onQualityChange?.(newLevel); // Call the callback
-
-        if (newLevel === QualityMonitor.Levels.POOR) {
-          this.mediaManager.adjustQualityForPoorConnection();
-        } else if (newLevel === QualityMonitor.Levels.EXCELLENT) {
-          this.mediaManager.optimizeQualityForGoodConnection();
-        }
-      },
-    });
-
     this.pendingProducers = [];
+
+    this.mediaInactivityDuration = 0; // how long we've gone without media
+    this.MEDIA_CHECK_INTERVAL = 5000; // check every 5s
+    this.MEDIA_INACTIVITY_THRESHOLD = 20000; // 20s of no media flow
+  }
+
+  startMediaFlowChecks() {
+    this.mediaCheckInterval = setInterval(async () => {
+      const flowing = await this.mediaManager.isInboundMediaFlowing();
+      if (!flowing) {
+        this.mediaInactivityDuration += this.MEDIA_CHECK_INTERVAL;
+        if (this.mediaInactivityDuration >= this.MEDIA_INACTIVITY_THRESHOLD) {
+          console.warn(
+            'No inbound media detected for 20s, triggering full reconnection...',
+          );
+          this.mediaInactivityDuration = 0;
+          await this.attemptReconnect();
+        }
+      } else {
+        // Media is flowing, reset inactivity counter
+        this.mediaInactivityDuration = 0;
+      }
+    }, this.MEDIA_CHECK_INTERVAL);
   }
 
   /**
@@ -468,6 +478,9 @@ class ConnectionManager extends EventEmitter {
       this.reconnectionAttempts = 0;
       console.log(`Connection established - isHost: ${this.isHost}`);
 
+      this.startMediaFlowChecks();
+      console.log('Media flow checks started');
+
       return {
         isHost: this.isHost,
         hostSocketId: this.hostSocketId,
@@ -566,6 +579,7 @@ class ConnectionManager extends EventEmitter {
     this.isReconnecting = true;
 
     // Fall back to full reconnection
+    this.mediaManager.reset();
     await this.resetTransports();
     await this.pollServerReadiness();
     try {
@@ -636,26 +650,6 @@ class ConnectionManager extends EventEmitter {
         throw new Error('Max reconnection attempts reached');
       }
     }
-  }
-
-  async waitForServerReady(signaling) {
-    const response = await signaling.emitWithTimeout('checkServerStatus', {});
-    if (response.isReady) {
-      return true;
-    }
-
-    // If not ready, listen once for 'server-ready'
-    return new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        signaling.off('server-ready');
-        reject(new Error('Server ready timeout'));
-      }, 10000);
-
-      signaling.once('server-ready', () => {
-        clearTimeout(timeout);
-        resolve(true);
-      });
-    });
   }
 
   /**

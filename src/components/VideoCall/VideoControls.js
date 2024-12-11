@@ -14,7 +14,8 @@ import {
   Avatar,
   Snackbar,
 } from '@mui/material';
-import { MoreVert, Check } from '@mui/icons-material';
+import { Check, HdOutlined } from '@mui/icons-material';
+
 import CallEndIcon from '@mui/icons-material/CallEnd';
 import { useTranslation } from 'react-i18next';
 import TranslatedTextView from './TranslatedText';
@@ -62,6 +63,7 @@ const VideoControls = ({
   onCallToggle,
   translatedTexts,
   setTranslatedTexts,
+  onEnableHD,
 }) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [timeInSeconds, setTimeInSeconds] = useState(15 * 60);
@@ -70,7 +72,7 @@ const VideoControls = ({
   const [openSnackbarMeetingNotes, setOpenSnackbarMeetingNotes] =
     useState(false);
   const [isMeetingNotes, setIsMeetingNotes] = useState(true);
-
+  const [isHdSelected, setIsHdSelected] = useState(false);
   const isMainMenuOpen = useSelector((state) => state.ui.callMenuOpen);
   const isSideMenuOpen = useSelector((state) => state.ui.callSideMenu);
   const userTranslationLanguage = useSelector(
@@ -428,9 +430,14 @@ const VideoControls = ({
           />
 
           <CustomBottomNavigationAction
-            icon={<MoreVert sx={{ fontSize: 36 }} />}
+            icon={
+              <HdOutlined
+                sx={{ fontSize: 36, color: isHdSelected ? 'orange' : 'white' }}
+              />
+            }
             onClick={() => {
-              setOpenSnackbar(true);
+              setIsHdSelected((prev) => !prev);
+              onEnableHD(isHdSelected);
             }}
           />
           <Snackbar

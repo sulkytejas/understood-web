@@ -43,6 +43,7 @@ const VideoCall = () => {
     attemptReconnect,
     intializeMeeting,
     isConnectionManagerReady,
+    onEnableHD,
   } = useWebRTC();
 
   const { socket } = useSocket();
@@ -120,6 +121,7 @@ const VideoCall = () => {
         onCallToggle={handleClick}
         translatedTexts={translatedTexts}
         setTranslatedTexts={setTranslatedTexts}
+        onEnableHD={onEnableHD}
       />
     </div>
   );

@@ -179,6 +179,17 @@ export const WebRTCBridge = ({ children }) => {
         console.error('Failed to reconnect:', error);
       }
     },
+    async onEnableHD(enableHD) {
+      if (!connectionManager.current) {
+        console.warn('ConnectionManager not ready to attempt reconnect');
+        return;
+      }
+      try {
+        await connectionManager.current.mediaManager.toggleHD(enableHD);
+      } catch (error) {
+        console.error('Failed to reconnect:', error);
+      }
+    },
 
     async intializeMeeting(meetingId, uid) {
       if (!connectionManager.current) {

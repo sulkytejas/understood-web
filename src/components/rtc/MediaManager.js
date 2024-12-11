@@ -14,6 +14,8 @@ class MediaManager {
     this.lastQuality = 'high';
     this.browserName = this.detectBrowser();
     this.isHDEnabled = false; // Add HD flag initialization
+    this.lastMediaCheck = Date.now();
+    this.lastBytesReceived = 0; // Track last known inbound bytes
   }
 
   detectBrowser() {
@@ -37,6 +39,58 @@ class MediaManager {
         this.applyQualityConstraints(videoTrack, this.lastQuality);
       }
     }
+  }
+
+  /**
+   * Periodic check if media is flowing
+   * @returns {boolean} Whether inbound media is flowing
+   */
+
+  // In MediaManager.js
+  async isInboundMediaFlowing() {
+    if (this.consumers.size === 0) {
+      console.log('No consumers available to check media flow');
+      return false;
+    }
+
+    // Pick any active consumer
+    const firstConsumer = Array.from(this.consumers.values()).find(
+      (c) => !c.closed,
+    );
+    if (!firstConsumer) return false;
+
+    // Use consumer.getStats() instead of accessing transport internals
+    const consumerStats = await firstConsumer.getStats();
+
+    let inboundRtp = null;
+    // Try to find video inbound-rtp first
+    for (const s of consumerStats.values()) {
+      if (s.type === 'inbound-rtp' && s.kind === 'video') {
+        inboundRtp = s;
+        break;
+      }
+    }
+
+    // If no video inbound-rtp found, try audio
+    if (!inboundRtp) {
+      for (const s of consumerStats.values()) {
+        if (s.type === 'inbound-rtp' && s.kind === 'audio') {
+          inboundRtp = s;
+          break;
+        }
+      }
+    }
+
+    if (!inboundRtp) {
+      // No inbound rtp found at all
+      return false;
+    }
+
+    const currentBytes = inboundRtp.bytesReceived || 0;
+    const flowing = currentBytes > (this.lastBytesReceived || 0);
+    this.lastBytesReceived = currentBytes;
+    console.log('Inbound media flowing:', flowing, currentBytes);
+    return flowing;
   }
 
   /**
@@ -562,6 +616,32 @@ class MediaManager {
         });
       }
     });
+  }
+
+  /**
+   * Option to enable hd stream
+   * @param {boolean} enabled
+   */
+  async toggleHD(enabled) {
+    this.isHDEnabled = enabled;
+    const videoTrack = this.localStream?.getVideoTracks()[0];
+    if (videoTrack) {
+      try {
+        if (enabled) {
+          // Apply HD constraints
+          const hdProfile = this.deviceConstraints.qualityProfiles.hd;
+          await videoTrack.applyConstraints(hdProfile.video);
+          this.lastQuality = 'high';
+        } else {
+          // Revert to standard quality (use 'high', 'medium', or 'low' as desired)
+          const standardProfile = this.deviceConstraints.qualityProfiles.high;
+          await videoTrack.applyConstraints(standardProfile.video);
+          this.lastQuality = 'medium';
+        }
+      } catch (error) {
+        console.warn('Failed to toggle HD mode:', error);
+      }
+    }
   }
 
   /**
