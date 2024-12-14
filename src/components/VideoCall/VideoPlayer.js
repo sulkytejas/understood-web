@@ -72,6 +72,8 @@ const VideoPlayer = ({
   videoContainerRef,
   callStarted,
   onNoMediaFlow,
+  connectionStatus,
+  connectionQuality,
 }) => {
   const isMainMenuOpen = useSelector((state) => state.ui.callMenuOpen);
   const localTranslationLanguage = useSelector(
@@ -86,11 +88,15 @@ const VideoPlayer = ({
 
   // Check if the srcObject is available or not
 
-  const showConnectionAlert = connectionState !== 'connected';
+  console.log(
+    connectionStatus,
+    'connectionStatus',
+    connectionQuality,
+    'connectionQuality',
+  );
 
   const pipVideoRef = useRef(null);
 
-  const [showAlert, setShowAlert] = useState(false);
   const [streamError, setStreamError] = useState(null);
   const [hasMediaFlow, setHasMediaFlow] = useState(false);
   const [opacity, setOpacity] = useState(0);
@@ -152,8 +158,6 @@ const VideoPlayer = ({
         } catch (error) {
           console.warn('Face tracking failed:', error);
         }
-      } else {
-        setShowAlert(true);
       }
 
       if (pipVideoRef.current && callStarted) {
@@ -293,6 +297,7 @@ const VideoPlayer = ({
             opacity: opacity,
             transition: 'opacity 0.5s ease-in-out',
             objectFit: 'cover',
+            display: connectionStatus?.isAlert ? 'none' : 'block',
           }}
         />
       </Box>
@@ -344,7 +349,7 @@ const VideoPlayer = ({
         </Box>
       </div>
 
-      {showAlert && (
+      {connectionStatus?.isAlert && (
         <Box
           sx={{
             position: 'absolute',
@@ -359,41 +364,8 @@ const VideoPlayer = ({
           }}
         >
           <Alert severity="info">
-            {t('Waiting for the participant to join...')}
+            {t(connectionStatus?.message || 'Connection status unknown')}
           </Alert>
-        </Box>
-      )}
-
-      {showConnectionAlert && (
-        <Box
-          sx={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            backgroundColor: 'rgba(0, 0, 0, 0.5)', // Optional dark overlay
-          }}
-        >
-          <Box sx={{ marginBottom: '20px', display: 'inline-block' }}>
-            <LoadingSpinner />
-            <Box
-              component="span"
-              sx={{
-                color: 'white',
-                position: 'absolute',
-                top: '58%',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',
-                textAlign: 'center',
-              }}
-            >
-              {t('Attempting to reconnect...')}
-            </Box>
-          </Box>
         </Box>
       )}
 

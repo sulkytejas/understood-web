@@ -11,98 +11,240 @@ import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import { styled } from '@mui/system';
 import {
-  TextField,
-  InputAdornment,
-  FormControl,
-  MenuItem,
-  Select,
   Box,
   IconButton,
+  FormControl,
   FormHelperText,
+  TextField,
+  Autocomplete,
+  Popover,
+  Button,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
 } from '@mui/material';
-
+import PhoneInput, {
+  getCountries,
+  getCountryCallingCode,
+} from 'react-phone-number-input';
+import enLabels from 'react-phone-number-input/locale/en.json'; // Country name labels
+import flags from 'react-phone-number-input/flags';
+import 'react-phone-number-input/style.css';
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { AsYouType } from 'libphonenumber-js';
+import { isValidPhoneNumber } from 'libphonenumber-js';
 import { useDispatch } from 'react-redux';
 import { useTranslation } from 'react-i18next';
-
+import { keyframes } from '@mui/system';
 import { setUserPhoneNumber, setUserName, setUid } from '../../redux/userSlice';
 import OtpVerification from './OtpVerification';
+import { t } from 'i18next';
 
-const CustomTextField = styled(TextField)({
-  backgroundColor: '#F9F9F9',
-  marginTop: 10,
-  borderRadius: '0px',
-  borderBottom: '1px solid #A8A8A8',
-  '& .MuiOutlinedInput-root': {
-    padding: '0px',
-    '& fieldset': {
-      border: 'none', // Remove the default border
-    },
+const pulseAnimation = keyframes`
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(0.9); opacity: 0.7; }
+  100% { transform: scale(1.2); opacity: 1; }
+`;
+
+const AnimatedArrow = styled(ArrowDropDownIcon)(({ theme, animate }) => ({
+  ...(animate && {
+    animation: `${pulseAnimation} 1s infinite`,
+  }),
+}));
+
+// Custom styling for phone input
+const CustomPhoneInput = styled('div')(({ theme }) => ({
+  '& .PhoneInput': {
+    backgroundColor: '#F9F9F9',
+    marginTop: 10,
+    borderRadius: '0px',
+    borderBottom: '1px solid #A8A8A8',
     display: 'flex',
     alignItems: 'center',
+    padding: '0px',
+    width: '100%',
+
     '& input': {
-      height: '48px', // Set a fixed height for the input
-      boxSizing: 'border-box', // Ensure padding is included in the height
-      lineHeight: '22px', // Align text vertically
-      fontSize: '16px', // Font size for the input
+      height: '48px',
+      boxSizing: 'border-box',
+      lineHeight: '22px',
+      fontSize: '16px',
       color: '#000000',
-      '&.Mui-disabled': {
+      backgroundColor: 'transparent',
+      border: 'none',
+      outline: 'none',
+      width: '100%',
+      padding: '0 10px',
+
+      '&::placeholder': {
+        color: '#000',
+        opacity: 0.8,
+      },
+
+      '&:disabled': {
         color: '#707070',
         opacity: 0.8,
         '-webkit-text-fill-color': '#000',
       },
     },
-    '& input::placeholder': {
-      color: '#000', // Placeholder text color
-      opacity: 0.8, // Ensure the color is applied (overrides browser default opacity)
+
+    '& .PhoneInputCountry': {
+      marginRight: '10px',
+      marginLeft: 10,
+      display: 'flex',
+      alignItems: 'center',
+      background: '#DFEBFF',
+      borderRadius: '6px',
+      padding: '0 6px',
     },
   },
-  '& .MuiInputAdornment-root': {
-    marginRight: '10px',
-    marginLeft: 10,
-    display: 'flex',
-    alignItems: 'center',
-    borderRadius: 2,
+
+  '& .PhoneInputInput': {
+    '&:focus': {
+      outline: 'none',
+    },
   },
-});
 
-const ScreenContainer = styled('div')({
-  position: 'relative',
-  width: '100%',
-  height: '100vh' /* Full viewport height */,
-  overflow: 'hidden',
-});
+  // Error state styling
+  '&[data-invalid="true"]': {
+    '& .PhoneInput': {
+      borderBottomColor: '#f44336',
+    },
+  },
+}));
 
-const Screen = styled('div')({
-  position: 'absolute',
-  top: 0,
-  left: 0,
-  width: '100%',
-  height: '100%',
-});
+// This component handles the country selection UI
+function SearchableCountrySelect({ value, onChange, labels, ...rest }) {
+  const countries = getCountries();
+  const defaultCountry = ''; // fallback if none selected
 
-const countries = [
-  { code: 'US', dialCode: '+1', name: 'USA' },
-  { code: 'IN', dialCode: '+91', name: 'India' },
-  { code: 'RU', dialCode: '+7', name: 'Russia' },
-  // Add more countries as needed
-];
+  const selectedCode = value || defaultCountry;
+  const [anchorEl, setAnchorEl] = useState(null);
+
+  const options = countries.map((country) => ({
+    code: country,
+    label: labels[country],
+    callingCode: `+${getCountryCallingCode(country)}`,
+    flag: flags[country],
+  }));
+
+  const selectedOption =
+    options.find((opt) => opt.code === selectedCode) ||
+    options.find((opt) => opt.code === defaultCountry);
+
+  const handleOpen = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  console.log('selectedOption', selectedOption);
+
+  return (
+    <>
+      <Button
+        onClick={handleOpen}
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          backgroundColor: '#DFEBFF',
+          borderRadius: '6px',
+          padding: '0px',
+          minWidth: 'auto',
+          padding: '10px',
+        }}
+      >
+        {selectedOption && (
+          <selectedOption.flag
+            alt={selectedOption.code}
+            style={{
+              width: '20px',
+              height: 'auto',
+              borderRadius: '2px',
+              marginRight: '6px',
+            }}
+          />
+        )}
+        <AnimatedArrow sx={{ zIndex: 2 }} animate={!selectedOption} />
+        {/* {selectedOption && selectedOption.callingCode} */}
+      </Button>
+      <Popover
+        open={Boolean(anchorEl)}
+        anchorEl={anchorEl}
+        onClose={handleClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        PaperProps={{
+          style: { width: '100%', maxHeight: 400 }, // match width as needed
+        }}
+      >
+        <Box sx={{ padding: '8px' }}>
+          <Autocomplete
+            options={options}
+            fullWidth
+            getOptionLabel={(option) =>
+              `${option.label} (${option.callingCode})`
+            }
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                variant="outlined"
+                placeholder={t('Search for a country')}
+                fullWidth
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    padding: '6px',
+                  },
+                }}
+              />
+            )}
+            renderOption={(props, option) => (
+              <ListItem
+                {...props}
+                key={option.code}
+                sx={{ paddingLeft: '8px', paddingRight: '8px' }}
+              >
+                <ListItemIcon sx={{ minWidth: '32px' }}>
+                  <option.flag
+                    title={option.code}
+                    style={{
+                      width: '20px',
+                      height: 'auto',
+                      borderRadius: '2px',
+                    }}
+                  />
+                </ListItemIcon>
+                <ListItemText
+                  primary={`${option.label} (${option.callingCode})`}
+                />
+              </ListItem>
+            )}
+            onChange={(event, newValue) => {
+              if (newValue) {
+                onChange(newValue.code);
+              }
+              handleClose();
+            }}
+          />
+        </Box>
+      </Popover>
+    </>
+  );
+}
 
 const PhoneSignIn = forwardRef(
-  ({ onLogin, onSetIsPhoneNumberSubmitted }, ref) => {
+  ({ onLogin, onSetIsPhoneNumberSubmitted, setLoading }, ref) => {
     const navigate = useNavigate();
     const dispatch = useDispatch();
     const [phoneNumber, setPhoneNumber] = useState('');
     const [otp, setOtp] = useState('');
     const [confirmationResult, setConfirmationResult] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [country, setCountry] = useState(countries[0]);
     const [userData, setUserData] = useState(null);
     const { t } = useTranslation();
     const [isOtpInvalid, setIsOtpInvalid] = useState(false);
     const [phoneSignInError, setPhoneSignInError] = useState('');
 
+    // Load reCAPTCHA script and initialize RecaptchaVerifier
     useEffect(() => {
       const loadRecaptchaScript = () => {
         return new Promise((resolve, reject) => {
@@ -125,7 +267,7 @@ const PhoneSignIn = forwardRef(
       };
 
       const initializeRecaptchaVerifier = () => {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
           const checkRecaptcha = () => {
             if (window.grecaptcha && window.grecaptcha.render) {
               resolve();
@@ -188,36 +330,19 @@ const PhoneSignIn = forwardRef(
             );
           }
         });
-    }, []);
-
-    const handleCountryChange = (event) => {
-      const selectedCountry = countries.find(
-        (country) => country.code === event.target.value,
-      );
-
-      setCountry(selectedCountry);
-      setPhoneNumber('');
-    };
-
-    const handlePhoneNumberChange = (event) => {
-      const inputNumber = event.target.value;
-      const formatter = new AsYouType(country.code);
-
-      setPhoneNumber(formatter.input(inputNumber));
-    };
+    }, [setLoading]);
 
     // Send OTP to the phone number
     const sendOTP = () => {
+      if (!phoneNumber || !isValidPhoneNumber(phoneNumber)) {
+        setPhoneSignInError(t('Please enter a valid phone number'));
+        return;
+      }
+
       setLoading(true);
       let appVerifier = window.recaptchaVerifier;
 
-      const unformattedPhoneNumber = phoneNumber.replace(/\D/g, '');
-      console.log(`${country.dialCode}${unformattedPhoneNumber}`);
-      signInWithPhoneNumber(
-        auth,
-        `${country.dialCode}${phoneNumber}`,
-        appVerifier,
-      )
+      signInWithPhoneNumber(auth, phoneNumber, appVerifier)
         .then((confirmationResult) => {
           // SMS sent. Prompt user to type the code from the message
           setConfirmationResult(confirmationResult);
@@ -273,10 +398,7 @@ const PhoneSignIn = forwardRef(
               console.log('serverResponse ', serverResponse);
 
               if (serverResponse.message === 'success') {
-                /**
-                 * Store user info into redux
-                 */
-
+                // Store user info into redux
                 console.log('serverResponse', serverResponse);
                 console.log('Login complete', user);
 
@@ -287,6 +409,7 @@ const PhoneSignIn = forwardRef(
                 const redirectQuery = new URLSearchParams(location.search);
                 const meetingId = redirectQuery.get('meetingId');
 
+                setLoading(false);
                 if (meetingId) {
                   navigate(
                     `/meeting?meetingId=${encodeURIComponent(meetingId)}`,
@@ -324,88 +447,43 @@ const PhoneSignIn = forwardRef(
           marginTop: !confirmationResult ? '90px' : '72px',
         }}
       >
-        {/* <ScreenContainer>
-        <CSSTransition
-          in={!confirmationResult}
-          timeout={500}
-          classNames="fade"
-          unmountOnExit
-        >
-          <Screen> */}
         {!confirmationResult && (
           <FormControl fullWidth>
-            <CustomTextField
-              placeholder={t('Your Number – Your Ticket to Talk')}
-              variant="outlined"
-              fullWidth
-              margin="normal"
-              inputProps={{
-                inputMode: 'numeric', // Ensures numeric keyboard
-                pattern: '[0-9]*', // Ensures only numbers are allowed
-              }}
-              onChange={handlePhoneNumberChange}
-              value={phoneNumber}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Select
-                      value={country.dialCode}
-                      onChange={handleCountryChange}
-                      displayEmpty
-                      variant="standard"
-                      disableUnderline
-                      sx={{
-                        background: '#DFEBFF',
-                        borderRadius: '6px',
-                        paddingLeft: ' 6px',
-                      }}
-                      renderValue={() => (
-                        <img
-                          loading="lazy"
-                          width="20"
-                          srcSet={`https://flagcdn.com/w40/${country.code.toLowerCase()}.png 2x`}
-                          src={`https://flagcdn.com/w20/${country.code.toLowerCase()}.png`}
-                          alt={country.name}
-                        />
-                      )}
-                    >
-                      {countries.map((option) => (
-                        <MenuItem key={option.code} value={option.code}>
-                          <img
-                            loading="lazy"
-                            width="20"
-                            srcSet={`https://flagcdn.com/w40/${option.code.toLowerCase()}.png 2x`}
-                            src={`https://flagcdn.com/w20/${option.code.toLowerCase()}.png`}
-                            alt={option.name}
-                            style={{ marginRight: 8 }}
-                          />
-                          {option.name} ({option.dialCode})
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </InputAdornment>
-                ),
-              }}
-            />
-            {phoneSignInError && (
+            <CustomPhoneInput data-invalid={Boolean(phoneSignInError)}>
+              <PhoneInput
+                flags={flags}
+                international
+                countryCallingCodeEditable={false}
+                // defaultCountry="US"
+                placeholder={t('Your Number – Your Ticket to Talk')}
+                value={phoneNumber}
+                onChange={(value) => {
+                  setPhoneNumber(value || '');
+                  setPhoneSignInError('');
+                }}
+                countrySelectComponent={(props) => (
+                  <SearchableCountrySelect {...props} labels={enLabels} />
+                )}
+              />
+              {phoneSignInError && (
+                <FormHelperText
+                  error
+                  sx={{ marginLeft: '14px', marginTop: '4px' }}
+                >
+                  {phoneSignInError}
+                </FormHelperText>
+              )}
+            </CustomPhoneInput>
+            {/* {phoneSignInError && (
               <FormHelperText>
                 {t(
                   'Phone number not found. Sign up below to gain early access.',
                 )}
               </FormHelperText>
-            )}
+            )} */}
           </FormControl>
         )}
-        {/* </Screen>
-        </CSSTransition> */}
 
-        {/* <CSSTransition
-          in={!!confirmationResult}
-          timeout={500}
-          classNames="fade"
-          unmountOnExit
-        > */}
-        {/* <Screen> */}
         {!!confirmationResult && (
           <div>
             <IconButton
@@ -421,13 +499,10 @@ const PhoneSignIn = forwardRef(
               onSetOtp={setOtp}
               isOtpInvalid={isOtpInvalid}
               phoneNumber={phoneNumber}
+              setLoading={setLoading}
             />
           </div>
         )}
-
-        {/* </Screen> */}
-        {/* </CSSTransition> */}
-        {/* </ScreenContainer> */}
         <div id="recaptcha-container"></div>
       </Box>
     );

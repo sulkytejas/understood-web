@@ -17,6 +17,7 @@ const OtpVerification = ({
   length = 6,
   phoneNumber,
   isOtpInvalid,
+  setLoading,
 }) => {
   const [otp, setOtp] = useState(new Array(length).fill(''));
   const inputRefs = useRef([]);
@@ -33,6 +34,7 @@ const OtpVerification = ({
       const newOtp = [...otp];
       newOtp[index] = value;
       setOtp(newOtp);
+      setLoading(true);
       onSetOtp(newOtp.join(''));
 
       if (index < length - 1) {

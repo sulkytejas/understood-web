@@ -205,6 +205,8 @@ class ConnectionManager extends EventEmitter {
     onError,
     onQualityChange,
     uid,
+    onParticipantJoined,
+    onMediaFlowing,
   }) {
     super();
     // Validate required parameters
@@ -224,6 +226,8 @@ class ConnectionManager extends EventEmitter {
     this.onStateChange = onStateChange;
     this.onStreamsUpdate = onStreamsUpdate;
     this.onError = onError;
+    this.onParticipantJoined = onParticipantJoined;
+    this.onMediaFlowing = onMediaFlowing;
 
     // Initialize managers
     this.signaling = new SignalingLayer(socket);
@@ -270,22 +274,42 @@ class ConnectionManager extends EventEmitter {
     this.onQualityChange = onQualityChange;
 
     this.pendingProducers = [];
-
+    this.mediaChecksStarted = false;
+    this.mediaFlowing = false;
     this.mediaInactivityDuration = 0; // how long we've gone without media
     this.MEDIA_CHECK_INTERVAL = 5000; // check every 5s
     this.MEDIA_INACTIVITY_THRESHOLD = 20000; // 20s of no media flow
   }
 
   startMediaFlowChecks() {
+    if (this.mediaChecksStarted) return; // don't start twice
+    this.mediaChecksStarted = true;
+
     this.mediaCheckInterval = setInterval(async () => {
-      const flowing = await this.mediaManager.isInboundMediaFlowing();
-      if (!flowing) {
+      this.mediaFlowing = await this.mediaManager.isInboundMediaFlowing();
+
+      this.onMediaFlowing(
+        this.mediaFlowing &&
+          this.mediaChecksStarted &&
+          this.mediaFlowing !== 'not-ready',
+      );
+
+      if (this.mediaFlowing === 'not-ready') {
+        console.log('Media not ready for flow checks');
+        return;
+      }
+
+      if (!this.mediaFlowing) {
         this.mediaInactivityDuration += this.MEDIA_CHECK_INTERVAL;
         if (this.mediaInactivityDuration >= this.MEDIA_INACTIVITY_THRESHOLD) {
           console.warn(
             'No inbound media detected for 20s, triggering full reconnection...',
           );
           this.mediaInactivityDuration = 0;
+
+          if (this.state.currentState !== CONNECTION_STATES.RECONNECTING) {
+            this.state.transition(CONNECTION_STATES.RECONNECTING);
+          }
           await this.attemptReconnect();
         }
       } else {
@@ -334,14 +358,12 @@ class ConnectionManager extends EventEmitter {
         }
       },
       onParticipantDisconnected: (participantId) => {
-        if (participantId === this.hostSocketId) {
-          this.cleanup();
-        } else {
-          this.removeParticipantMedia();
-        }
+        this.removeParticipantMedia();
+
+        console.log('Participant disconnected:', participantId);
       },
       onMeetingEnded: () => {
-        this.cleanup();
+        this.handleCallDisonnect();
       },
       onConnectionError: (error) => {
         console.error('Connection error', error);
@@ -377,6 +399,10 @@ class ConnectionManager extends EventEmitter {
           console.warn(
             'No matching transport found for ICE restart. Proceeding to full reconnection...',
           );
+          if (this.state.currentState !== CONNECTION_STATES.RECONNECTING) {
+            this.state.transition(CONNECTION_STATES.RECONNECTING);
+          }
+
           await this.attemptReconnect(); // Full reconnection if no transport found
           return;
         }
@@ -392,6 +418,11 @@ class ConnectionManager extends EventEmitter {
         } catch (error) {
           console.error('Failed to restart ICE on client:', error);
           // Immediately fallback to full reconnection
+
+          if (this.state.currentState !== CONNECTION_STATES.RECONNECTING) {
+            this.state.transition(CONNECTION_STATES.RECONNECTING);
+          }
+
           await this.attemptReconnect();
         }
       },
@@ -411,6 +442,7 @@ class ConnectionManager extends EventEmitter {
         }
 
         await this.consumeProducer(data);
+        this.onParticipantJoined();
       } catch (error) {
         this.handleError('Failed to consume new producer', error);
       }
@@ -478,7 +510,9 @@ class ConnectionManager extends EventEmitter {
       this.reconnectionAttempts = 0;
       console.log(`Connection established - isHost: ${this.isHost}`);
 
-      this.startMediaFlowChecks();
+      if (!this.mediaChecksStarted) {
+        this.startMediaFlowChecks();
+      }
       console.log('Media flow checks started');
 
       return {
@@ -517,32 +551,38 @@ class ConnectionManager extends EventEmitter {
   }
 
   async pollServerReadiness() {
-    let maxAttempts = 5;
-    return new Promise((resolve, reject) => {
-      for (let i = 0; i < maxAttempts; i++) {
-        console.log('Server readiness check:emitting');
-        this.socket.emit('checkServerStatus', {}, (response) => {
-          console.log('Server readiness check:', response);
-          if (response.isReady) {
-            resolve(true);
-            return;
-          } else {
-            reject(new Error('Server not ready'));
-          }
-        });
-      }
-    });
-    // for (let i = 0; i < maxAttempts; i++) {
-    //   const response = await signaling.emitWithTimeout('checkServerStatus', {});
-    //   console.log('Server readiness check:', response);
+    const maxDuration = 20_000; // 20 seconds total
+    const interval = 1000;
+    const startTime = Date.now();
 
-    //   if (response.isReady) {
-    //     return true; // The server is ready now
-    //   }
-    //   // Wait before next attempt
-    //   await new Promise((resolve) => setTimeout(resolve, delay));
-    // }
-    // throw new Error('Server is not ready after multiple attempts');
+    while (Date.now() - startTime < maxDuration) {
+      console.log('Server readiness check: emitting');
+
+      const response = await new Promise((resolve, reject) => {
+        // Set up a timeout in case the server doesn't respond
+        const timeout = setTimeout(() => {
+          reject(new Error('No response from server on readiness check'));
+        }, 1000); // give the server 1s to respond for each check
+
+        this.socket.emit('checkServerStatus', {}, (resp) => {
+          clearTimeout(timeout);
+          resolve(resp);
+        });
+      }).catch((error) => {
+        console.error('Poll attempt failed:', error);
+        return null; // Return null if we got no response to try again
+      });
+
+      // If we got no response (null), continue looping until maxDuration elapsed
+      if (response && response.isReady) {
+        return true; // Server is ready
+      }
+
+      // Wait before next attempt
+      await new Promise((resolve) => setTimeout(resolve, interval));
+    }
+
+    throw new Error('Server not ready after 20 seconds');
   }
 
   async initialize(meetingId, uid) {
@@ -568,27 +608,36 @@ class ConnectionManager extends EventEmitter {
   }
 
   async attemptReconnect() {
+    if (!this.state.canReconnect()) {
+      console.log('Cannot reconnect, state is not reconnectable.');
+      return;
+    }
+
     // First, check max attempts to prevent infinite recursion
-    if (
-      this.reconnectionAttempts >= this.MAX_RECONNECTION_ATTEMPTS &&
-      this.state.currentState !== CONNECTION_STATES.CONNECTED
-    ) {
+    if (this.state.currentState !== CONNECTION_STATES.RECONNECTING) {
       this.state.transition(CONNECTION_STATES.FAILED);
-      throw new Error('Max reconnection attempts reached');
+      throw new Error('Cannot reconnect from current state');
     }
     this.isReconnecting = true;
 
-    // Fall back to full reconnection
+    // Reset media manager and transports
     this.mediaManager.reset();
-    await this.resetTransports();
+
     await this.pollServerReadiness();
+
+    await this.resetTransports();
+
     try {
       console.log(
         `Attempt ${this.reconnectionAttempts + 1} of ${this.MAX_RECONNECTION_ATTEMPTS}`,
       );
 
+      if (!this.uid || !this.meetingId) {
+        throw new Error('Meeting ID and UID are required for reconnect');
+      }
+
       // Reconnect socket first
-      const response = await this.signaling.emitWithTimeout('reconnect', {
+      const response = await this.signaling.emitWithTimeout('userRejoin', {
         uid: this.uid,
         meetingId: this.meetingId,
       });
@@ -631,24 +680,28 @@ class ConnectionManager extends EventEmitter {
 
       return true;
     } catch (error) {
+      // this.reconnectionAttempts++;
+
       console.error('Reconnection attempt failed:', error);
-      this.reconnectionAttempts++;
+      this.state.transition(CONNECTION_STATES.FAILED);
+      this.isReconnecting = false;
+      throw error;
 
       // Add exponential backoff delay
-      const delay = Math.min(
-        1000 * Math.pow(2, this.reconnectionAttempts),
-        10000,
-      );
-      await new Promise((resolve) => setTimeout(resolve, delay));
+      // const delay = Math.min(
+      //   1000 * Math.pow(2, this.reconnectionAttempts),
+      //   10000,
+      // );
+      // await new Promise((resolve) => setTimeout(resolve, delay));
 
       // Only retry if under max attempts
-      if (this.reconnectionAttempts < this.MAX_RECONNECTION_ATTEMPTS) {
-        return this.attemptReconnect();
-      } else {
-        this.state.transition(CONNECTION_STATES.FAILED);
-        this.isReconnecting = false;
-        throw new Error('Max reconnection attempts reached');
-      }
+      // if (this.reconnectionAttempts < this.MAX_RECONNECTION_ATTEMPTS) {
+      //   return this.attemptReconnect();
+      // } else {
+      //   this.state.transition(CONNECTION_STATES.FAILED);
+      //   this.isReconnecting = false;
+      //   throw new Error('Max reconnection attempts reached');
+      // }
     }
   }
 
@@ -917,6 +970,15 @@ class ConnectionManager extends EventEmitter {
           enabled: track.enabled,
           settings: track.getSettings(),
         });
+
+        const existingProducer = this.mediaManager.getProducer(track.kind);
+        if (existingProducer && !existingProducer.closed) {
+          console.log(
+            `Producer for ${track.kind} already exists, skipping produce`,
+          );
+          continue;
+        }
+
         const producer = await producerTransport.produce({ track });
 
         this.mediaManager.addProducer(producer);
@@ -1036,7 +1098,7 @@ class ConnectionManager extends EventEmitter {
         // Set to closing state
         this.state.transition(CONNECTION_STATES.CLOSING);
 
-        // Cleanup intervals
+        // Stop quality monitoring if running
         if (this.statsInterval) {
           clearInterval(this.statsInterval);
           this.statsInterval = null;
@@ -1044,12 +1106,18 @@ class ConnectionManager extends EventEmitter {
 
         // Cleanup managers
         const cleanupPromises = [
-          this.mediaManager.cleanup(),
+          this.mediaManager.cleanup({ force: true }),
           this.connectionPool.cleanup(),
           this.signaling.cleanup(),
         ];
 
         await Promise.all(cleanupPromises);
+
+        this.isConsumerReady = false;
+        this.producerTransportId = null;
+        this.consumerTransportId = null;
+        this.isReconnecting = false;
+        this.reconnectionAttempts = 0;
 
         // Only transition to closed if we're still in closing state
         if (this.state.currentState === CONNECTION_STATES.CLOSING) {
@@ -1063,6 +1131,28 @@ class ConnectionManager extends EventEmitter {
         }
       }
     }
+  }
+
+  async handleCallDisonnect() {
+    if (
+      this.state.currentState !== CONNECTION_STATES.CLOSING &&
+      this.state.currentState !== CONNECTION_STATES.CLOSED &&
+      this.state.currentState !== CONNECTION_STATES.FAILED
+    ) {
+      this.state.transition(CONNECTION_STATES.CLOSING);
+    }
+
+    await this.cleanup();
+
+    // Cleanup intervals
+    if (this.statsInterval) {
+      clearInterval(this.statsInterval);
+      this.statsInterval = null;
+    }
+
+    this.mediaChecksStarted = false;
+
+    // Cleanup managers
   }
 
   async resetTransports() {

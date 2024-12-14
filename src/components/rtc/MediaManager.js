@@ -50,7 +50,7 @@ class MediaManager {
   async isInboundMediaFlowing() {
     if (this.consumers.size === 0) {
       console.log('No consumers available to check media flow');
-      return false;
+      return 'not-ready';
     }
 
     // Pick any active consumer
@@ -89,6 +89,7 @@ class MediaManager {
     const currentBytes = inboundRtp.bytesReceived || 0;
     const flowing = currentBytes > (this.lastBytesReceived || 0);
     this.lastBytesReceived = currentBytes;
+
     console.log('Inbound media flowing:', flowing, currentBytes);
     return flowing;
   }
@@ -804,14 +805,14 @@ class MediaManager {
   /**
    * Clean up all resources
    */
-  async cleanup(options = { force: false }) {
+  async cleanup({ force = false } = {}) {
     if (this.localStream) {
       const tracks = this.localStream.getTracks();
 
       // Check if tracks are still in use before stopping
       tracks.forEach((track) => {
         const producer = this.producers.get(track.kind);
-        if (options.force || !producer || producer.closed) {
+        if (force || !producer || producer.closed) {
           track.stop();
         }
       });

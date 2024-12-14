@@ -1,8 +1,8 @@
 import React, { useRef, useState } from 'react';
-import { Box, Typography, Button } from '@mui/material';
-import GoogleAuthentication from './GoogleAuthentication';
+import { Box, Typography, Button, CircularProgress } from '@mui/material';
+// import GoogleAuthentication from './GoogleAuthentication';
 import PhoneSignIn from './PhoneSignIn';
-import SignUpModal from './SignUpModal';
+// import SignUpModal from './SignUpModal';
 import { styled } from '@mui/material/styles';
 import { ReactComponent as LogoIcon } from '../assets/understood_logo.svg';
 import { useTranslation } from 'react-i18next';
@@ -27,8 +27,9 @@ const UserLogin = () => {
   const [loginMethod, setLoginMethod] = useState(null);
   const { t } = useTranslation();
   const [isPhoneNumberSubmitted, setIsPhoneNumberSubmitted] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  // const [isModalOpen, setIsModalOpen] = useState(false);
   const phoneLoginRef = useRef(null);
+  const [loading, setLoading] = useState(false);
 
   const handleButtonClick = (e) => {
     e.preventDefault();
@@ -41,9 +42,9 @@ const UserLogin = () => {
     }
   };
 
-  const handleModalClose = () => {
-    setIsModalOpen(false);
-  };
+  // const handleModalClose = () => {
+  //   setIsModalOpen(false);
+  // };
 
   return (
     <Box
@@ -55,7 +56,6 @@ const UserLogin = () => {
       <BackgroundLogo>
         <LogoIcon />
       </BackgroundLogo>
-
       {!isPhoneNumberSubmitted && (
         <div>
           <Typography
@@ -95,9 +95,11 @@ const UserLogin = () => {
           onLogin={setLoginMethod}
           onSetIsPhoneNumberSubmitted={setIsPhoneNumberSubmitted}
           ref={phoneLoginRef}
+          setLoading={setLoading}
         />
       )}
 
+      {/* Disabling the phone google login till we get the activation and testing
       {!loginMethod && (
         <Typography
           sx={{
@@ -109,10 +111,9 @@ const UserLogin = () => {
           {t(' or')}
         </Typography>
       )}
-
       {loginMethod !== 'phoneLogin' && (
         <GoogleAuthentication onLogin={setLoginMethod} />
-      )}
+      )} */}
 
       <Button
         variant="contained"
@@ -126,8 +127,16 @@ const UserLogin = () => {
           fontSize: '18px',
         }}
       >
-        {isPhoneNumberSubmitted ? t('Verify & Hop Back In!') : t('Send OTP')}
+        {loading ? (
+          <CircularProgress size={24} color="inherit" />
+        ) : isPhoneNumberSubmitted ? (
+          t('Verify & Hop Back In!')
+        ) : (
+          t('Send OTP')
+        )}
       </Button>
+
+      {/* Disabling signup as mobile login will take care of it
       {!isPhoneNumberSubmitted && (
         <Typography
           sx={{
@@ -148,8 +157,7 @@ const UserLogin = () => {
           </Button>
         </Typography>
       )}
-
-      <SignUpModal open={isModalOpen} handleClose={handleModalClose} />
+      <SignUpModal open={isModalOpen} handleClose={handleModalClose} /> */}
     </Box>
   );
 };

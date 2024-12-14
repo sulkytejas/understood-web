@@ -44,6 +44,8 @@ const VideoCall = () => {
     intializeMeeting,
     isConnectionManagerReady,
     onEnableHD,
+    connectionStatus,
+    connectionQuality,
   } = useWebRTC();
 
   const { socket } = useSocket();
@@ -107,6 +109,8 @@ const VideoCall = () => {
         connectionState={connectionState}
         isRemoteConnected={isRemoteConnected}
         onNoMediaFlow={attemptReconnect}
+        connectionStatus={connectionStatus}
+        connectionQuality={connectionQuality}
       />
       <TranslationOverlay
         detectedLanguage={detectedLanguage}

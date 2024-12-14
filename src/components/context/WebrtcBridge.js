@@ -30,6 +30,14 @@ export const WebRTCBridge = ({ children }) => {
   const [connectionState, setConnectionState] = useState('new');
   const [connectionQuality, setConnectionQuality] = useState('good');
   const [joined, setJoined] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState({
+    isAlert: false,
+    message: null,
+  });
+  const [isMediaFlowing, setIsMediaFlowing] = useState(true);
+  const [participantLeft, setParticipantLeft] = useState(false);
+  const [connectionError, setConnectionError] = useState(null);
+
   const hostSocketId = useRef(null);
   const isHost = useRef(false);
 
@@ -71,10 +79,17 @@ export const WebRTCBridge = ({ children }) => {
         },
         onError: (error) => {
           console.error('Connection error:', error);
+          setConnectionError(error);
           // Handle UI errors appropriately
         },
         onQualityChange: (quality) => {
           setConnectionQuality(quality);
+        },
+        onParticipantJoined: () => {
+          setParticipantLeft(false);
+        },
+        onMediaFlowing: (isFlowing) => {
+          setIsMediaFlowing(isFlowing);
         },
       });
 
@@ -136,7 +151,99 @@ export const WebRTCBridge = ({ children }) => {
     }
   }, [isAudioPaused]);
 
-  // Debugger for webrtc
+  // Effect to handle connection status updates based on state changes
+  useEffect(() => {
+    // If we've navigated to meetingEnded, no further status updates are needed
+    if (connectionState === 'closed') {
+      return;
+    }
+
+    // Priority:
+    // 1. If call not started, no message.
+    if (!callStarted) {
+      setConnectionStatus({ isAlert: false, message: null });
+      return;
+    }
+
+    // 2. If participant disconnected during a connected state.
+    if (remoteStream === null && connectionState === 'connected') {
+      setConnectionStatus({
+        isAlert: true,
+        message: isHost.current
+          ? 'Participant has disconnected. Waiting for rejoin...'
+          : 'Host has disconnected. Waiting for rejoin...',
+      });
+      return;
+    }
+
+    // 3. If not connected (and not ended)
+    if (connectionState !== 'connected') {
+      setConnectionStatus({
+        isAlert: true,
+        message: 'Connection lost. Attempting to reconnect...',
+      });
+      return;
+    }
+
+    if (connectionError === 'Connection failed') {
+      setConnectionStatus({
+        isAlert: true,
+        message:
+          'Failed to connect to the meeting. Please check your network connection and retry',
+      });
+      return;
+    }
+
+    if (connectionError === 'Server connection lost and cannot reconnect') {
+      setConnectionStatus({
+        isAlert: true,
+        message:
+          'Disconnected from the meeting. Please try again later or contact support',
+      });
+      return;
+    }
+
+    // 4. Could not connect to other participant
+    if (connectionError === 'Failed to consume new producer') {
+      setConnectionStatus({
+        isAlert: true,
+        message:
+          'Failed to connect to the participant. Attempting to reconnect...',
+      });
+      return;
+    }
+
+    // 4. If media not flowing
+    if (!isMediaFlowing && connectionQuality !== 'good') {
+      setConnectionStatus({
+        isAlert: true,
+        message: 'Media connection interrupted. Attempting to restore...',
+      });
+      return;
+    }
+
+    // 5. If participant left
+    if (participantLeft) {
+      setConnectionStatus({
+        isAlert: true,
+        message: 'Participant has left the meeting...',
+      });
+      return;
+    }
+
+    // 6. All good
+    setConnectionStatus({
+      isAlert: false,
+      message: null,
+    });
+  }, [
+    callStarted,
+    connectionState,
+    participantLeft,
+    remoteStream,
+    isMediaFlowing,
+    isHost,
+  ]);
 
   // Maintain existing public methods with new implementation
   const publicMethods = {
@@ -148,6 +255,8 @@ export const WebRTCBridge = ({ children }) => {
           uid,
         );
         // Use the result
+        isHost.current = result.isHost;
+
         return {
           isHost: result.isHost,
           hostSocketId: result.hostSocketId,
@@ -217,7 +326,7 @@ export const WebRTCBridge = ({ children }) => {
       });
 
       if (connectionManager.current) {
-        await connectionManager.current.cleanup();
+        await connectionManager.current.handleCallDisonnect();
       }
 
       setLocalStream(null);
@@ -276,6 +385,7 @@ export const WebRTCBridge = ({ children }) => {
         console.log('Host disconnected, waiting for possible reconnect...');
       }
       // Clear remote stream if participant left
+      setParticipantLeft(true);
       setRemoteStream(null);
     };
 
@@ -302,6 +412,7 @@ export const WebRTCBridge = ({ children }) => {
     joined,
     hostSocketId: hostSocketId.current,
     isConnectionManagerReady,
+    connectionStatus,
   };
 
   return (
