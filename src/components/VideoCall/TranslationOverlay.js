@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react';
 // import Translation from '../Translation/Translation';
 import useTranslatedTextDisplay from '../hooks/useTranslatedTextDisplay';
-// import { addOrUpdateTranslatedText } from '../utils/peerConnectionUtils';
+import { useSelector } from 'react-redux';
+import { isRTL } from '../utils/countriesConfig';
 
 const TranslationOverlay = ({
   // detectedLanguage,
@@ -10,8 +11,17 @@ const TranslationOverlay = ({
   socket,
   // callStarted,
 }) => {
-  const addOrUpdateTranslatedText =
-    useTranslatedTextDisplay(setTranslatedTexts);
+  const translationLanguage = useSelector(
+    (state) => state.translation.localTranslationLanguage,
+  );
+  const languageDirection = isRTL(translationLanguage) ? 'rtl' : 'ltr';
+
+  console.log('TranslationOverlay:', translationLanguage, languageDirection);
+
+  const addOrUpdateTranslatedText = useTranslatedTextDisplay(
+    setTranslatedTexts,
+    languageDirection,
+  );
 
   useEffect(() => {
     const handleTranslatedText = ({ text, isFinal }) => {

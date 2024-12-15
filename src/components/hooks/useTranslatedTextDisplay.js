@@ -11,7 +11,7 @@ const decodeText = (text) => {
   return decodedText;
 };
 
-const useTranslatedTextDisplay = (setTranslatedText) => {
+const useTranslatedTextDisplay = (setTranslatedText, direction = 'ltr') => {
   const removeTextTimeoutRef = useRef(null);
   const lastFinalTextRef = useRef(''); // Store last finalized text
   const [displayedText, setDisplayedText] = useState(''); // Track the displayed text
@@ -77,11 +77,24 @@ const useTranslatedTextDisplay = (setTranslatedText) => {
 
       // Apply typing effect to the new part only after the last word of the previous sentence
       if (isTypingNeeded && typingText) {
-        const words = typingText.split(' ');
+        let words = typingText.split(' ');
+
+        if (direction === 'rtl') {
+          words = words.reverse(); // If direction is RTL, process words in reverse order
+        }
+
         words.forEach((word, i) => {
           setTimeout(() => {
             throttledUpdate((currentText) => {
-              const updatedText = `${processedText}${processedText ? ' ' : ''}${currentText.text}${currentText.text ? ' ' : ''}${word}`;
+              let updatedText = '';
+
+              if (direction === 'rtl') {
+                // RTL logic: prepend the word instead of append
+                updatedText = `${word}${currentText.text ? ' ' + currentText.text : ''}${processedText ? ' ' + processedText : ''}`;
+              } else {
+                updatedText = `${processedText}${processedText ? ' ' : ''}${currentText.text}${currentText.text ? ' ' : ''}${word}`;
+              }
+
               return { text: decodeText(updatedText), isFinal };
             });
           }, typingSpeed * i);

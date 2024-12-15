@@ -1,10 +1,17 @@
 import { Box, Typography } from '@mui/material';
+import { useSelector } from 'react-redux';
+import { isRTL } from '../utils/countriesConfig';
 
 const TranslatedTextView = ({
   translatedTexts = { text: '', isFinal: false },
 }) => {
   console.log(translatedTexts.text, 'translatedTexts');
   const isFinal = translatedTexts.isFinal;
+
+  const translationLanguage = useSelector(
+    (state) => state.translation.localTranslationLanguage,
+  );
+  const isRTLTarget = isRTL(translationLanguage);
 
   return (
     <Box
@@ -16,8 +23,8 @@ const TranslatedTextView = ({
       <Typography
         style={{
           margin: '5px',
-          fontSize: '14px',
-          textAlign: 'left',
+          fontSize: isRTLTarget ? '18px' : '14px',
+          textAlign: isRTLTarget ? 'right' : 'left',
           whiteSpace: 'normal',
           fontWeight: isFinal ? 600 : 300,
           color: isFinal ? 'black' : '#333',
