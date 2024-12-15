@@ -65,7 +65,7 @@ const UserLogin = () => {
               color: '#000',
             }}
           >
-            {t('UI 2.0 coming this new year')} 🎉
+            {t('UI 2.0 coming soon..')} 🎉
           </Typography>
           <Typography
             sx={{
@@ -76,7 +76,7 @@ const UserLogin = () => {
               color: '#DF4303',
             }}
           >
-            {t('Welcome Back, Globe-Trotter!')}
+            {t('Welcome Back!')}
           </Typography>
           <Typography
             sx={{
@@ -86,7 +86,7 @@ const UserLogin = () => {
               color: '#595959',
             }}
           >
-            {t('Let’s get you talking—no passports needed.')}
+            {t('One platform, countless voices, endless possibilities.')}
           </Typography>
         </div>
       )}
@@ -130,7 +130,7 @@ const UserLogin = () => {
         {loading ? (
           <CircularProgress size={24} color="inherit" />
         ) : isPhoneNumberSubmitted ? (
-          t('Verify & Hop Back In!')
+          t('Verify & Join!')
         ) : (
           t('Send OTP')
         )}

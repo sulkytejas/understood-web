@@ -27,6 +27,7 @@ import { ReactComponent as CaptionIcon } from './assets/caption_icon.svg';
 import SummarizeOutlinedIcon from '@mui/icons-material/SummarizeOutlined';
 import { ReactComponent as TranslationIcon } from './assets/translation_icon.svg';
 import { useSocket } from '../context/SocketContext';
+import { getCountriesList } from '../utils/countriesConfig';
 
 const CustomBottomNavigationAction = styled(BottomNavigationAction)({
   color: 'white',
@@ -133,24 +134,6 @@ const VideoControls = ({
     };
   }, [socket]);
 
-  const langauges = [
-    {
-      language: t('Hindi'),
-      languageCode: 'hi-IN',
-      avatar: 'अ',
-    },
-    {
-      language: t('Russian'),
-      languageCode: 'ru-RU',
-      avatar: 'Б',
-    },
-    {
-      language: t('English'),
-      languageCode: 'en-US',
-      avatar: 'C',
-    },
-  ];
-
   const dispatch = useDispatch();
   const drawerContainerRef = useRef(null);
 
@@ -221,7 +204,7 @@ const VideoControls = ({
             {t('Select Language ')}
           </Typography>
         </MenuItem>
-        {langauges.map((lang) => (
+        {getCountriesList().map((lang) => (
           <MenuItem
             key={lang.languageCode}
             value={lang.languageCode}
@@ -238,14 +221,14 @@ const VideoControls = ({
               sx={{
                 bgcolor: '#4abbc9',
                 color: '#fff',
-                height: 20,
-                width: 20,
+                height: lang.languageCode === 'zh' ? 18 : 20,
+                width: lang.languageCode === 'zh' ? 18 : 20,
                 marginRight: 3,
               }}
             >
               {lang.avatar}
             </Avatar>
-            {lang.language}
+            {t(lang.name)}
             {userTranslationLanguage === lang.languageCode && (
               <Check
                 sx={{

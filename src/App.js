@@ -3,16 +3,21 @@
 import './App.css';
 import { React, useState, useEffect, useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Box, Typography, useMediaQuery } from '@mui/material';
+import {
+  Box,
+  ThemeProvider,
+  Typography,
+  useMediaQuery,
+  createTheme,
+} from '@mui/material';
 import Bowser from 'bowser';
 import { useSocket } from './components/context/SocketContext';
 // import { WebRTCProvider } from './components/context/WebrtcContext';
 import { WebRTCBridge } from './components/context/WebrtcBridge';
 import { AudioTranscriptionProvider } from './components/context/AudioTranscriptionContext';
 import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
-
 import { useDispatch, useSelector } from 'react-redux';
-
+import i18n from './i18n';
 import VideoCall from './components/VideoCall/VideoCall';
 import CreateMeetingPage from './components/Meeting/CreateMeeting';
 import PracticeMain from './components/PraticeMode/PracticeMain';
@@ -37,6 +42,11 @@ import {
   setLocalTranslationLanguage,
 } from './redux/translationSlice';
 import { setBrowserName } from './redux/uiSlice';
+import baseTheme from './theme';
+import { CacheProvider } from '@emotion/react';
+import createCache from '@emotion/cache';
+import { prefixer } from 'stylis';
+import rtlPlugin from 'stylis-plugin-rtl';
 
 function App() {
   const location = useLocation();
@@ -46,9 +56,27 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [isChrome, setIsChrome] = useState(true);
   const [userDetails, setUserDetails] = useState(null);
+  const [direction, setDirection] = useState(() => i18n.dir(i18n.language));
+
   const isDeviceSupported = useMediaQuery('(max-width:430px)');
   const { socket, isSocketConnected } = useSocket();
   const uid = useSelector((state) => state.user.uid);
+
+  const theme = useMemo(() => {
+    return createTheme({ ...baseTheme, direction });
+  }, [direction, baseTheme]);
+
+  const cache = useMemo(() => {
+    return createCache({
+      key: direction === 'rtl' ? 'muirtl' : 'muiltr',
+      prepend: true,
+      stylisPlugins: direction === 'rtl' ? [rtlPlugin, prefixer] : [prefixer],
+    });
+  }, [direction]);
+
+  useEffect(() => {
+    document.body.setAttribute('dir', direction);
+  }, [direction]);
 
   useEffect(() => {
     const browser = Bowser.getParser(window.navigator.userAgent);
@@ -91,6 +119,25 @@ function App() {
     }
 
     return false;
+  }, []);
+
+  useEffect(() => {
+    const locale = localStorage.getItem('locale') || 'en';
+    i18n.changeLanguage(locale);
+  }, []);
+
+  useEffect(() => {
+    const handleLanguageChange = (lng) => {
+      const dir = i18n.dir(lng);
+      setDirection(dir);
+    };
+
+    i18n.on('languageChanged', handleLanguageChange);
+
+    // Cleanup
+    return () => {
+      i18n.off('languageChanged', handleLanguageChange);
+    };
   }, []);
 
   useEffect(() => {
@@ -181,74 +228,81 @@ function App() {
   };
 
   return (
-    <Box
-      sx={{
-        width: '100%',
-        maxWidth: { xs: '100vw', md: '430px' },
-        margin: '0 auto',
-        boxSizing: 'border-box',
-      }}
-    >
-      <WebRTCBridge>
-        <AudioTranscriptionProvider>
-          <Routes location={location}>
-            <Route
-              path="/"
-              element={
-                !isLocaleAndSpokenSet ? (
-                  <AnimatedRoute element={<WelcomeScreen />} />
-                ) : userDetails?.username ? (
-                  <Navigate to="/meeting" />
-                ) : (
-                  <Navigate to="/login" />
-                )
-              }
-            />
-            <Route
-              path="/login"
-              element={
-                !userData?.username ? (
-                  <AnimatedRoute element={<UserLogin />} />
-                ) : (
-                  <Navigate to="/meeting" />
-                )
-              }
-            />
-            <Route path="/googleCallback" element={<GoogleCallback />} />
-            <Route
-              path="/meeting"
-              element={
-                <ProtectedRoute>
-                  <AnimatedRoute element={<CreateMeetingPage />} />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/videocall/:meetingId"
-              element={
-                <ProtectedRoute>
-                  <AnimatedRoute element={<VideoCall />} />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/vibe/:practiceSessionId"
-              element={
-                <ProtectedRoute>
-                  <AnimatedRoute element={<PracticeMain />} />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/meetingEnded"
-              element={<AnimatedRoute element={<MeetingEnded />} />}
-            />
-            <Route path="/privacyPolicy" element={<PrivacyPolicy />} />
-            <Route path="/termsAndConditions" element={<TermsAndCondition />} />
-          </Routes>
-        </AudioTranscriptionProvider>
-      </WebRTCBridge>
-    </Box>
+    <CacheProvider value={cache}>
+      <ThemeProvider theme={theme}>
+        <Box
+          sx={{
+            width: '100%',
+            maxWidth: { xs: '100vw', md: '430px' },
+            margin: '0 auto',
+            boxSizing: 'border-box',
+          }}
+        >
+          <WebRTCBridge>
+            <AudioTranscriptionProvider>
+              <Routes location={location}>
+                <Route
+                  path="/"
+                  element={
+                    !isLocaleAndSpokenSet ? (
+                      <AnimatedRoute element={<WelcomeScreen />} />
+                    ) : userDetails?.username ? (
+                      <Navigate to="/meeting" />
+                    ) : (
+                      <Navigate to="/login" />
+                    )
+                  }
+                />
+                <Route
+                  path="/login"
+                  element={
+                    !userData?.username ? (
+                      <AnimatedRoute element={<UserLogin />} />
+                    ) : (
+                      <Navigate to="/meeting" />
+                    )
+                  }
+                />
+                <Route path="/googleCallback" element={<GoogleCallback />} />
+                <Route
+                  path="/meeting"
+                  element={
+                    <ProtectedRoute>
+                      <AnimatedRoute element={<CreateMeetingPage />} />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/videocall/:meetingId"
+                  element={
+                    <ProtectedRoute>
+                      <AnimatedRoute element={<VideoCall />} />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/vibe/:practiceSessionId"
+                  element={
+                    <ProtectedRoute>
+                      <AnimatedRoute element={<PracticeMain />} />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/meetingEnded"
+                  element={<AnimatedRoute element={<MeetingEnded />} />}
+                />
+                <Route path="/privacyPolicy" element={<PrivacyPolicy />} />
+                <Route
+                  path="/termsAndConditions"
+                  element={<TermsAndCondition />}
+                />
+              </Routes>
+            </AudioTranscriptionProvider>
+          </WebRTCBridge>
+        </Box>
+      </ThemeProvider>
+    </CacheProvider>
   );
 }
 

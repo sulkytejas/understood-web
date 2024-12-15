@@ -6,6 +6,9 @@ import {
   IconButton,
   Grid,
   Box,
+  Autocomplete,
+  TextField,
+  Avatar,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -13,15 +16,9 @@ import { styled } from '@mui/material/styles';
 import { useDispatch } from 'react-redux';
 import { ReactComponent as LogoIcon } from '../assets/understood_logo_text.svg';
 import { setLocalSpokenLanguage } from '../../redux/translationSlice';
-import i18n from '../../i18n';
 import { useTranslation } from 'react-i18next';
-
-const countries = [
-  { code: 'IN', languageCode: 'hi-IN', name: 'Hindi', locale: 'hi' },
-  { code: 'US', languageCode: 'en-US', name: 'English', locale: 'en' },
-  { code: 'RU', languageCode: 'ru-RU', name: 'Russian', locale: 'ru' },
-  // Add more countries as needed
-];
+import { getCountriesList } from '../utils/countriesConfig';
+import i18n from '../../i18n';
 
 // Custom styled components
 const StyledContainer = styled(Container)(({ theme }) => ({
@@ -77,6 +74,7 @@ const WelcomeScreen = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const dispatch = useDispatch();
+  const countries = getCountriesList();
 
   const handleClick = () => {
     dispatch(setLocalSpokenLanguage(languageCode));
@@ -102,7 +100,13 @@ const WelcomeScreen = () => {
         <LogoIcon style={{ fontSize: 100 }} /> {/* Adjust size as needed */}
       </StyledLogoBox>
 
-      <Box sx={{ marginBottom: '30px', alignSelf: 'start', textAlign: 'left' }}>
+      <Box
+        sx={{
+          marginBottom: '30px',
+          alignSelf: 'start',
+          textAlign: 'left',
+        }}
+      >
         <Typography
           sx={{
             fontSize: '38px',
@@ -119,7 +123,7 @@ const WelcomeScreen = () => {
             fontWeight: '400',
           }}
         >
-          {t('Select your spoken language')}
+          {t('Select your language to begin.')}
         </Typography>
       </Box>
 
@@ -127,11 +131,50 @@ const WelcomeScreen = () => {
         container
         spacing={2}
         justifyContent="center"
+        alignItems={'center'}
         sx={{
           marginBottom: '16px',
         }}
       >
-        {countries.map((option) => (
+        <Autocomplete
+          options={countries}
+          getOptionLabel={(option) => t(option.name)}
+          sx={{ width: '100%', maxWidth: '350px', marginLeft: '10px' }}
+          onChange={(event, newValue) => {
+            if (newValue) {
+              console.log('Selected language:', newValue.languageCode);
+
+              // Handle language selection
+              setLanguageCode(newValue.languageCode);
+              setLocale(newValue.locale);
+              i18n.changeLanguage(newValue.locale);
+              // const dir = i18n.dir(newValue.locale);
+              // console.log('Direction:', dir);
+              // setDirection(dir);
+            }
+          }}
+          renderOption={(props, option) => (
+            <li {...props}>
+              <Avatar
+                sx={{
+                  bgcolor: '#4abbc9',
+                  color: '#fff',
+                  height: 24,
+                  width: 24,
+                  marginRight: 2,
+                  fontSize: option.languageCode === 'zh-CN' ? '12px' : '14px',
+                }}
+              >
+                {option.avatar}
+              </Avatar>
+              {t(option.name)}
+            </li>
+          )}
+          renderInput={(params) => (
+            <TextField {...params} label={t('Select Language')} />
+          )}
+        />
+        {/* {countries.map((option) => (
           <Grid item key={option.name}>
             <IconButton
               onClick={() => {
@@ -162,7 +205,7 @@ const WelcomeScreen = () => {
               />
             </IconButton>
           </Grid>
-        ))}
+        ))} */}
       </StyledLanguagesContainer>
 
       <Button

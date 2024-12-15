@@ -6,11 +6,11 @@ import ListItemButton from '@mui/material/ListItemButton';
 import ListItemText from '@mui/material/ListItemText';
 import DialogTitle from '@mui/material/DialogTitle';
 import Dialog from '@mui/material/Dialog';
-import { blue } from '@mui/material/colors';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import { Check } from '@mui/icons-material';
 import { useSocket } from '../context/SocketContext';
+import { getCountriesList } from '../utils/countriesConfig';
 
 function AccountSeetingDialog(props) {
   const { onClose, selectedValue, open } = props;
@@ -20,13 +20,6 @@ function AccountSeetingDialog(props) {
     (state) => state.translation.localSpokenLanguage,
   );
   const userUid = useSelector((state) => state.user.uid);
-
-  const countries = [
-    { code: 'IN', languageCode: 'hi-IN', name: t('Hindi') },
-    { code: 'US', languageCode: 'en-US', name: t('English') },
-    { code: 'RU', languageCode: 'ru-RU', name: t('Russian') },
-    // Add more countries as needed
-  ];
 
   const handleClose = () => {
     onClose(selectedValue);
@@ -50,20 +43,23 @@ function AccountSeetingDialog(props) {
         {t('Change Spoken Language')}
       </DialogTitle>
       <List sx={{ pt: 0 }}>
-        {countries.map((option) => (
+        {getCountriesList().map((option) => (
           <ListItem disableGutters key={option.name}>
             <ListItemButton
               onClick={() => handleListItemClick(option.languageCode)}
             >
               <ListItemAvatar>
-                <Avatar sx={{ bgcolor: blue[100], color: blue[600] }}>
-                  <img
-                    loading="lazy"
-                    srcSet={`https://flagcdn.com/w40/${option.code.toLowerCase()}.png 2x`}
-                    src={`https://flagcdn.com/w20/${option.code.toLowerCase()}.png`}
-                    alt={option.name}
-                    style={{ width: 24, height: 24 }}
-                  />
+                <Avatar
+                  sx={{
+                    bgcolor: '#4abbc9',
+                    color: '#fff',
+                    height: 24,
+                    width: 24,
+                    marginRight: 2,
+                    fontSize: option.languageCode === 'zh-CN' ? '12px' : '14px',
+                  }}
+                >
+                  {option.avatar}
                 </Avatar>
               </ListItemAvatar>
               <ListItemText primary={option.name} />

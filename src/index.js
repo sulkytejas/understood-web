@@ -5,8 +5,7 @@ import App from './App';
 import reportWebVitals from './reportWebVitals';
 import { Provider } from 'react-redux';
 import store from './redux/store';
-import { ThemeProvider } from '@mui/material/styles';
-import theme from './theme';
+
 import { BrowserRouter } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { SocketProvider } from './components/context/SocketContext';
@@ -18,13 +17,11 @@ root.render(
   // <React.StrictMode>
   <Provider store={store}>
     <BrowserRouter>
-      <ThemeProvider theme={theme}>
-        <GoogleOAuthProvider clientId={CLIENT_ID}>
-          <SocketProvider>
-            <App />
-          </SocketProvider>
-        </GoogleOAuthProvider>
-      </ThemeProvider>
+      <GoogleOAuthProvider clientId={CLIENT_ID}>
+        <SocketProvider>
+          <App />
+        </SocketProvider>
+      </GoogleOAuthProvider>
     </BrowserRouter>
   </Provider>,
   // </React.StrictMode>,

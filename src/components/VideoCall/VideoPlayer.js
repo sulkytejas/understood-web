@@ -364,7 +364,7 @@ const VideoPlayer = ({
           }}
         >
           <Alert severity="info">
-            {t(connectionStatus?.message || 'Connection status unknown')}
+            {connectionStatus?.message || t('Connection status unknown')}
           </Alert>
         </Box>
       )}

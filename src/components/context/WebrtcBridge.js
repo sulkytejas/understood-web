@@ -11,7 +11,7 @@ import ConnectionManager from '../rtc/ConnectionManager';
 import { cleanupState } from '../../redux/actions';
 import { setParticipantInfo } from '../../redux/meetingSlice';
 import { useSocket } from './SocketContext';
-
+import { useTranslation } from 'react-i18next';
 const WebRTCContext = createContext();
 
 export const useWebRTC = () => useContext(WebRTCContext);
@@ -52,6 +52,7 @@ export const WebRTCBridge = ({ children }) => {
 
   // Connection Manager Reference
   const connectionManager = useRef(null);
+  const { t } = useTranslation();
 
   useEffect(() => {
     console.log('WebRTCBridge Effect - Socket state:', {
@@ -170,8 +171,8 @@ export const WebRTCBridge = ({ children }) => {
       setConnectionStatus({
         isAlert: true,
         message: isHost.current
-          ? 'Participant has disconnected. Waiting for rejoin...'
-          : 'Host has disconnected. Waiting for rejoin...',
+          ? t('Participant has disconnected. Waiting for rejoin...')
+          : t('Host has disconnected. Waiting for rejoin...'),
       });
       return;
     }
@@ -180,7 +181,7 @@ export const WebRTCBridge = ({ children }) => {
     if (connectionState !== 'connected') {
       setConnectionStatus({
         isAlert: true,
-        message: 'Connection lost. Attempting to reconnect...',
+        message: t('Connection lost. Attempting to reconnect...'),
       });
       return;
     }
@@ -188,8 +189,9 @@ export const WebRTCBridge = ({ children }) => {
     if (connectionError === 'Connection failed') {
       setConnectionStatus({
         isAlert: true,
-        message:
+        message: t(
           'Failed to connect to the meeting. Please check your network connection and retry',
+        ),
       });
       return;
     }
@@ -197,8 +199,9 @@ export const WebRTCBridge = ({ children }) => {
     if (connectionError === 'Server connection lost and cannot reconnect') {
       setConnectionStatus({
         isAlert: true,
-        message:
+        message: t(
           'Disconnected from the meeting. Please try again later or contact support',
+        ),
       });
       return;
     }
@@ -207,8 +210,9 @@ export const WebRTCBridge = ({ children }) => {
     if (connectionError === 'Failed to consume new producer') {
       setConnectionStatus({
         isAlert: true,
-        message:
+        message: t(
           'Failed to connect to the participant. Attempting to reconnect...',
+        ),
       });
       return;
     }
@@ -217,7 +221,7 @@ export const WebRTCBridge = ({ children }) => {
     if (!isMediaFlowing && connectionQuality !== 'good') {
       setConnectionStatus({
         isAlert: true,
-        message: 'Media connection interrupted. Attempting to restore...',
+        message: t('Media connection interrupted. Attempting to restore...'),
       });
       return;
     }

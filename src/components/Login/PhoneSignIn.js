@@ -366,6 +366,7 @@ const PhoneSignIn = forwardRef(
         confirmationResult
           .confirm(otp)
           .then(async (result) => {
+            setLoading(true);
             // User signed in successfully.
             const user = result.user;
             setUserData({ ...user });
@@ -455,7 +456,7 @@ const PhoneSignIn = forwardRef(
                 international
                 countryCallingCodeEditable={false}
                 // defaultCountry="US"
-                placeholder={t('Your Number – Your Ticket to Talk')}
+                placeholder={t('Your Number—Your Key to Connect')}
                 value={phoneNumber}
                 onChange={(value) => {
                   setPhoneNumber(value || '');
@@ -499,7 +500,6 @@ const PhoneSignIn = forwardRef(
               onSetOtp={setOtp}
               isOtpInvalid={isOtpInvalid}
               phoneNumber={phoneNumber}
-              setLoading={setLoading}
             />
           </div>
         )}

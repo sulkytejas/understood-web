@@ -1,5 +1,5 @@
 module.exports = {
-  locales: ['en', 'hi', 'ru'], // Define the languages you support
+  locales: ['en', 'hi', 'ru', 'de', 'zh', 'ar'], // Define the languages you support
   output: 'public/locales/$LOCALE/$NAMESPACE.json', // Where the JSON files should be created
   keySeparator: false, // Set to false if you use dot notation in keys (e.g., 'common.welcome')
   namespaceSeparator: false, // Set to false if you don't want to use namespaces

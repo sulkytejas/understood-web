@@ -52,26 +52,26 @@ const CustomTab = styled(Tab)({
   },
 });
 
-const CustomTabDark = styled(Tab)({
-  backgroundColor: '#A9A9A9',
-  minHeight: 'auto',
-  textTransform: 'none',
-  padding: '10px 20px',
-  fontSize: 14,
-  color: '#FFF',
-  transition: 'all 0.3s ease',
-  zIndex: 0,
-  boxShadow: 'none', // No shadow for non-selected tabs
-  fontWeight: 400,
-  '&.Mui-selected': {
-    backgroundColor: '#000', // Background for the selected tab
-    boxShadow: '1px 2px 8px rgba(0, 0, 0, 0.4)',
-    color: '#fff',
-    // transform: 'translateY(-2px)', // Make the selected tab appear raised
-    zIndex: 1, // Ensure it appears above other tabs
-    borderBottom: 'none',
-  },
-});
+// const CustomTabDark = styled(Tab)({
+//   backgroundColor: '#A9A9A9',
+//   minHeight: 'auto',
+//   textTransform: 'none',
+//   padding: '10px 20px',
+//   fontSize: 14,
+//   color: '#FFF',
+//   transition: 'all 0.3s ease',
+//   zIndex: 0,
+//   boxShadow: 'none', // No shadow for non-selected tabs
+//   fontWeight: 400,
+//   '&.Mui-selected': {
+//     backgroundColor: '#000', // Background for the selected tab
+//     boxShadow: '1px 2px 8px rgba(0, 0, 0, 0.4)',
+//     color: '#fff',
+//     // transform: 'translateY(-2px)', // Make the selected tab appear raised
+//     zIndex: 1, // Ensure it appears above other tabs
+//     borderBottom: 'none',
+//   },
+// });
 
 const StyledLogoBox = styled(Box)(() => ({
   marginBottom: '40px',
@@ -168,9 +168,9 @@ const CreateMeetingPage = () => {
         textColor="primary"
         variant="fullWidth"
       >
-        <CustomTab label={t('Host ')} />
-        <CustomTab label={t('Join')} />
-        <CustomTabDark label={t('Vibe')} />
+        <CustomTab label={t('Host Meeting')} />
+        <CustomTab label={t('Join Meeting')} />
+        {/* <CustomTabDark label={t('Vibe')} /> */}
       </CustomTabs>
       <div className="create-meeting-content">{/* <UserAvatar /> */}</div>
 
