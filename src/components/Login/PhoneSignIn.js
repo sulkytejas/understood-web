@@ -244,103 +244,133 @@ const PhoneSignIn = forwardRef(
     const [isOtpInvalid, setIsOtpInvalid] = useState(false);
     const [phoneSignInError, setPhoneSignInError] = useState('');
 
-    // Load reCAPTCHA script and initialize RecaptchaVerifier
+    // // Load reCAPTCHA script and initialize RecaptchaVerifier
+    // useEffect(() => {
+    //   const loadRecaptchaScript = () => {
+    //     return new Promise((resolve, reject) => {
+    //       if (document.getElementById('recaptcha-script')) {
+    //         resolve(); // Script already loaded
+    //         return;
+    //       }
+
+    //       const script = document.createElement('script');
+    //       script.id = 'recaptcha-script';
+    //       script.src =
+    //         'https://www.google.com/recaptcha/api.js?render=explicit';
+    //       script.async = true;
+    //       script.defer = true;
+    //       script.onload = () => resolve();
+    //       script.onerror = () =>
+    //         reject(new Error('Failed to load reCAPTCHA script'));
+    //       document.body.appendChild(script);
+    //     });
+    //   };
+
+    //   const initializeRecaptchaVerifier = () => {
+    //     return new Promise((resolve) => {
+    //       const checkRecaptcha = () => {
+    //         if (window.grecaptcha && window.grecaptcha.render) {
+    //           resolve();
+    //         } else {
+    //           setTimeout(checkRecaptcha, 100);
+    //         }
+    //       };
+    //       checkRecaptcha();
+    //     });
+    //   };
+
+    //   const initializeRecaptchaVerifierLoaded = () => {
+    //     if (!document.getElementById('recaptcha-container')) {
+    //       console.error('reCAPTCHA container not found in DOM.');
+    //       return;
+    //     }
+    //     try {
+    //       // if (auth && auth.settings) {
+    //       //   auth.settings.appVerificationDisabledForTesting = true;
+    //       // } else {
+    //       //   console.error('Firebase Auth is not properly initialized.');
+    //       //   return;
+    //       // }
+
+    //       // Initialize the RecaptchaVerifier
+    //       window.recaptchaVerifier = new RecaptchaVerifier(
+    //         auth,
+    //         'recaptcha-container',
+    //         {
+    //           size: 'invisible',
+    //           callback: () => {
+    //             console.log('recaptcha resolved..');
+    //           },
+    //         },
+    //       );
+
+    //       // Render the reCAPTCHA widget
+    //       window.recaptchaVerifier
+    //         .render()
+    //         .then((widgetId) => {
+    //           setLoading(false);
+    //           console.log('reCAPTCHA rendered with widgetId:', widgetId);
+    //         })
+    //         .catch((error) => {
+    //           console.error('Error rendering reCAPTCHA widget:', error);
+    //         });
+    //     } catch (error) {
+    //       console.error('Error initializing reCAPTCHA:', error);
+    //     }
+    //   };
+
+    //   loadRecaptchaScript()
+    //     .then(initializeRecaptchaVerifier)
+    //     .then(() => {
+    //       if (auth && window.grecaptcha && window.grecaptcha.render) {
+    //         initializeRecaptchaVerifierLoaded();
+    //       } else {
+    //         console.error(
+    //           'Firebase auth or reCAPTCHA not initialized properly.',
+    //         );
+    //       }
+    //     });
+    // }, [setLoading]);
+
     useEffect(() => {
-      const loadRecaptchaScript = () => {
-        return new Promise((resolve, reject) => {
-          if (document.getElementById('recaptcha-script')) {
-            resolve(); // Script already loaded
-            return;
-          }
-
-          const script = document.createElement('script');
-          script.id = 'recaptcha-script';
-          script.src =
-            'https://www.google.com/recaptcha/api.js?render=explicit';
-          script.async = true;
-          script.defer = true;
-          script.onload = () => resolve();
-          script.onerror = () =>
-            reject(new Error('Failed to load reCAPTCHA script'));
-          document.body.appendChild(script);
-        });
-      };
-
-      const initializeRecaptchaVerifier = () => {
-        return new Promise((resolve) => {
-          const checkRecaptcha = () => {
-            if (window.grecaptcha && window.grecaptcha.render) {
-              resolve();
-            } else {
-              setTimeout(checkRecaptcha, 100);
-            }
-          };
-          checkRecaptcha();
-        });
-      };
-
-      const initializeRecaptchaVerifierLoaded = () => {
-        if (!document.getElementById('recaptcha-container')) {
-          console.error('reCAPTCHA container not found in DOM.');
-          return;
-        }
-        try {
-          if (auth && auth.settings) {
-            auth.settings.appVerificationDisabledForTesting = true;
-          } else {
-            console.error('Firebase Auth is not properly initialized.');
-            return;
-          }
-
-          // Initialize the RecaptchaVerifier
-          window.recaptchaVerifier = new RecaptchaVerifier(
-            auth,
-            'recaptcha-container',
-            {
-              size: 'invisible',
-              callback: () => {
-                console.log('recaptcha resolved..');
-              },
-            },
-          );
-
-          // Render the reCAPTCHA widget
-          window.recaptchaVerifier
-            .render()
-            .then((widgetId) => {
-              setLoading(false);
-              console.log('reCAPTCHA rendered with widgetId:', widgetId);
-            })
-            .catch((error) => {
-              console.error('Error rendering reCAPTCHA widget:', error);
-            });
-        } catch (error) {
-          console.error('Error initializing reCAPTCHA:', error);
+      return () => {
+        if (window.recaptchaVerifier) {
+          window.recaptchaVerifier.clear();
+          window.recaptchaVerifier = null;
         }
       };
-
-      loadRecaptchaScript()
-        .then(initializeRecaptchaVerifier)
-        .then(() => {
-          if (auth && window.grecaptcha && window.grecaptcha.render) {
-            initializeRecaptchaVerifierLoaded();
-          } else {
-            console.error(
-              'Firebase auth or reCAPTCHA not initialized properly.',
-            );
-          }
-        });
-    }, [setLoading]);
+    }, []);
 
     // Send OTP to the phone number
     const sendOTP = () => {
-      if (!phoneNumber || !isValidPhoneNumber(phoneNumber)) {
-        setPhoneSignInError(t('Please enter a valid phone number'));
-        return;
-      }
+      // if (!phoneNumber || !isValidPhoneNumber(phoneNumber)) {
+      //   setPhoneSignInError(t('Please enter a valid phone number'));
+      //   return;
+      // }
 
       setLoading(true);
-      let appVerifier = window.recaptchaVerifier;
+
+      if (!window.recaptchaVerifier) {
+        window.recaptchaVerifier = new RecaptchaVerifier(
+          auth,
+          'sign-in-button',
+          {
+            size: 'invisible',
+            callback: () => {
+              console.log('reCAPTCHA solved successfully');
+            },
+            'expired-callback': () => {
+              console.log('reCAPTCHA expired');
+            },
+            'error-callback': (error) => {
+              console.error('reCAPTCHA error:', error);
+            },
+          },
+        );
+      }
+
+      const appVerifier = window.recaptchaVerifier;
+      console.log('Starting phone sign in for:', phoneNumber);
 
       signInWithPhoneNumber(auth, phoneNumber, appVerifier)
         .then((confirmationResult) => {
@@ -348,7 +378,7 @@ const PhoneSignIn = forwardRef(
           setConfirmationResult(confirmationResult);
           onLogin('phoneLogin');
           onSetIsPhoneNumberSubmitted(true);
-          console.log('OTP sent');
+          console.log('OTP sent', confirmationResult);
           setLoading(false);
         })
         .catch((error) => {

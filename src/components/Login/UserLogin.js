@@ -126,6 +126,7 @@ const UserLogin = () => {
           color: '#fff',
           fontSize: '18px',
         }}
+        id="sign-in-button"
       >
         {loading ? (
           <CircularProgress size={24} color="inherit" />
