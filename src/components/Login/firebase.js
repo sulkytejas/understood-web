@@ -2,8 +2,8 @@
 import { initializeApp } from 'firebase/app';
 import {
   getAuth,
-  // setPersistence,
-  // browserLocalPersistence,
+  setPersistence,
+  browserLocalPersistence,
 } from 'firebase/auth';
 
 // const firebaseConfig = {
@@ -36,13 +36,13 @@ const auth = getAuth(app);
 // auth.settings.appVerificationDisabledForTesting = true;
 
 // Set persistence for Firebase Authentication
-// setPersistence(auth, browserLocalPersistence)
-//   .then(() => {
-//     console.log('Persistence set to local (long-term).');
-//     // Now the user session will persist even after a browser restart
-//   })
-//   .catch((error) => {
-//     console.error('Error setting persistence:', error);
-//   });
+setPersistence(auth, browserLocalPersistence)
+  .then(() => {
+    console.log('Persistence set to local (long-term).');
+    // Now the user session will persist even after a browser restart
+  })
+  .catch((error) => {
+    console.error('Error setting persistence:', error);
+  });
 
 export { auth };
