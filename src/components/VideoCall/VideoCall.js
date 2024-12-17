@@ -17,16 +17,10 @@ import {
 } from '../../redux/meetingSlice';
 
 const VideoCall = () => {
-  const [detectedLanguage, setDetectedLanguage] = useState(null);
-  const [translatedTexts, setTranslatedTexts] = useState({ text: '' });
   const [isRemoteConnected, setIsRemoteConnected] = useState(false);
 
   const remoteVideoRef = useRef(null);
   const videoContainerRef = useRef(null);
-
-  const localTranslationLanguage = useSelector(
-    (state) => state.translation.localTranslationLanguage,
-  );
 
   const userUid = useSelector((state) => state.user.uid);
   const meetingIdRedux = useSelector((state) => state.meeting.meetingId);
@@ -112,19 +106,17 @@ const VideoCall = () => {
         connectionStatus={connectionStatus}
         connectionQuality={connectionQuality}
       />
-      <TranslationOverlay
+      {/* <TranslationOverlay
         detectedLanguage={detectedLanguage}
         localTargetLanguage={localTranslationLanguage}
         setTranslatedTexts={setTranslatedTexts}
         socket={socket}
         callStarted={callStarted}
-      />
+      /> */}
 
       <VideoControls
         callStarted={callStarted}
         onCallToggle={handleClick}
-        translatedTexts={translatedTexts}
-        setTranslatedTexts={setTranslatedTexts}
         onEnableHD={onEnableHD}
       />
     </div>

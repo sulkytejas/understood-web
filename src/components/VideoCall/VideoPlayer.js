@@ -4,13 +4,12 @@ import { useEffect, useRef, useState } from 'react';
 import { Box, Alert, Typography } from '@mui/material';
 import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
-import LoadingSpinner from '../onBoarding/LoadingSpinner';
 import useListTracker from '../hooks/useListTracker';
 import ListOverlay from './ListOverlay';
 import useStudioLight from '../hooks/useStudioLight';
 import useStreamAttachment from '../hooks/useStreamAttachment';
 import useFaceTracking from '../hooks/useFaceTracking';
-
+import PiPVideo from './PipVideo';
 import { enhanceVideoContainer } from '../utils/videoPlayerUtils';
 
 const circularRemoteVideo = {
@@ -71,7 +70,6 @@ const VideoPlayer = ({
   remoteTrack,
   videoContainerRef,
   callStarted,
-  onNoMediaFlow,
   connectionStatus,
   connectionQuality,
 }) => {
@@ -87,13 +85,6 @@ const VideoPlayer = ({
   const { t } = useTranslation();
 
   // Check if the srcObject is available or not
-
-  console.log(
-    connectionStatus,
-    'connectionStatus',
-    connectionQuality,
-    'connectionQuality',
-  );
 
   const pipVideoRef = useRef(null);
 
@@ -314,17 +305,7 @@ const VideoPlayer = ({
               isMainMenuOpen ? circularRemoteVideoInner : mainRemoteVideoInner
             }
           >
-            <video
-              ref={pipVideoRef}
-              autoPlay
-              playsInline
-              muted
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-              }}
-            />
+            <PiPVideo videoRef={pipVideoRef} />
           </Box>
 
           {/* Language Label */}

@@ -1,16 +1,14 @@
 import { Box, Typography } from '@mui/material';
-import { useSelector } from 'react-redux';
+
 import { isRTL } from '../utils/countriesConfig';
 
 const TranslatedTextView = ({
   translatedTexts = { text: '', isFinal: false },
+  translationLanguage,
 }) => {
   console.log(translatedTexts.text, 'translatedTexts');
   const isFinal = translatedTexts.isFinal;
 
-  const translationLanguage = useSelector(
-    (state) => state.translation.localTranslationLanguage,
-  );
   const isRTLTarget = isRTL(translationLanguage);
 
   return (

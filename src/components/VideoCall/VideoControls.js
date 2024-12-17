@@ -18,7 +18,6 @@ import { Check, HdOutlined } from '@mui/icons-material';
 
 import CallEndIcon from '@mui/icons-material/CallEnd';
 import { useTranslation } from 'react-i18next';
-import TranslatedTextView from './TranslatedText';
 import { setLocalTranslationLanguage } from '../../redux/translationSlice';
 import { setCallMenuOpen, setCallSideMenu } from '../../redux/uiSlice';
 import SideMenu from './SideMenu';
@@ -28,6 +27,7 @@ import SummarizeOutlinedIcon from '@mui/icons-material/SummarizeOutlined';
 import { ReactComponent as TranslationIcon } from './assets/translation_icon.svg';
 import { useSocket } from '../context/SocketContext';
 import { getCountriesList } from '../utils/countriesConfig';
+import TranslationDisplay from './TranslationDisplay';
 
 const CustomBottomNavigationAction = styled(BottomNavigationAction)({
   color: 'white',
@@ -59,13 +59,7 @@ const CustomBottomNavigationAction = styled(BottomNavigationAction)({
   },
 });
 
-const VideoControls = ({
-  callStarted,
-  onCallToggle,
-  translatedTexts,
-  setTranslatedTexts,
-  onEnableHD,
-}) => {
+const VideoControls = ({ callStarted, onCallToggle, onEnableHD }) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [timeInSeconds, setTimeInSeconds] = useState(15 * 60);
   const [isMeetingEndingSoon, setIsMeetingEndingSoon] = useState(false);
@@ -155,20 +149,6 @@ const VideoControls = ({
   const handleCloseSnackbarMeetingNotes = () => {
     setOpenSnackbarMeetingNotes(false);
   };
-
-  const checkOverFlow = () => {
-    const container = translationTextBoxRef.current;
-
-    if (container) {
-      if (container.scrollHeight > container.clientHeight) {
-        setTranslatedTexts([]);
-      }
-    }
-  };
-
-  useEffect(() => {
-    checkOverFlow();
-  }, [translatedTexts]);
 
   return (
     <div className="video-chat-controls" ref={drawerContainerRef}>
@@ -267,46 +247,12 @@ const VideoControls = ({
         </Box>
       )}
 
-      <Box
-        id="translationTextBox"
-        sx={{
-          position: 'fixed',
-          color: '#25293B',
-          paddingTop: '10px',
-          background: '#fff',
-          borderRadius: '30px 30px 0 0',
-          fontSize: '12px',
-          textAlign: 'center',
-          lineHeight: '18px',
-          fontWeight: 500,
-          height: 182,
-          width: '100%',
-          animation: isMainMenuOpen
-            ? 'moveUp 0.2s ease-in-out forwards'
-            : 'moveDown 0.2s ease-in-out forwards',
-        }}
-      >
-        <Box
-          ref={translationTextBoxRef}
-          sx={{
-            padding: '10px',
-            height: '75px',
-            overflow: 'hidden',
-          }}
-        >
-          {!userTranslationLanguage &&
-            t('Please select the language for translation')}
-          {userTranslationLanguage &&
-            translatedTexts?.text &&
-            translatedTexts.text.length > 0 && (
-              <TranslatedTextView translatedTexts={translatedTexts} />
-            )}
-
-          {userTranslationLanguage &&
-            !translatedTexts?.text.length &&
-            t('Translated text will appear here')}
-        </Box>
-      </Box>
+      <TranslationDisplay
+        isMainMenuOpen={isMainMenuOpen}
+        userTranslationLanguage={userTranslationLanguage}
+        translationTextBoxRef={translationTextBoxRef}
+        translationLanguage={userTranslationLanguage}
+      />
 
       <Box
         sx={{

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useSocket } from '../context/SocketContext';
 import { useSelector } from 'react-redux';
 
@@ -81,7 +81,9 @@ const useListTracker = () => {
     };
   }, [socket, meetingId]);
 
-  return { listItems, showList, title };
+  const listItemsMemoized = useMemo(() => listItems, [listItems]);
+
+  return { listItems: listItemsMemoized, showList, title };
 };
 
 export default useListTracker;
