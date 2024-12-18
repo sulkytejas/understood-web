@@ -59,5 +59,7 @@
   "Translated text will appear here": "سيظهر النص المترجم هنا",
   "not set": "غير مضبوط",
   "Connection status unknown": "حالة الاتصال غير معروفة",
-  "Video stream error occurred": "حدث خطأ في تدفق الفيديو"
+  "Video stream error occurred": "حدث خطأ في تدفق الفيديو",
+  "No camera detected. Please check your settings and try again.": "لم يتم الكشف عن كاميرا. يرجى التحقق من الإعدادات والمحاولة مرة أخرى.",
+  "Phone number not found. Please enter a valid phone number.": "لم يتم العثور على رقم الهاتف. يرجى إدخال رقم هاتف صحيح."
 }

@@ -59,5 +59,7 @@
   "Translated text will appear here": "Der übersetzte Text wird hier angezeigt",
   "not set": "nicht festgelegt",
   "Connection status unknown": "Verbindungsstatus unbekannt",
-  "Video stream error occurred": "Ein Fehler im Videostream ist aufgetreten"
+  "Video stream error occurred": "Ein Fehler im Videostream ist aufgetreten",
+  "No camera detected. Please check your settings and try again.": "Keine Kamera erkannt. Bitte überprüfen Sie Ihre Einstellungen und versuchen Sie es erneut.",
+  "Phone number not found. Please enter a valid phone number.": "Telefonnummer nicht gefunden. Bitte geben Sie eine gültige Telefonnummer ein."
 }

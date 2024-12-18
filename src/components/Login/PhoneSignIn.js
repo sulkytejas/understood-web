@@ -175,7 +175,7 @@ function SearchableCountrySelect({ value, onChange, labels, ...rest }) {
         onClose={handleClose}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
         PaperProps={{
-          style: { width: '100%', maxHeight: 400 }, // match width as needed
+          style: { maxWidth: '400px', maxHeight: 400, width: '100%' }, // match width as needed
         }}
       >
         <Box sx={{ padding: '8px' }}>
@@ -243,6 +243,7 @@ const PhoneSignIn = forwardRef(
     const { t } = useTranslation();
     const [isOtpInvalid, setIsOtpInvalid] = useState(false);
     const [phoneSignInError, setPhoneSignInError] = useState('');
+    const [selectedCountry, setSelectedCountry] = useState('');
 
     // // Load reCAPTCHA script and initialize RecaptchaVerifier
     // useEffect(() => {
@@ -343,11 +344,10 @@ const PhoneSignIn = forwardRef(
 
     // Send OTP to the phone number
     const sendOTP = () => {
-      // if (!phoneNumber || !isValidPhoneNumber(phoneNumber)) {
-      //   setPhoneSignInError(t('Please enter a valid phone number'));
-      //   return;
-      // }
-
+      if (!phoneNumber || !isValidPhoneNumber(phoneNumber)) {
+        setPhoneSignInError(t('Please enter a valid phone number'));
+        return;
+      }
       setLoading(true);
 
       if (!window.recaptchaVerifier) {
@@ -361,9 +361,13 @@ const PhoneSignIn = forwardRef(
             },
             'expired-callback': () => {
               console.log('reCAPTCHA expired');
+              setPhoneSignInError('Please refresh page and try again');
+              setLoading(false);
             },
             'error-callback': (error) => {
               console.error('reCAPTCHA error:', error);
+              setPhoneSignInError('Something went wrong. Please try again');
+              setLoading(false);
             },
           },
         );
@@ -385,8 +389,9 @@ const PhoneSignIn = forwardRef(
           // Error; SMS not sent
           console.error('Error during signInWithPhoneNumber ', error);
           setPhoneSignInError(
-            'Phone number not found. Please sign up for early access',
+            'Phone number not found. Please enter a valid phone number.',
           );
+          setLoading(false);
         });
     };
 
@@ -451,12 +456,14 @@ const PhoneSignIn = forwardRef(
               }
             } catch (error) {
               console.error('Error from server to complete login ', error);
+              setLoading(false);
             }
           })
           .catch((error) => {
             setIsOtpInvalid(true);
             // User couldn't sign in (bad verification code?)
             console.error('Error during OTP verification', error);
+            setLoading(false);
           });
       }
     };
@@ -485,7 +492,8 @@ const PhoneSignIn = forwardRef(
                 flags={flags}
                 international
                 countryCallingCodeEditable={false}
-                // defaultCountry="US"
+                defaultCountry={selectedCountry}
+                onCountryChange={setSelectedCountry}
                 placeholder={t('Your Number—Your Key to Connect')}
                 value={phoneNumber}
                 onChange={(value) => {
@@ -493,7 +501,13 @@ const PhoneSignIn = forwardRef(
                   setPhoneSignInError('');
                 }}
                 countrySelectComponent={(props) => (
-                  <SearchableCountrySelect {...props} labels={enLabels} />
+                  <SearchableCountrySelect
+                    {...props}
+                    labels={enLabels}
+                    onChange={(newCountry) => {
+                      setSelectedCountry(newCountry);
+                    }}
+                  />
                 )}
               />
               {phoneSignInError && (

@@ -59,5 +59,7 @@
   "Translated text will appear here": "Translated text will appear here",
   "not set": "not set",
   "Connection status unknown": "Connection status unknown",
-  "Video stream error occurred": "Video stream error occurred"
+  "Video stream error occurred": "Video stream error occurred",
+  "No camera detected. Please check your settings and try again.": "No camera detected. Please check your settings and try again.",
+  "Phone number not found. Please enter a valid phone number.": "Phone number not found. Please enter a valid phone number."
 }

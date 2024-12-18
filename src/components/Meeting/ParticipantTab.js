@@ -9,6 +9,8 @@ import {
   Typography,
   Tooltip,
   Snackbar,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import LinkIcon from '@mui/icons-material/Link';
@@ -95,6 +97,8 @@ const ParticipantTab = ({
   const [error, setError] = useState(null);
   const [openTooltip, setOpenTooltip] = useState(true);
   const [copiedToClipboard, setCopiedToClipboard] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [importantError, setImportantError] = useState(null);
 
   const reduxmeetingId = useSelector((state) => state.meeting.meetingId);
   const reduxmeetingPhrase = useSelector(
@@ -161,6 +165,8 @@ const ParticipantTab = ({
       return;
     }
 
+    setLoading(true);
+
     let meetingIDToJoin = meetingId;
 
     if (meetingPhraseLocal && !meetingId) {
@@ -175,6 +181,7 @@ const ParticipantTab = ({
               if (!meetingID || !isValidMeetingId(meetingID)) {
                 setError(message || 'Invalid or not found meeting ID');
                 reject(new Error(message || 'Invalid or not found meeting ID'));
+                setLoading(false);
                 return;
               }
 
@@ -183,12 +190,14 @@ const ParticipantTab = ({
           );
         });
       } catch (e) {
+        setLoading(false);
         return;
       }
     }
 
     if (!meetingIDToJoin || !isValidMeetingId(meetingIDToJoin)) {
       setError('Invalid meeting ID');
+      setLoading(false);
       return;
     }
 
@@ -223,16 +232,25 @@ const ParticipantTab = ({
           });
 
           localStorage.setItem('meetingData', serializedData);
+
           // Add a small delay before navigation to ensure state updates complete
           setTimeout(() => {
+            setLoading(false);
             navigate(`/videocall/${meetingIDToJoin}`);
           }, 100);
 
           // navigate(`/videocall/${meetingIDToJoin}`);
         }
       } catch (e) {
-        console.log(e, 'err err');
+        console.log(e, 'error after joinRoom');
+        if (e.message && e.message.includes('Media acquisition failed')) {
+          const message = t(
+            'No camera detected. Please check your settings and try again.',
+          );
+          setImportantError(message);
+        }
         setError(e?.error);
+        setLoading(false);
       }
     }
   };
@@ -290,7 +308,7 @@ const ParticipantTab = ({
           // padding: '8px 16px', // Adjust padding as needed
         }}
       >
-        <p className="host-control-title"> Join Meeting </p>
+        <p className="host-control-title"> {t('Join Meeting')} </p>
         <Tooltip title={tooltipTitle} open={openTooltip} placement="top" arrow>
           <IconButton
             aria-label="settings"
@@ -396,6 +414,12 @@ const ParticipantTab = ({
           <LinkIcon />
         </IconButton>
       </Box>
+
+      {importantError && (
+        <Alert severity="error" sx={{ marginTop: '10px' }}>
+          {importantError}
+        </Alert>
+      )}
       <Button
         variant="contained"
         color="primary"
@@ -405,7 +429,7 @@ const ParticipantTab = ({
         disabled={!isValidInput()}
         sx={{ marginTop: '45px', color: '#fff', fontSize: '18px' }}
       >
-        Join
+        {loading ? <CircularProgress size={24} color="inherit" /> : t('Join')}
       </Button>
     </div>
   );

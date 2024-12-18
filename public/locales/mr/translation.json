@@ -59,5 +59,7 @@
   "Translated text will appear here": "अनुवादित मजकूर येथे दिसेल",
   "not set": "सेट केलेले नाही",
   "Connection status unknown": "कनेक्शन स्थिती अज्ञात",
-  "Video stream error occurred": "व्हिडिओ प्रवाहात त्रुटी आली"
+  "Video stream error occurred": "व्हिडिओ प्रवाहात त्रुटी आली",
+  "No camera detected. Please check your settings and try again.": "कोणतेही कॅमेरा ओळखले नाही. कृपया तुमची सेटिंग्ज तपासा आणि पुन्हा प्रयत्न करा.",
+  "Phone number not found. Please enter a valid phone number.": "फोन नंबर सापडला नाही. कृपया एक वैध फोन नंबर प्रविष्ट करा."
 }
