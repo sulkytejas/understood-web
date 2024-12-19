@@ -62,5 +62,10 @@
   "Video stream error occurred": "Произошла ошибка видеопотока",
   "No camera detected. Please check your settings and try again.": "Камера не обнаружена. Проверьте настройки и попробуйте снова.",
   "Phone number not found. Please enter a valid phone number.": "Номер телефона не найден. Пожалуйста, введите корректный номер телефона.",
-  "Join": "Присоединиться"
+  "Join": "Присоединиться",
+  "logout": "выйти",
+  "ok": "ок",
+  "cancel": "отмена",
+  "change app language": "изменить язык приложения",
+  "account settings": "настройки аккаунта"
 }

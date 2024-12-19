@@ -61,6 +61,11 @@
   "Connection status unknown": "连接状态未知",
   "Video stream error occurred": "发生视频流错误",
   "Join": "加入",
+  "logout": "退出",
+  "ok": "确定",
+  "cancel": "取消",
+  "change app language": "更改应用语言",
+  "account settings": "账户设置",
   "No camera detected. Please check your settings and try again.": "未检测到摄像头。请检查您的设置，然后重试。",
   "Phone number not found. Please enter a valid phone number.": "未找到电话号码。请输入有效的电话号码。"
 }

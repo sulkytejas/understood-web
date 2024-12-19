@@ -62,5 +62,10 @@
   "Video stream error occurred": "حدث خطأ في تدفق الفيديو",
   "No camera detected. Please check your settings and try again.": "لم يتم الكشف عن كاميرا. يرجى التحقق من الإعدادات والمحاولة مرة أخرى.",
   "Phone number not found. Please enter a valid phone number.": "لم يتم العثور على رقم الهاتف. يرجى إدخال رقم هاتف صحيح.",
-  "Join": "انضم"
+  "Join": "انضم",
+  "logout": "تسجيل ال",
+  "ok": "حسنا",
+  "cancel": "إلغاء",
+  "change app language": "تغيير لغة التطبيق",
+  "account settings": "إعدادات الحساب"
 }

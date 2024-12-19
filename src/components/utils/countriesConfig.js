@@ -72,6 +72,13 @@ export const getLanguageName = (languageCode) => {
   return country ? country.name : null;
 };
 
+export const getLocaleForLanguageCode = (languageCode) => {
+  const country = Object.values(SUPPORTED_COUNTRIES).find(
+    (c) => c.languageCode === languageCode,
+  );
+  return country ? country.locale : null;
+};
+
 export const getLanguageAvatar = (languageCode) => {
   const country = Object.values(SUPPORTED_COUNTRIES).find(
     (c) => c.languageCode === languageCode,

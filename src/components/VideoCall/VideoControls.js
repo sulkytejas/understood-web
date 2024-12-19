@@ -70,9 +70,10 @@ const VideoControls = ({ callStarted, onCallToggle, onEnableHD }) => {
   const [isHdSelected, setIsHdSelected] = useState(false);
   const isMainMenuOpen = useSelector((state) => state.ui.callMenuOpen);
   const isSideMenuOpen = useSelector((state) => state.ui.callSideMenu);
-  const userTranslationLanguage = useSelector(
-    (state) => state.translation.localTranslationLanguage,
-  );
+  const userTranslationLanguage =
+    useSelector((state) => state.translation.localTranslationLanguage) ||
+    localStorage.getItem('translationLanguagePreference') ||
+    'en';
   const userUid = useSelector((state) => state.user.uid);
   const meetingId = useSelector((state) => state.meeting.meetingId);
 

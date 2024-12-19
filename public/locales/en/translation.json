@@ -62,5 +62,10 @@
   "Video stream error occurred": "Video stream error occurred",
   "No camera detected. Please check your settings and try again.": "No camera detected. Please check your settings and try again.",
   "Phone number not found. Please enter a valid phone number.": "Phone number not found. Please enter a valid phone number.",
-  "Join": "Join"
+  "Join": "Join",
+  "logout": "logout",
+  "ok": "ok",
+  "cancel": "cancel",
+  "change app language": "change app language",
+  "account settings": "account settings"
 }

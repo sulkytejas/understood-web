@@ -125,7 +125,7 @@ function App() {
     if (translationLanguagePreference) {
       dispatch(setLocalTranslationLanguage(translationLanguagePreference));
     }
-  }, []);
+  }, [dispatch]);
 
   const isLocaleAndSpokenSet = useMemo(() => {
     const sl = localStorage.getItem('spokenLanguage');
@@ -180,6 +180,30 @@ function App() {
 
           setUserData({ ...user });
           console.log(user);
+
+          // Re verifying the locale , translation and spoken language
+          const storedLocale = localStorage.getItem('locale');
+          if (user?.locale && !storedLocale) {
+            localStorage.setItem('locale', user.locale);
+            i18n.changeLanguage(user.locale);
+          }
+
+          const storedSpokenLang = localStorage.getItem('spokenLanguage');
+          if (user?.spokenLanguage && !storedSpokenLang) {
+            localStorage.setItem('spokenLanguage', user.spokenLanguage);
+            dispatch(setLocalSpokenLanguage(user.spokenLanguage));
+          }
+
+          const storedTranslationLang = localStorage.getItem(
+            'translationLanguagePreference',
+          );
+          if (user?.translationLanguage && !storedTranslationLang) {
+            localStorage.setItem(
+              'translationLanguagePreference',
+              user.translationLanguage,
+            );
+            dispatch(setLocalTranslationLanguage(user.translationLanguage));
+          }
         } else {
           dispatch(setUserName(null));
           dispatch(setUserPhoneNumber(null));
@@ -273,9 +297,14 @@ function App() {
                 <Route
                   path="/login"
                   element={
-                    !userData?.username ? (
+                    !isLocaleAndSpokenSet ? (
+                      // If locale is not set, show the WelcomeScreen
+                      <Navigate to="/" />
+                    ) : !userData?.username ? (
+                      // If locale is set and user not authenticated, show login
                       <AnimatedRoute element={<UserLogin />} />
                     ) : (
+                      // If locale is set and user is authenticated, go to meeting
                       <Navigate to="/meeting" />
                     )
                   }

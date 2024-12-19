@@ -412,6 +412,7 @@ const PhoneSignIn = forwardRef(
               const translationLanguage = localStorage.getItem(
                 'translationLanguagePreference',
               );
+              const locale = localStorage.getItem('locale');
 
               const response = await fetch(`${apiUrl}/api/login`, {
                 method: 'POST',
@@ -427,6 +428,7 @@ const PhoneSignIn = forwardRef(
                   source: 'phone',
                   spokenLanguage,
                   translationLanguage,
+                  locale,
                 }),
               });
 
