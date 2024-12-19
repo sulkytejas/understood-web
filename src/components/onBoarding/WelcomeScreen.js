@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Container,
   Button,
@@ -68,6 +68,16 @@ const StyledLanguagesContainer = styled(Grid)(({ theme }) => ({
   zIndex: 2,
 }));
 
+const translations = [
+  { lang: 'English', text: 'Select your language to begin.' },
+  { lang: 'Hindi', text: 'शुरू करने के लिए अपनी भाषा चुनें।' },
+  { lang: 'Arabic', text: 'اختر لغتك للبدء.' },
+  { lang: 'Chinese (simplified)', text: '选择您的语言开始。' },
+  { lang: 'Marathi', text: 'प्रारंभ करण्यासाठी आपली भाषा निवडा.' },
+  { lang: 'Russian', text: 'Выберите свой язык, чтобы начать.' },
+  { lang: 'German', text: 'Wählen Sie Ihre Sprache, um zu beginnen.' },
+];
+
 const WelcomeScreen = () => {
   const [languageCode, setLanguageCode] = useState('');
   const [locale, setLocale] = useState('');
@@ -75,6 +85,25 @@ const WelcomeScreen = () => {
   const { t } = useTranslation();
   const dispatch = useDispatch();
   const countries = getCountriesList();
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [fade, setFade] = useState(true);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // Trigger fade out
+      setFade(false);
+
+      // After fade-out time, change the text and fade in again
+      const timeout = setTimeout(() => {
+        setCurrentIndex((prevIndex) => (prevIndex + 1) % translations.length);
+        setFade(true);
+      }, 500); // match this with transition duration in CSS
+
+      return () => clearTimeout(timeout);
+    }, 3000); // Change language every 2 seconds
+
+    return () => clearInterval(interval);
+  }, [translations.length]);
 
   const handleClick = () => {
     dispatch(setLocalSpokenLanguage(languageCode));
@@ -121,9 +150,11 @@ const WelcomeScreen = () => {
             fontSize: '20px',
             lineHeight: '30px',
             fontWeight: '400',
+            transition: 'opacity 0.5s ease-in-out',
+            opacity: fade ? 1 : 0,
           }}
         >
-          {t('Select your language to begin.')}
+          {translations[currentIndex].text}
         </Typography>
       </Box>
 
