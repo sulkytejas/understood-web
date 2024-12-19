@@ -12,6 +12,10 @@ import { cleanupState } from '../../redux/actions';
 import { setParticipantInfo } from '../../redux/meetingSlice';
 import { useSocket } from './SocketContext';
 import { useTranslation } from 'react-i18next';
+import {
+  setlocalAudioOnly,
+  setRemoteAudioOnly,
+} from '../../redux/videoPlayerSlice';
 const WebRTCContext = createContext();
 
 export const useWebRTC = () => useContext(WebRTCContext);
@@ -38,6 +42,7 @@ export const WebRTCBridge = ({ children }) => {
   const [participantLeft, setParticipantLeft] = useState(false);
   const [connectionError, setConnectionError] = useState(null);
 
+  const audioOnlyRef = useRef(false);
   const hostSocketId = useRef(null);
   const isHost = useRef(false);
 
@@ -92,6 +97,12 @@ export const WebRTCBridge = ({ children }) => {
         onMediaFlowing: (isFlowing) => {
           setIsMediaFlowing(isFlowing);
         },
+        onAudioOnly: (isAudioOnly) => {
+          console.log('Audio only:', isAudioOnly, meetingId);
+          dispatch(setlocalAudioOnly(isAudioOnly));
+
+          audioOnlyRef.current = isAudioOnly;
+        },
       });
 
       // Handle device info (maintain existing functionality)
@@ -119,7 +130,7 @@ export const WebRTCBridge = ({ children }) => {
         );
       }
     };
-  }, [socket, isSocketConnected]);
+  }, [socket, isSocketConnected, meetingId]);
 
   // Handle Redux state changes
   useEffect(() => {
@@ -249,6 +260,32 @@ export const WebRTCBridge = ({ children }) => {
     isHost,
   ]);
 
+  useEffect(() => {
+    if (socket) {
+      const handleOtherParticipantAudioOnly = ({
+        participantId,
+        isAudioOnly,
+      }) => {
+        console.log('Received audio only state:', participantId, isAudioOnly);
+        if (participantId !== socket.id) {
+          dispatch(setRemoteAudioOnly(isAudioOnly));
+        }
+      };
+
+      socket.on(
+        'other-participant-audio-only',
+        handleOtherParticipantAudioOnly,
+      );
+
+      return () => {
+        socket.off(
+          'other-participant-audio-only',
+          handleOtherParticipantAudioOnly,
+        );
+      };
+    }
+  }, [socket, dispatch]);
+
   // Maintain existing public methods with new implementation
   const publicMethods = {
     async joinRoom(enteredMeetingId) {
@@ -260,6 +297,30 @@ export const WebRTCBridge = ({ children }) => {
         );
         // Use the result
         isHost.current = result.isHost;
+
+        if (result.joined) {
+          socket.emit('client-set-audio-only', {
+            meetingId: enteredMeetingId,
+            isAudioOnly: audioOnlyRef.current,
+          });
+
+          socket.on(
+            'existing-participants-audio-only-states',
+            ({ audioOnlyStates }) => {
+              console.log('audioOnlyStates:', audioOnlyStates);
+              // audioOnlyStates is an object { participantId: boolean }
+              // Set redux state for each participant or at least for the remote participant if it's a 1:1 call
+              const remoteParticipantId = Object.keys(audioOnlyStates).find(
+                (pid) => pid !== socket.id,
+              );
+              if (remoteParticipantId) {
+                dispatch(
+                  setRemoteAudioOnly(audioOnlyStates[remoteParticipantId]),
+                );
+              }
+            },
+          );
+        }
 
         return {
           isHost: result.isHost,
@@ -288,6 +349,13 @@ export const WebRTCBridge = ({ children }) => {
       }
       try {
         await connectionManager.current.attemptReconnect();
+
+        if (audioOnlyRef.current) {
+          socket.emit('client-set-audio-only', {
+            meetingId: meetingId,
+            isAudioOnly: audioOnlyRef.current,
+          });
+        }
       } catch (error) {
         console.error('Failed to reconnect:', error);
       }

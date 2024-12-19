@@ -61,5 +61,6 @@
   "Connection status unknown": "कनेक्शन की स्थिति अज्ञात",
   "Video stream error occurred": "वीडियो स्ट्रीम में त्रुटि हुई",
   "No camera detected. Please check your settings and try again.": "कोई कैमरा नहीं मिला। कृपया अपनी सेटिंग्स जाँचें और पुनः प्रयास करें।",
-  "Phone number not found. Please enter a valid phone number.": "फ़ोन नंबर नहीं मिला। कृपया एक मान्य फ़ोन नंबर दर्ज करें।"
+  "Phone number not found. Please enter a valid phone number.": "फ़ोन नंबर नहीं मिला। कृपया एक मान्य फ़ोन नंबर दर्ज करें।",
+  "Join": "शामिल हों"
 }

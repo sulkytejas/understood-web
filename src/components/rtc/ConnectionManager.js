@@ -207,6 +207,7 @@ class ConnectionManager extends EventEmitter {
     uid,
     onParticipantJoined,
     onMediaFlowing,
+    onAudioOnly,
   }) {
     super();
     // Validate required parameters
@@ -228,6 +229,7 @@ class ConnectionManager extends EventEmitter {
     this.onError = onError;
     this.onParticipantJoined = onParticipantJoined;
     this.onMediaFlowing = onMediaFlowing;
+    this.onAudioOnly = onAudioOnly;
 
     // Initialize managers
     this.signaling = new SignalingLayer(socket);
@@ -464,6 +466,16 @@ class ConnectionManager extends EventEmitter {
       this.signaling.setMeetingId(meetingId);
       this.signaling.setUid(uid);
 
+      // Step: Check network conditions
+      const networkQuality = await this.runUploadTest();
+      console.log('Network quality:', networkQuality);
+      let isAudioOnly = false;
+      if (networkQuality === 'poor') {
+        isAudioOnly = true;
+        this.onAudioOnly?.(isAudioOnly);
+      }
+      this.signaling.setAudioOnly(isAudioOnly);
+
       // Step 1: Join the room and get capabilities
       const joinResponse = await this.signaling.joinRoom();
 
@@ -502,7 +514,15 @@ class ConnectionManager extends EventEmitter {
 
       //   this.mediaManager.setHDPreference(true);
       // Step 7: Get and start streaming media
-      const stream = await this.mediaManager.acquireMedia();
+
+      const { stream, wasFallback } =
+        await this.mediaManager.tryAcquireMedia(!isAudioOnly);
+      if (wasFallback) {
+        isAudioOnly = true;
+        this.onAudioOnly?.(isAudioOnly);
+      }
+      this.signaling.setAudioOnly(isAudioOnly);
+
       await this.startStreaming(stream);
 
       this.state.transition(CONNECTION_STATES.CONNECTED);
@@ -636,6 +656,14 @@ class ConnectionManager extends EventEmitter {
         throw new Error('Meeting ID and UID are required for reconnect');
       }
 
+      const networkQuality = await this.runUploadTest();
+
+      const isAudioOnly = networkQuality === 'poor';
+
+      if (isAudioOnly) {
+        this.onAudioOnly?.(isAudioOnly);
+      }
+
       // Reconnect socket first
       const response = await this.signaling.emitWithTimeout('userRejoin', {
         uid: this.uid,
@@ -667,7 +695,13 @@ class ConnectionManager extends EventEmitter {
         !localStream ||
         localStream.getTracks().some((t) => t.readyState === 'ended')
       ) {
-        localStream = await this.mediaManager.acquireMedia();
+        console.log('Local media tracks are ended, re-acquiring media');
+        const { stream, wasFallback } =
+          await this.mediaManager.tryAcquireMedia(!isAudioOnly);
+        if (wasFallback) {
+          this.onAudioOnly?.(true);
+        }
+        localStream = stream;
       }
 
       // Restart streaming with the media stream
@@ -1337,6 +1371,32 @@ class ConnectionManager extends EventEmitter {
       this.mediaManager.adjustQualityForPoorConnection();
     } else if (newLevel === QualityMonitor.Levels.EXCELLENT) {
       this.mediaManager.optimizeQualityForGoodConnection();
+    }
+  }
+
+  async runUploadTest() {
+    const size = 500_000; // ~0.5 MB
+    const data = new Uint8Array(size); // create a buffer of size
+    const start = Date.now();
+    const apiURL = process.env.REACT_APP_API_URL;
+
+    await fetch(`${apiURL}/api/uploadTest`, {
+      method: 'POST',
+      body: data,
+    });
+
+    const end = Date.now();
+    const durationSec = (end - start) / 1000;
+    const bandwidthMbps = (size * 8) / (durationSec * 1_000_000);
+
+    console.log(`Upload bandwidth: ${bandwidthMbps.toFixed(2)} Mbps`);
+
+    if (bandwidthMbps < 0.5) {
+      return 'poor';
+    } else if (bandwidthMbps < 5) {
+      return 'fair';
+    } else {
+      return 'good';
     }
   }
 }

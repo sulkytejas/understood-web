@@ -61,5 +61,6 @@
   "Connection status unknown": "Статус соединения неизвестен",
   "Video stream error occurred": "Произошла ошибка видеопотока",
   "No camera detected. Please check your settings and try again.": "Камера не обнаружена. Проверьте настройки и попробуйте снова.",
-  "Phone number not found. Please enter a valid phone number.": "Номер телефона не найден. Пожалуйста, введите корректный номер телефона."
+  "Phone number not found. Please enter a valid phone number.": "Номер телефона не найден. Пожалуйста, введите корректный номер телефона.",
+  "Join": "Присоединиться"
 }

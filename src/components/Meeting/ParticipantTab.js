@@ -243,7 +243,10 @@ const ParticipantTab = ({
         }
       } catch (e) {
         console.log(e, 'error after joinRoom');
-        if (e.message && e.message.includes('Media acquisition failed')) {
+        if (
+          e.message &&
+          e.message.includes('Failed to acquire even audio-only media')
+        ) {
           const message = t(
             'No camera detected. Please check your settings and try again.',
           );

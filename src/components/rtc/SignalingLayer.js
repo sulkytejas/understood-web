@@ -11,6 +11,7 @@ class SignalingLayer {
     this.socket = socket;
     this.meetingId = null;
     this.uid = null;
+    this.isAudioOnly = false;
     this.eventHandlers = new Map();
     this.pendingRequests = new Map();
     this.timeouts = {
@@ -89,6 +90,13 @@ class SignalingLayer {
     this.uid = uid;
   }
 
+  setAudioOnly(isAudioOnly) {
+    if (!isAudioOnly === null || isAudioOnly === undefined) {
+      throw new Error('isAudioOnly indication  is required');
+    }
+    this.isAudioOnly = isAudioOnly;
+  }
+
   /**
    * Join meeting room
    * @returns {Promise<Object>} Router capabilities and role information
@@ -102,6 +110,7 @@ class SignalingLayer {
     return this.emitWithTimeout('joinMeeting', {
       meetingId: this.meetingId,
       uid: this.uid,
+      isAudioOnly: this.isAudioOnly,
     });
   }
 
@@ -155,7 +164,6 @@ class SignalingLayer {
       'producer-closed': handlers.onProducerClosed,
       'participant-disconnected': handlers.onParticipantDisconnected,
       'meeting-ended': handlers.onMeetingEnded,
-      'other-participant-audio-only': handlers.onAudioOnly,
       'connection-quality-changed': handlers.onConnectionQualityChanged,
     };
 

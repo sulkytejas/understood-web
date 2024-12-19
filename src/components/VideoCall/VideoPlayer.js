@@ -2,6 +2,7 @@
 /* eslint-disable */
 import { useEffect, useRef, useState } from 'react';
 import { Box, Alert, Typography } from '@mui/material';
+import CallOutlinedIcon from '@mui/icons-material/CallOutlined';
 import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import useListTracker from '../hooks/useListTracker';
@@ -79,6 +80,12 @@ const VideoPlayer = ({
   );
   const otherParticipantInfo = useSelector(
     (state) => state.meeting.participantInfo,
+  );
+  const isLocalAudioOnly = useSelector(
+    (state) => state.videoPlayer.localAudioOnly,
+  );
+  const isRemoteAudioOnly = useSelector(
+    (state) => state.videoPlayer.remoteAudioOnly,
   );
 
   const { listItems, showList, title } = useListTracker();
@@ -266,6 +273,11 @@ const VideoPlayer = ({
   return (
     <div className="video-player" style={containerStyle}>
       <Box sx={videoWrapperStyle}>
+        {callStarted && isRemoteAudioOnly ? (
+          <CallOutlinedIcon sx={{ fontSize: '150px', color: 'white' }} />
+        ) : !callStarted && isLocalAudioOnly ? (
+          <CallOutlinedIcon sx={{ fontSize: '150px', color: 'white' }} />
+        ) : null}
         <video
           className="local-video"
           ref={remoteVideoRef}
@@ -297,6 +309,7 @@ const VideoPlayer = ({
         <ListOverlay listItems={listItems} showList={showList} title={title} />
       )}
 
+      {/* Pip video */}
       <div className="remote-video">
         <Box sx={isMainMenuOpen ? circularRemoteVideo : mainRemoteVideo}>
           {/* Circular Video */}
@@ -305,6 +318,15 @@ const VideoPlayer = ({
               isMainMenuOpen ? circularRemoteVideoInner : mainRemoteVideoInner
             }
           >
+            {callStarted && isLocalAudioOnly && (
+              <CallOutlinedIcon
+                sx={{
+                  fontSize: '50px',
+                  color: '#4abbc9',
+                  position: 'absolute',
+                }}
+              />
+            )}
             <PiPVideo videoRef={pipVideoRef} />
           </Box>
 

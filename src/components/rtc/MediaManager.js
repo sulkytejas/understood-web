@@ -392,16 +392,24 @@ class MediaManager {
   }
 
   mergeConstraints(defaultConstraints, customConstraints) {
-    return {
-      audio: {
-        ...defaultConstraints.audio,
-        ...customConstraints.audio,
-      },
-      video: {
+    const finalConstraints = {
+      audio: { ...defaultConstraints.audio, ...customConstraints.audio },
+      video: { ...defaultConstraints.video },
+    };
+
+    if (typeof customConstraints.video === 'boolean') {
+      // If customConstraints.video is false or true (just boolean),
+      // set video directly without merging
+      finalConstraints.video = customConstraints.video;
+    } else if (typeof customConstraints.video === 'object') {
+      // If it's an object, merge the objects
+      finalConstraints.video = {
         ...defaultConstraints.video,
         ...customConstraints.video,
-      },
-    };
+      };
+    }
+
+    return finalConstraints;
   }
 
   /**
@@ -572,6 +580,37 @@ class MediaManager {
       return { supportsHD: false };
     }
   }
+
+  /**
+   * Check if we need to process audio/video tracks
+   */
+
+  async tryAcquireMedia(preferVideo = true) {
+    const initialConstraints = preferVideo
+      ? { audio: true, video: true }
+      : { audio: true, video: false };
+
+    try {
+      const stream = await this.acquireMedia(initialConstraints);
+      return { stream, wasFallback: false };
+    } catch (error) {
+      console.warn(
+        'Failed to acquire video, falling back to audio-only:',
+        error,
+      );
+      try {
+        const audioStream = await this.acquireMedia({
+          audio: true,
+          video: false,
+        });
+        return { stream: audioStream, wasFallback: true };
+      } catch (audioError) {
+        console.error('Failed to acquire even audio-only media:', audioError);
+        throw audioError;
+      }
+    }
+  }
+
   /**
    * Check media permissions
    * @private
