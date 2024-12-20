@@ -1,5 +1,5 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { cleanupState } from './actions';
+import { cleanupState, meetingEndedCleanup } from './actions';
 
 const initialState = {
   videoPause: false,
@@ -27,7 +27,9 @@ const videoPlayerSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    builder.addCase(cleanupState, () => initialState);
+    builder
+      .addCase(meetingEndedCleanup, () => initialState)
+      .addCase(cleanupState, () => initialState);
   },
 });
 

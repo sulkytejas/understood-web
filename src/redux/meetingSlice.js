@@ -1,5 +1,5 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { cleanupState } from './actions';
+import { cleanupState, meetingEndedCleanup } from './actions';
 
 const initialState = {
   meetingId: null,
@@ -30,7 +30,9 @@ const meetingSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    builder.addCase(cleanupState, () => initialState);
+    builder
+      .addCase(meetingEndedCleanup, () => initialState)
+      .addCase(cleanupState, () => initialState);
   },
 });
 

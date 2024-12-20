@@ -8,7 +8,7 @@ import React, {
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import ConnectionManager from '../rtc/ConnectionManager';
-import { cleanupState } from '../../redux/actions';
+import { meetingEndedCleanup } from '../../redux/actions';
 import { setParticipantInfo } from '../../redux/meetingSlice';
 import { useSocket } from './SocketContext';
 import { useTranslation } from 'react-i18next';
@@ -143,7 +143,23 @@ export const WebRTCBridge = ({ children }) => {
   useEffect(() => {
     const handleMeetingEnded = async () => {
       console.log('meeting-ended triggered');
-      await publicMethods.handleDisconnectCall(meetingId);
+
+      // This happens only when host ends the meeting or host fails to return.
+      // Full cleanup and navigation:
+      if (connectionManager.current) {
+        await connectionManager.current.handleCallDisonnect();
+      }
+
+      setLocalStream(null);
+      setRemoteStream(null);
+      setCallStarted(false);
+      setJoined(false);
+      hostSocketId.current = null;
+      isHost.current = false;
+      dispatch(meetingEndedCleanup());
+      localStorage.removeItem('meetingData');
+
+      navigate(`/meetingEnded?meetingId=${meetingId || ''}`);
     };
 
     if (socket) {
@@ -155,7 +171,7 @@ export const WebRTCBridge = ({ children }) => {
         socket.off('meeting-ended', handleMeetingEnded);
       }
     };
-  }, [socket, meetingId]);
+  }, [socket, meetingId, dispatch, navigate]);
 
   useEffect(() => {
     if (connectionManager.current) {
@@ -391,11 +407,44 @@ export const WebRTCBridge = ({ children }) => {
     },
 
     async handleDisconnectCall(meetingId) {
-      socket.emit('endMeeting', { meetingId }, ({ error }) => {
-        if (error) {
-          console.error('Error ending meeting:', error);
-        }
-      });
+      if (isHost.current && meetingId) {
+        socket.emit('endMeeting', { meetingId }, ({ error }) => {
+          if (error) {
+            console.error('Error ending meeting:', error);
+          }
+        });
+      } else {
+        console.log('Leaving meeting triggered:', meetingId);
+        socket.emit(
+          'leaveMeeting',
+          { meetingId },
+          async ({ error, success }) => {
+            if (error) {
+              console.error('Error leaving meeting:', error);
+            } else if (success) {
+              // Participant-specific local cleanup (stop local tracks, navigate away if needed)
+              // No 'meeting-ended' event will be triggered for others,
+              // just this participant has left.
+
+              if (connectionManager.current) {
+                await connectionManager.current.handleCallDisonnect();
+              }
+
+              setLocalStream(null);
+              setRemoteStream(null);
+              setCallStarted(false);
+              setJoined(false);
+              hostSocketId.current = null;
+              isHost.current = false;
+              dispatch(meetingEndedCleanup());
+              localStorage.removeItem('meetingData');
+
+              // Navigate participant away, for example to /login
+              navigate('/login');
+            }
+          },
+        );
+      }
 
       if (connectionManager.current) {
         await connectionManager.current.handleCallDisonnect();
@@ -408,11 +457,11 @@ export const WebRTCBridge = ({ children }) => {
       hostSocketId.current = null;
       isHost.current = false;
 
-      dispatch(cleanupState());
+      dispatch(meetingEndedCleanup());
       setCallStarted(false);
       localStorage.removeItem('meetingData');
 
-      navigate(`/meetingEnded?meetingId=${meetingId}`);
+      navigate(`/meetingEnded?meetingId=${meetingId || ''}`);
     },
   };
 

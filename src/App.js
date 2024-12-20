@@ -61,6 +61,9 @@ function App() {
   const isDeviceSupported = useMediaQuery('(max-width:430px)');
   const { socket, isSocketConnected } = useSocket();
   const uid = useSelector((state) => state.user.uid);
+  const sl = localStorage.getItem('spokenLanguage');
+  const ll = localStorage.getItem('locale');
+  const isLocaleAndSpokenSet = sl && ll;
 
   const theme = useMemo(() => {
     return createTheme({ ...baseTheme, direction });
@@ -126,17 +129,6 @@ function App() {
       dispatch(setLocalTranslationLanguage(translationLanguagePreference));
     }
   }, [dispatch]);
-
-  const isLocaleAndSpokenSet = useMemo(() => {
-    const sl = localStorage.getItem('spokenLanguage');
-    const ll = localStorage.getItem('locale');
-
-    if (sl && ll) {
-      return true;
-    }
-
-    return false;
-  }, []);
 
   useEffect(() => {
     const locale = localStorage.getItem('locale') || 'en';
