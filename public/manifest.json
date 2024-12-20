@@ -1,7 +1,7 @@
 {
   "short_name": "Understood",
   "name": "Understood",
-  "id": "https://www.myunderstood.com",
+  "id": "/",
   "icons": [
     {
       "src": "favicon.ico",
@@ -33,13 +33,13 @@
       "form_factor": "wide"
     }
   ],
-  "start_url": "https://www.myunderstood.com",
+  "start_url": "/",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone"],
   "protocol_handlers": [
     {
       "protocol": "web+understood",
-      "url": "https://www.myunderstood.com/login?redirect=%s"
+      "url": "https://app.myunderstood.com/login?redirect=%s"
     }
   ],
   "theme_color": "#4abcc9",

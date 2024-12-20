@@ -3,7 +3,7 @@ importScripts(
   'https://storage.googleapis.com/workbox-cdn/releases/6.4.1/workbox-sw.js',
 );
 
-if (workbox) {
+if (typeof workbox !== 'undefined') {
   console.log(`Workbox is loaded`);
   // Your caching logic will go here
 
@@ -45,11 +45,11 @@ if (workbox) {
   );
 
   // Handle Navigation Requests:
-  workbox.routing.registerRoute(
-    new workbox.routing.NavigationRoute(
-      workbox.precaching.createHandlerBoundToURL('/index.html'),
-    ),
-  );
+  // workbox.routing.registerRoute(
+  //   new workbox.routing.NavigationRoute(
+  //     workbox.precaching.createHandlerBoundToURL('/index.html'),
+  //   ),
+  // );
 } else {
   console.log(`Workbox didn't load`);
 }
