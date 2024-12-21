@@ -6,9 +6,11 @@ import {
   IconButton,
   Grid,
   Box,
-  Autocomplete,
-  TextField,
   Avatar,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -79,8 +81,8 @@ const translations = [
 ];
 
 const WelcomeScreen = () => {
-  const [languageCode, setLanguageCode] = useState('');
-  const [locale, setLocale] = useState('');
+  const [languageCode, setLanguageCode] = useState('en-US');
+  const [locale, setLocale] = useState('en');
   const navigate = useNavigate();
   const { t } = useTranslation();
   const dispatch = useDispatch();
@@ -111,6 +113,23 @@ const WelcomeScreen = () => {
     localStorage.setItem('translationLanguagePreference', languageCode);
     localStorage.setItem('locale', locale);
     navigate('/login');
+  };
+
+  const handleLanguageChange = (event) => {
+    const selectedCode = event.target.value;
+
+    console.log('Selected language:', selectedCode);
+
+    setLanguageCode(selectedCode);
+
+    // Find the actual object from your countries array
+    const foundCountry = countries.find(
+      (country) => country.languageCode === selectedCode,
+    );
+    if (foundCountry) {
+      setLocale(foundCountry.locale);
+      i18n.changeLanguage(foundCountry.locale);
+    }
   };
 
   return (
@@ -167,76 +186,37 @@ const WelcomeScreen = () => {
           marginBottom: '16px',
         }}
       >
-        <Autocomplete
-          options={countries}
-          getOptionLabel={(option) => t(option.name)}
+        <FormControl
           sx={{ width: '100%', maxWidth: '350px', marginLeft: '10px' }}
-          onChange={(event, newValue) => {
-            if (newValue) {
-              console.log('Selected language:', newValue.languageCode);
-
-              // Handle language selection
-              setLanguageCode(newValue.languageCode);
-              setLocale(newValue.locale);
-              i18n.changeLanguage(newValue.locale);
-              // const dir = i18n.dir(newValue.locale);
-              // console.log('Direction:', dir);
-              // setDirection(dir);
-            }
-          }}
-          renderOption={(props, option) => (
-            <li {...props}>
-              <Avatar
-                sx={{
-                  bgcolor: '#4abbc9',
-                  color: '#fff',
-                  height: 24,
-                  width: 24,
-                  marginRight: 2,
-                  fontSize: option.languageCode === 'zh-CN' ? '12px' : '14px',
-                }}
-              >
-                {option.avatar}
-              </Avatar>
-              {t(option.name)}
-            </li>
-          )}
-          renderInput={(params) => (
-            <TextField {...params} label={t('Select Language')} />
-          )}
-        />
-        {/* {countries.map((option) => (
-          <Grid item key={option.name}>
-            <IconButton
-              onClick={() => {
-                setLanguageCode(option.languageCode);
-                setLocale(option.locale);
-                i18n.changeLanguage(option.locale);
-              }}
-              sx={{
-                width: 47,
-                height: 47,
-                padding: '5px',
-                background: '#DFEBFF',
-                borderRadius: 0,
-                '&:active': {
-                  background: 'orange',
-                },
-                '&:hover': {
-                  backgroundColor: '#f8cab7',
-                },
-              }}
-            >
-              <img
-                loading="lazy"
-                srcSet={`https://flagcdn.com/w40/${option.code.toLowerCase()}.png 2x`}
-                src={`https://flagcdn.com/w20/${option.code.toLowerCase()}.png`}
-                alt={option.name}
-                style={{ width: 24, height: 24 }}
-              />
-            </IconButton>
-          </Grid>
-        ))} */}
+        >
+          <InputLabel>{t('Select Language')}</InputLabel>
+          <Select
+            label={t('Select Language')}
+            value={languageCode}
+            onChange={handleLanguageChange}
+          >
+            {countries.map((country) => (
+              <MenuItem key={country.languageCode} value={country.languageCode}>
+                <Box display="flex" alignItems="center">
+                  <Avatar
+                    sx={{
+                      bgcolor: '#4abbc9',
+                      color: '#fff',
+                      height: 24,
+                      width: 24,
+                      marginRight: 2,
+                      fontSize:
+                        country.languageCode === 'zh-CN' ? '12px' : '14px',
+                    }}
+                  >
+                    {country.avatar}
+                  </Avatar>
+                  {t(country.name)}
+                </Box>
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
       </StyledLanguagesContainer>
 
       <Button

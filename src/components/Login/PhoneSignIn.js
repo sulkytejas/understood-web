@@ -9,19 +9,19 @@ import React, {
 import { auth } from './firebase';
 import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
-import { styled } from '@mui/system';
+import { fontFamily, styled } from '@mui/system';
 import {
   Box,
   IconButton,
   FormControl,
   FormHelperText,
-  TextField,
-  Autocomplete,
+  List,
   Popover,
   Button,
-  ListItem,
+  ListItemButton,
   ListItemIcon,
   ListItemText,
+  InputLabel,
 } from '@mui/material';
 import PhoneInput, {
   getCountries,
@@ -65,6 +65,7 @@ const CustomPhoneInput = styled('div')(({ theme }) => ({
     width: '100%',
 
     '& input': {
+      fontFamily: 'Exo 2',
       height: '48px',
       boxSizing: 'border-box',
       lineHeight: '22px',
@@ -121,6 +122,7 @@ function SearchableCountrySelect({ value, onChange, labels, ...rest }) {
   const selectedCode = value || defaultCountry;
   const [anchorEl, setAnchorEl] = useState(null);
 
+  // Prepare data for our country list
   const options = countries.map((country) => ({
     code: country,
     label: labels[country],
@@ -128,6 +130,7 @@ function SearchableCountrySelect({ value, onChange, labels, ...rest }) {
     flag: flags[country],
   }));
 
+  // Find selected option or default
   const selectedOption =
     options.find((opt) => opt.code === selectedCode) ||
     options.find((opt) => opt.code === defaultCountry);
@@ -179,34 +182,18 @@ function SearchableCountrySelect({ value, onChange, labels, ...rest }) {
         }}
       >
         <Box sx={{ padding: '8px' }}>
-          <Autocomplete
-            options={options}
-            fullWidth
-            getOptionLabel={(option) =>
-              `${option.label} (${option.callingCode})`
-            }
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                variant="outlined"
-                placeholder={t('Search for a country')}
-                fullWidth
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    padding: '6px',
-                  },
-                }}
-              />
-            )}
-            renderOption={(props, option) => (
-              <ListItem
-                {...props}
+          <List sx={{ padding: 0 }}>
+            {options.map((option) => (
+              <ListItemButton
                 key={option.code}
-                sx={{ paddingLeft: '8px', paddingRight: '8px' }}
+                onClick={() => {
+                  onChange(option.code);
+                  handleClose();
+                }}
               >
                 <ListItemIcon sx={{ minWidth: '32px' }}>
                   <option.flag
-                    title={option.code}
+                    alt={option.code}
                     style={{
                       width: '20px',
                       height: 'auto',
@@ -217,15 +204,9 @@ function SearchableCountrySelect({ value, onChange, labels, ...rest }) {
                 <ListItemText
                   primary={`${option.label} (${option.callingCode})`}
                 />
-              </ListItem>
-            )}
-            onChange={(event, newValue) => {
-              if (newValue) {
-                onChange(newValue.code);
-              }
-              handleClose();
-            }}
-          />
+              </ListItemButton>
+            ))}
+          </List>
         </Box>
       </Popover>
     </>
@@ -243,95 +224,7 @@ const PhoneSignIn = forwardRef(
     const { t } = useTranslation();
     const [isOtpInvalid, setIsOtpInvalid] = useState(false);
     const [phoneSignInError, setPhoneSignInError] = useState('');
-    const [selectedCountry, setSelectedCountry] = useState('');
-
-    // // Load reCAPTCHA script and initialize RecaptchaVerifier
-    // useEffect(() => {
-    //   const loadRecaptchaScript = () => {
-    //     return new Promise((resolve, reject) => {
-    //       if (document.getElementById('recaptcha-script')) {
-    //         resolve(); // Script already loaded
-    //         return;
-    //       }
-
-    //       const script = document.createElement('script');
-    //       script.id = 'recaptcha-script';
-    //       script.src =
-    //         'https://www.google.com/recaptcha/api.js?render=explicit';
-    //       script.async = true;
-    //       script.defer = true;
-    //       script.onload = () => resolve();
-    //       script.onerror = () =>
-    //         reject(new Error('Failed to load reCAPTCHA script'));
-    //       document.body.appendChild(script);
-    //     });
-    //   };
-
-    //   const initializeRecaptchaVerifier = () => {
-    //     return new Promise((resolve) => {
-    //       const checkRecaptcha = () => {
-    //         if (window.grecaptcha && window.grecaptcha.render) {
-    //           resolve();
-    //         } else {
-    //           setTimeout(checkRecaptcha, 100);
-    //         }
-    //       };
-    //       checkRecaptcha();
-    //     });
-    //   };
-
-    //   const initializeRecaptchaVerifierLoaded = () => {
-    //     if (!document.getElementById('recaptcha-container')) {
-    //       console.error('reCAPTCHA container not found in DOM.');
-    //       return;
-    //     }
-    //     try {
-    //       // if (auth && auth.settings) {
-    //       //   auth.settings.appVerificationDisabledForTesting = true;
-    //       // } else {
-    //       //   console.error('Firebase Auth is not properly initialized.');
-    //       //   return;
-    //       // }
-
-    //       // Initialize the RecaptchaVerifier
-    //       window.recaptchaVerifier = new RecaptchaVerifier(
-    //         auth,
-    //         'recaptcha-container',
-    //         {
-    //           size: 'invisible',
-    //           callback: () => {
-    //             console.log('recaptcha resolved..');
-    //           },
-    //         },
-    //       );
-
-    //       // Render the reCAPTCHA widget
-    //       window.recaptchaVerifier
-    //         .render()
-    //         .then((widgetId) => {
-    //           setLoading(false);
-    //           console.log('reCAPTCHA rendered with widgetId:', widgetId);
-    //         })
-    //         .catch((error) => {
-    //           console.error('Error rendering reCAPTCHA widget:', error);
-    //         });
-    //     } catch (error) {
-    //       console.error('Error initializing reCAPTCHA:', error);
-    //     }
-    //   };
-
-    //   loadRecaptchaScript()
-    //     .then(initializeRecaptchaVerifier)
-    //     .then(() => {
-    //       if (auth && window.grecaptcha && window.grecaptcha.render) {
-    //         initializeRecaptchaVerifierLoaded();
-    //       } else {
-    //         console.error(
-    //           'Firebase auth or reCAPTCHA not initialized properly.',
-    //         );
-    //       }
-    //     });
-    // }, [setLoading]);
+    const [selectedCountry, setSelectedCountry] = useState('US');
 
     useEffect(() => {
       return () => {
@@ -340,6 +233,25 @@ const PhoneSignIn = forwardRef(
           window.recaptchaVerifier = null;
         }
       };
+    }, []);
+
+    useEffect(() => {
+      async function detectCountry() {
+        try {
+          const res = await fetch('https://ipapi.co/json/');
+          const data = await res.json();
+          if (data && data.country_code) {
+            // e.g. "US", "IN", "GB", ...
+            setSelectedCountry(data.country_code.toUpperCase());
+          } else {
+            setSelectedCountry('US');
+          }
+        } catch {
+          // In case of any error, default to US
+          setSelectedCountry('US');
+        }
+      }
+      detectCountry();
     }, []);
 
     // Send OTP to the phone number
@@ -490,9 +402,12 @@ const PhoneSignIn = forwardRef(
         {!confirmationResult && (
           <FormControl fullWidth>
             <CustomPhoneInput data-invalid={Boolean(phoneSignInError)}>
+              {/* <InputLabel htmlFor="phone-input">
+                {t('Your Number—Your Key to Connect')}
+              </InputLabel> */}
               <PhoneInput
                 flags={flags}
-                international
+                international={false}
                 countryCallingCodeEditable={false}
                 defaultCountry={selectedCountry}
                 onCountryChange={setSelectedCountry}

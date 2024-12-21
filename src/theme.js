@@ -10,7 +10,7 @@ const theme = createTheme({
     },
   },
   typography: {
-    fontFamily: 'Poppins, Arial, sans-serif', // Customize your typography
+    fontFamily: '"Exo 2", serif !important', // Customize your typography
   },
   // Add more customizations here if needed
 });
