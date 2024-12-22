@@ -111,9 +111,9 @@ function App() {
     }
   }, []);
 
-  useEffect(() => {
-    initializeTensorFlow();
-  }, []);
+  // useEffect(() => {
+  //   initializeTensorFlow();
+  // }, []);
 
   useEffect(() => {
     const spokenLanguage = localStorage.getItem('spokenLanguage');

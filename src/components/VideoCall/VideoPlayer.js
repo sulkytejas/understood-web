@@ -284,7 +284,7 @@ const VideoPlayer = ({
           ref={remoteVideoRef}
           autoPlay
           playsInline
-          muted={!callStarted || !hasMediaFlow}
+          muted={!callStarted}
           onLoadedMetadata={async () => {
             const currentStream = callStarted ? remoteTrack : localStream;
             setOpacity(1);
