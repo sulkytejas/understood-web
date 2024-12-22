@@ -1176,7 +1176,11 @@ class ConnectionManager extends EventEmitter {
       this.state.transition(CONNECTION_STATES.CLOSING);
     }
 
-    await this.cleanup();
+    try {
+      await this.cleanup();
+    } catch (error) {
+      console.error('Error during call disconnect:', error);
+    }
 
     // Cleanup intervals
     if (this.statsInterval) {
@@ -1184,9 +1188,13 @@ class ConnectionManager extends EventEmitter {
       this.statsInterval = null;
     }
 
-    this.mediaChecksStarted = false;
+    // Stop media flow checks
+    if (this.mediaCheckInterval) {
+      clearInterval(this.mediaCheckInterval);
+      this.mediaCheckInterval = null;
+    }
 
-    // Cleanup managers
+    this.mediaChecksStarted = false;
   }
 
   async resetTransports() {

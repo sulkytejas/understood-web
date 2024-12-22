@@ -48,6 +48,7 @@ export const WebRTCBridge = ({ children }) => {
 
   // Redux states
   const meetingId = useSelector((state) => state.meeting.meetingId);
+
   const isVideoPaused = useSelector((state) => state.videoPlayer.videoPause);
   const isAudioPaused = useSelector((state) => state.videoPlayer.audioPause);
   const userSpokenLanguage = useSelector(
@@ -59,20 +60,19 @@ export const WebRTCBridge = ({ children }) => {
   const connectionManager = useRef(null);
   const { t } = useTranslation();
 
-  useEffect(() => {
-    console.log('WebRTCBridge Effect - Socket state:', {
-      hasSocket: !!socket,
-      meetingId,
-      connectionManagerExists: !!connectionManager.current,
-    });
-    if (socket && !connectionManager.current && isSocketConnected) {
+  const ensureConnectionManager = (managerId) => {
+    if (!socket || !isSocketConnected) return;
+
+    if (!managerId) return;
+
+    if (!connectionManager.current) {
       // Initialize Connection Manager with all callbacks
 
       console.log('Initializing new ConnectionManager');
 
       connectionManager.current = new ConnectionManager({
         socket,
-        meetingId,
+        meetingId: managerId,
         userSpokenLanguage,
         uid,
         onStateChange: (state) => {
@@ -115,22 +115,7 @@ export const WebRTCBridge = ({ children }) => {
     } else {
       console.log('Conditions not met for initializing ConnectionManager');
     }
-
-    return () => {
-      console.log('WebRTCBridge cleanup triggered');
-
-      if (socket && isSocketConnected) {
-        if (connectionManager.current) {
-          connectionManager.current.cleanup();
-          connectionManager.current = null;
-        }
-      } else {
-        console.log(
-          'Socket disconnected, but not cleaning up ConnectionManager',
-        );
-      }
-    };
-  }, [socket, isSocketConnected, meetingId]);
+  };
 
   // Handle Redux state changes
   useEffect(() => {
@@ -305,6 +290,10 @@ export const WebRTCBridge = ({ children }) => {
   // Maintain existing public methods with new implementation
   const publicMethods = {
     async joinRoom(enteredMeetingId) {
+      if (!connectionManager.current) {
+        ensureConnectionManager(enteredMeetingId);
+      }
+
       try {
         await connectionManager.current.initializeEventListeners();
         const result = await connectionManager.current.connect(
@@ -389,11 +378,10 @@ export const WebRTCBridge = ({ children }) => {
     },
 
     async intializeMeeting(meetingId, uid) {
-      if (!connectionManager.current) {
-        console.warn('ConnectionManager not ready to intialize meeting');
-        return;
-      }
       try {
+        if (!connectionManager.current) {
+          ensureConnectionManager(meetingId);
+        }
         await connectionManager.current.initializeEventListeners();
         const response = await connectionManager.current.initialize(
           meetingId,
@@ -407,6 +395,12 @@ export const WebRTCBridge = ({ children }) => {
     },
 
     async handleDisconnectCall(meetingId) {
+      if (!connectionManager.current) {
+        // There's no manager to disconnect
+        console.log('No manager to disconnect. Skipping.');
+        return;
+      }
+
       if (isHost.current && meetingId) {
         socket.emit('endMeeting', { meetingId }, ({ error }) => {
           if (error) {
@@ -415,35 +409,11 @@ export const WebRTCBridge = ({ children }) => {
         });
       } else {
         console.log('Leaving meeting triggered:', meetingId);
-        socket.emit(
-          'leaveMeeting',
-          { meetingId },
-          async ({ error, success }) => {
-            if (error) {
-              console.error('Error leaving meeting:', error);
-            } else if (success) {
-              // Participant-specific local cleanup (stop local tracks, navigate away if needed)
-              // No 'meeting-ended' event will be triggered for others,
-              // just this participant has left.
-
-              if (connectionManager.current) {
-                await connectionManager.current.handleCallDisonnect();
-              }
-
-              setLocalStream(null);
-              setRemoteStream(null);
-              setCallStarted(false);
-              setJoined(false);
-              hostSocketId.current = null;
-              isHost.current = false;
-              dispatch(meetingEndedCleanup());
-              localStorage.removeItem('meetingData');
-
-              // Navigate participant away, for example to /login
-              navigate('/login');
-            }
-          },
-        );
+        socket.emit('leaveMeeting', { meetingId }, async ({ error }) => {
+          if (error) {
+            console.error('Error leaving meeting:', error);
+          }
+        });
       }
 
       if (connectionManager.current) {
@@ -456,7 +426,7 @@ export const WebRTCBridge = ({ children }) => {
       setJoined(false);
       hostSocketId.current = null;
       isHost.current = false;
-
+      connectionManager.current = null;
       dispatch(meetingEndedCleanup());
       setCallStarted(false);
       localStorage.removeItem('meetingData');

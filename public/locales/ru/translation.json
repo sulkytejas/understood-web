@@ -67,5 +67,6 @@
   "ok": "ок",
   "cancel": "отмена",
   "change app language": "изменить язык приложения",
-  "account settings": "настройки аккаунта"
+  "account settings": "настройки аккаунта",
+  "Starting. Please wait...": "Загрузка. Пожалуйста, подождите..."
 }

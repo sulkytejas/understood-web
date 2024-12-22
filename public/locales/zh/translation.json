@@ -67,5 +67,6 @@
   "change app language": "更改应用语言",
   "account settings": "账户设置",
   "No camera detected. Please check your settings and try again.": "未检测到摄像头。请检查您的设置，然后重试。",
-  "Phone number not found. Please enter a valid phone number.": "未找到电话号码。请输入有效的电话号码。"
+  "Phone number not found. Please enter a valid phone number.": "未找到电话号码。请输入有效的电话号码。",
+  "Starting. Please wait...": "正在启动。请稍候……"
 }

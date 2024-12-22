@@ -20,17 +20,11 @@ import {
   Settings as SettingsIcon,
   ContentCopy as CopyIcon,
 } from '@mui/icons-material';
-import { useSelector, useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { styled } from '@mui/system';
-// import { useWebRTC } from '../context/WebrtcContext';
-import { useWebRTC } from '../context/WebrtcBridge';
+
 import { useSocket } from '../context/SocketContext';
-import {
-  joinMeeting,
-  setHostSocketId,
-  setIsHost,
-  setMeetingPhrase,
-} from '../../redux/meetingSlice';
+import { setPendingMeetingId } from '../../redux/meetingSlice';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
@@ -84,15 +78,10 @@ const CustomIcon = styled('div')({
   height: 20,
 });
 
-const ParticipantTab = ({
-  onSetOpenSettingMenu,
-  persistedUserName,
-  phoneNumber,
-  email,
-}) => {
+const ParticipantTab = ({ onSetOpenSettingMenu, persistedUserName }) => {
   // const socket = useSocket();
-  const [meetingId, setMeetingId] = useState(null);
-  const [meetingPhraseLocal, setMeetingPhraseLocal] = useState(null);
+  const [typedMeetingId, setTypedMeetingId] = useState('');
+  const [typedPhrase, setTypedPhrase] = useState('');
   const [username, setUsername] = useState(persistedUserName);
   const [error, setError] = useState(null);
   const [openTooltip, setOpenTooltip] = useState(true);
@@ -100,16 +89,14 @@ const ParticipantTab = ({
   const [loading, setLoading] = useState(false);
   const [importantError, setImportantError] = useState(null);
 
-  const reduxmeetingId = useSelector((state) => state.meeting.meetingId);
-  const reduxmeetingPhrase = useSelector(
-    (state) => state.meeting.meetingPhrase,
-  );
-
-  const { joinRoom } = useWebRTC();
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { socket } = useSocket();
   const { t } = useTranslation();
+
+  const reduxMeetingPhrase = useSelector(
+    (state) => state.meeting.meetingPhrase,
+  );
 
   useEffect(() => {
     // Set a timeout to close the tooltip after 3 seconds (3000ms)
@@ -119,18 +106,6 @@ const ParticipantTab = ({
 
     return () => clearTimeout(timer); // Clean up the timer on unmount
   }, []);
-
-  useEffect(() => {
-    if (reduxmeetingId) {
-      setMeetingId(reduxmeetingId);
-    }
-  }, [reduxmeetingId]);
-
-  useEffect(() => {
-    if (reduxmeetingPhrase) {
-      setMeetingPhraseLocal(reduxmeetingPhrase);
-    }
-  }, [reduxmeetingPhrase]);
 
   const handleCloseSnackbar = () => {
     setCopiedToClipboard(false);
@@ -151,31 +126,33 @@ const ParticipantTab = ({
 
     // Check if input matches nanoid format
     if (isValidMeetingId(value)) {
-      setMeetingId(value);
-      setMeetingPhraseLocal(null);
+      setTypedMeetingId(value);
+      setTypedPhrase('');
     } else {
-      setMeetingPhraseLocal(value);
-      setMeetingId(null);
+      setTypedPhrase(value);
+      setTypedMeetingId('');
     }
   };
 
   const onClickHandler = async () => {
-    if (!meetingId && !meetingPhraseLocal) {
-      setError('Please enter a valid meeting ID or phrase');
-      return;
-    }
-
     setLoading(true);
+    setError(null);
 
-    let meetingIDToJoin = meetingId;
+    let finalId = typedMeetingId;
 
-    if (meetingPhraseLocal && !meetingId) {
+    if (typedPhrase && !typedMeetingId) {
       try {
-        meetingIDToJoin = await new Promise((resolve, reject) => {
+        finalId = await new Promise((resolve, reject) => {
           socket.emit(
             'getMeetingForPhrase',
-            meetingPhraseLocal,
+            typedPhrase,
             async ({ meetingID, message }) => {
+              if (message === 'Meeting not found') {
+                setLoading(false);
+                setImportantError(message);
+                return;
+              }
+
               console.log('meetingID from phrase', meetingID);
 
               if (!meetingID || !isValidMeetingId(meetingID)) {
@@ -195,82 +172,29 @@ const ParticipantTab = ({
       }
     }
 
-    if (!meetingIDToJoin || !isValidMeetingId(meetingIDToJoin)) {
+    if (!finalId || !isValidMeetingId(finalId)) {
       setError('Invalid meeting ID');
       setLoading(false);
       return;
     }
 
-    if (meetingIDToJoin && isValidMeetingId(meetingIDToJoin)) {
-      try {
-        const { joined, hostSocketId, isHost } =
-          await joinRoom(meetingIDToJoin);
+    dispatch(setPendingMeetingId(finalId));
 
-        console.log('clicked', joined, hostSocketId, isHost);
-
-        if (joined) {
-          if (username !== persistedUserName) {
-            await new Promise((resolve) => {
-              socket.emit('updateUsername', { username, phoneNumber, email });
-              resolve();
-            });
-          }
-
-          // Then update redux state
-          dispatch(joinMeeting(meetingIDToJoin));
-          dispatch(setHostSocketId(hostSocketId));
-          dispatch(setIsHost(isHost));
-          if (meetingPhraseLocal) {
-            dispatch(setMeetingPhrase(meetingPhraseLocal));
-          }
-
-          const serializedData = JSON.stringify({
-            meetingId: meetingIDToJoin,
-            hostSocketId,
-            isHost,
-            meetingPhrase: meetingPhraseLocal,
-          });
-
-          localStorage.setItem('meetingData', serializedData);
-
-          // Add a small delay before navigation to ensure state updates complete
-          setTimeout(() => {
-            setLoading(false);
-            navigate(`/videocall/${meetingIDToJoin}`);
-          }, 100);
-
-          // navigate(`/videocall/${meetingIDToJoin}`);
-        }
-      } catch (e) {
-        console.log(e, 'error after joinRoom');
-        if (
-          e.message &&
-          e.message.includes('Failed to acquire even audio-only media')
-        ) {
-          const message = t(
-            'No camera detected. Please check your settings and try again.',
-          );
-          setImportantError(message);
-        }
-        setError(e?.error);
-        setLoading(false);
-      }
-    }
+    setTimeout(() => {
+      setLoading(false);
+      navigate(`/videocall/${finalId}`);
+    }, 100);
   };
 
   const handleWhatsAppShare = () => {
-    const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent('Join meeting with following link:')} ${encodeURIComponent(`https://app.myunderstood.com/meeting?meetingId=${meetingId}`)}`;
+    const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent('Join meeting with following link:')} ${encodeURIComponent(`https://app.myunderstood.com/meeting?meetingId=${typedMeetingId}`)}`;
     window.open(whatsappUrl, '_blank');
   };
 
   // Helper function to get display value with correct priority
   const getDisplayValue = () => {
-    if (meetingPhraseLocal) {
-      return meetingPhraseLocal;
-    }
-    if (meetingId) {
-      return meetingId;
-    }
+    if (typedPhrase) return typedPhrase;
+    if (typedMeetingId) return typedMeetingId;
     return '';
   };
 
@@ -286,7 +210,9 @@ const ParticipantTab = ({
 
   const handleCopyShare = () => {
     navigator.clipboard
-      .writeText(`https://app.myunderstood.com/meeting?meetingId=${meetingId}`)
+      .writeText(
+        `https://app.myunderstood.com/meeting?meetingId=${typedMeetingId}`,
+      )
       .then(() => {
         console.log('Text copied to clipboard!');
       });
@@ -295,10 +221,16 @@ const ParticipantTab = ({
   // Helper to determine if the input is valid and join should be enabled
   const isValidInput = () => {
     const value = getDisplayValue();
-    return value && (meetingPhraseLocal || isValidMeetingId(value));
+    return value && (typedPhrase || isValidMeetingId(value));
   };
 
   const tooltipTitle = t('Language and settings');
+
+  useEffect(() => {
+    if (reduxMeetingPhrase && !typedMeetingId) {
+      setTypedPhrase(reduxMeetingPhrase);
+    }
+  }, [reduxMeetingPhrase]);
 
   return (
     <div>

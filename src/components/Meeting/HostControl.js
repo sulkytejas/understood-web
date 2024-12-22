@@ -20,7 +20,7 @@ import { styled } from '@mui/system';
 import { useDispatch, useSelector } from 'react-redux';
 import { useSocket } from '../context/SocketContext';
 import {
-  joinMeeting,
+  setPendingMeetingId,
   setHostSocketId,
   setIsHost,
   setMeetingPhrase,
@@ -136,7 +136,7 @@ const HostControl = ({
 
           console.log('Meeting created with ID:', meetingId);
           setMeetingId(meetingId);
-          dispatch(joinMeeting(meetingId));
+          dispatch(setPendingMeetingId(meetingId));
           dispatch(setHostSocketId(hostSocketId));
           dispatch(setIsHost(true));
           dispatch(setUserName(username));

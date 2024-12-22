@@ -14,7 +14,7 @@ import { ReactComponent as LogoIcon } from '../assets/understood_logo.svg';
 
 import { setLocalSpokenLanguage } from '../../redux/translationSlice';
 import {
-  joinMeeting,
+  setPendingMeetingId,
   setHostSocketId,
   setIsHost,
   setMeetingPhrase,
@@ -88,7 +88,7 @@ const CreateMeetingPage = () => {
   const { t } = useTranslation();
 
   const [activeTab, setActiveTab] = useState(0);
-  const meetingId = useSelector((state) => state.meeting.meetingId);
+  const meetingId = useSelector((state) => state.meeting.pendingMeetingId);
   const persistedUserName = useSelector((state) => state.user.username);
   const phoneNumber = useSelector((state) => state.user.phoneNumber);
   const localSpokenLanguage = useSelector(
@@ -117,7 +117,8 @@ const CreateMeetingPage = () => {
   useEffect(() => {
     if (socket && isSocketConnected) {
       if (urlMeetingId) {
-        dispatch(joinMeeting(urlMeetingId));
+        dispatch(setPendingMeetingId(urlMeetingId));
+
         navigate(location.pathname, { replace: true });
       } else {
         socket.emit(
@@ -127,7 +128,7 @@ const CreateMeetingPage = () => {
             console.log('Meeting old ID:', meetingId);
 
             if (meetingId) {
-              dispatch(joinMeeting(meetingId));
+              dispatch(setPendingMeetingId(urlMeetingId));
             }
 
             if (meetingPhrase) {

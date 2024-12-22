@@ -73,6 +73,7 @@ const VideoPlayer = ({
   callStarted,
   connectionStatus,
   connectionQuality,
+  isMeetingStarted,
 }) => {
   const isMainMenuOpen = useSelector((state) => state.ui.callMenuOpen);
   const localTranslationLanguage = useSelector(
@@ -350,6 +351,24 @@ const VideoPlayer = ({
           )}
         </Box>
       </div>
+
+      {!isMeetingStarted && (
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)', // Optional dark overlay
+          }}
+        >
+          <Alert severity="info">{t('Starting. Please wait...')}</Alert>
+        </Box>
+      )}
 
       {connectionStatus?.isAlert && (
         <Box
