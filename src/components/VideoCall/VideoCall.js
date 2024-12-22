@@ -50,11 +50,19 @@ const VideoCall = () => {
   const { socket } = useSocket();
 
   useEffect(() => {
+    if (isMeetingStarted) {
+      return;
+    }
+
+    console.log('isMeetingStarted', isMeetingStarted);
+
     const handleClientConnect = async () => {
       const storedData = localStorage.getItem('meetingData');
       const meetingDataLocalStorage = JSON.parse(storedData);
 
-      if (meetingDataLocalStorage && meetingDataLocalStorage.meetingId) {
+      console.log('Meeting data from local storage:', meetingDataLocalStorage);
+
+      if (meetingDataLocalStorage?.meetingId) {
         await Promise.all([
           dispatch(joinMeeting(meetingDataLocalStorage.meetingId)),
           dispatch(setIsHost(meetingDataLocalStorage.isHost)),
@@ -81,16 +89,17 @@ const VideoCall = () => {
           dispatch(joinMeeting(pendingMeetingId));
           dispatch(setHostSocketId(hostSocketId));
           dispatch(setIsHost(isHost));
+
+          const JSONData = JSON.stringify({
+            meetingId: pendingMeetingId,
+            isHost,
+            hostSocketId,
+          });
+
+          localStorage.setItem('meetingData', JSONData);
+
+          setIsMeetingStarted(true);
         }
-
-        const JSONData = JSON.stringify({
-          meetingId: pendingMeetingId,
-          isHost,
-          hostSocketId,
-        });
-
-        localStorage.setItem('meetingData', JSONData);
-        setIsMeetingStarted(true);
       } else {
         navigate('/');
       }
@@ -99,15 +108,9 @@ const VideoCall = () => {
     if (socket) {
       handleClientConnect();
     }
-  }, [
-    // intializeMeeting,
-    dispatch,
-    // meetingId,
-    pendingMeetingId,
-    // isConnectionManagerReady,
-    // userUid,
-    socket,
-  ]);
+
+    return;
+  }, [dispatch, socket]);
 
   const handleClick = () => {
     handleDisconnectCall(meetingIdRedux);

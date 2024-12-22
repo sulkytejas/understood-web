@@ -183,7 +183,7 @@ const ParticipantTab = ({ onSetOpenSettingMenu, persistedUserName }) => {
     setTimeout(() => {
       setLoading(false);
       navigate(`/videocall/${finalId}`);
-    }, 100);
+    }, 1000);
   };
 
   const handleWhatsAppShare = () => {
