@@ -3,11 +3,11 @@ let blazeface = null;
 let model = null;
 
 async function loadDependencies() {
-  if (!tf) {
-    tf = await import('@tensorflow/tfjs');
-    await import('@tensorflow/tfjs-backend-webgl');
-    blazeface = await import('@tensorflow-models/blazeface');
-  }
+  // if (!tf) {
+  //   tf = await import('@tensorflow/tfjs');
+  //   await import('@tensorflow/tfjs-backend-webgl');
+  //   blazeface = await import('@tensorflow-models/blazeface');
+  // }
 }
 
 async function initializeTensorFlowBackend() {

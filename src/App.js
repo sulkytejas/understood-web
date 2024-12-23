@@ -25,10 +25,8 @@ import UserLogin from './components/Login/UserLogin';
 import MeetingEnded from './components/Meeting/MeetingEnded';
 import GoogleCallback from './components/Login/GoogleCallback';
 import ProtectedRoute from './components/onBoarding/ProtectedRoute';
-import PrivacyPolicy from './components/onBoarding/PrivacyPolicy';
-// import UnsupportedBrowser from './components/onBoarding/Unsupported';
-import TermsAndCondition from './components/onBoarding/TermsAndCondition';
-import { initializeTensorFlow } from './components/utils/tensorFlowUtils';
+
+// import { initializeTensorFlow } from './components/utils/tensorFlowUtils';
 import WelcomeScreen from './components/onBoarding/WelcomeScreen';
 import LoadingSpinner from './components/onBoarding/LoadingSpinner';
 import {
@@ -330,11 +328,6 @@ function App() {
                 <Route
                   path="/meetingEnded"
                   element={<AnimatedRoute element={<MeetingEnded />} />}
-                />
-                <Route path="/privacyPolicy" element={<PrivacyPolicy />} />
-                <Route
-                  path="/termsAndConditions"
-                  element={<TermsAndCondition />}
                 />
               </Routes>
             </AudioTranscriptionProvider>
