@@ -1,16 +1,24 @@
-import * as tf from '@tensorflow/tfjs';
-import '@tensorflow/tfjs-backend-webgl';
-import * as blazeface from '@tensorflow-models/blazeface';
-
+let tf = null;
+let blazeface = null;
 let model = null;
 
+async function loadDependencies() {
+  if (!tf) {
+    tf = await import('@tensorflow/tfjs');
+    await import('@tensorflow/tfjs-backend-webgl');
+    blazeface = await import('@tensorflow-models/blazeface');
+  }
+}
+
 async function initializeTensorFlowBackend() {
+  await loadDependencies();
   await tf.setBackend('webgl');
   await tf.ready();
 }
 
 async function loadBlazeFace() {
   if (!model) {
+    await loadDependencies();
     model = await blazeface.load();
     console.log('BlazeFace model loaded');
   }
