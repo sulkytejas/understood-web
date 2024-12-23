@@ -48,7 +48,7 @@ export const WebRTCBridge = ({ children }) => {
 
   // Redux states
   const meetingId = useSelector((state) => state.meeting.meetingId);
-
+  const isHostFromRedux = useSelector((state) => state.meeting.isHost);
   const isVideoPaused = useSelector((state) => state.videoPlayer.videoPause);
   const isAudioPaused = useSelector((state) => state.videoPlayer.audioPause);
   const userSpokenLanguage = useSelector(
@@ -123,6 +123,10 @@ export const WebRTCBridge = ({ children }) => {
       connectionManager.current.setVideoEnabled(!isVideoPaused);
     }
   }, [isVideoPaused]);
+
+  useEffect(() => {
+    isHost.current = isHostFromRedux;
+  }, [isHostFromRedux]);
 
   //meeting ended handler
   useEffect(() => {

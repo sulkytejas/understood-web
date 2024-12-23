@@ -658,10 +658,13 @@ class ConnectionManager extends EventEmitter {
 
       const networkQuality = await this.runUploadTest();
 
-      const isAudioOnly = networkQuality === 'poor';
+      let isAudioOnly = false;
 
-      if (isAudioOnly) {
-        this.onAudioOnly?.(isAudioOnly);
+      if (networkQuality === 'unavailable') {
+        console.warn('Server might be down; skipping normal connect flow.');
+      } else if (networkQuality === 'poor') {
+        isAudioOnly = true;
+        this.onAudioOnly?.(true);
       }
 
       // Reconnect socket first
@@ -1384,14 +1387,21 @@ class ConnectionManager extends EventEmitter {
 
   async runUploadTest() {
     const size = 500_000; // ~0.5 MB
-    const data = new Uint8Array(size); // create a buffer of size
+    const data = new Uint8Array(size);
     const start = Date.now();
     const apiURL = process.env.REACT_APP_API_URL;
 
-    await fetch(`${apiURL}/api/uploadTest`, {
-      method: 'POST',
-      body: data,
-    });
+    try {
+      await fetch(`${apiURL}/api/uploadTest`, {
+        method: 'POST',
+        body: data,
+      });
+    } catch (error) {
+      // If the upload test fails (e.g. server restart),
+      // we can treat it as a "poor" network or skip it.
+      console.warn('Upload test failed, returning "poor".', error);
+      return 'unavailable';
+    }
 
     const end = Date.now();
     const durationSec = (end - start) / 1000;

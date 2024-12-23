@@ -314,7 +314,8 @@ function App() {
                   path="/videocall/:meetingId"
                   element={
                     <ProtectedRoute>
-                      <AnimatedRoute element={<VideoCall />} />
+                      <VideoCall />
+                      {/* <AnimatedRoute element={<VideoCall />} /> */}
                     </ProtectedRoute>
                   }
                 />

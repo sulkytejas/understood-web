@@ -19,6 +19,7 @@ import {
 const VideoCall = () => {
   const [isRemoteConnected, setIsRemoteConnected] = useState(false);
   const [isMeetingStarted, setIsMeetingStarted] = useState(false);
+  const hasAttemptedInitRef = useRef(false);
   const remoteVideoRef = useRef(null);
   const videoContainerRef = useRef(null);
 
@@ -47,20 +48,26 @@ const VideoCall = () => {
     joinRoom,
   } = useWebRTC();
 
-  const { socket } = useSocket();
+  const { isSocketConnected } = useSocket();
 
   useEffect(() => {
-    if (isMeetingStarted) {
+    if (!isSocketConnected) return;
+
+    if (isMeetingStarted || hasAttemptedInitRef.current) {
       return;
     }
 
-    console.log('isMeetingStarted', isMeetingStarted);
+    console.log(
+      hasAttemptedInitRef.current,
+      'isMeetingStarted',
+      isMeetingStarted,
+    );
+
+    hasAttemptedInitRef.current = true;
 
     const handleClientConnect = async () => {
       const storedData = localStorage.getItem('meetingData');
       const meetingDataLocalStorage = JSON.parse(storedData);
-
-      console.log('Meeting data from local storage:', meetingDataLocalStorage);
 
       if (meetingDataLocalStorage?.meetingId) {
         await Promise.all([
@@ -105,12 +112,8 @@ const VideoCall = () => {
       }
     };
 
-    if (socket) {
-      handleClientConnect();
-    }
-
-    return;
-  }, [dispatch, socket]);
+    handleClientConnect();
+  }, [isSocketConnected]);
 
   const handleClick = () => {
     handleDisconnectCall(meetingIdRedux);
