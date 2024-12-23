@@ -68,5 +68,15 @@
   "account settings": "账户设置",
   "No camera detected. Please check your settings and try again.": "未检测到摄像头。请检查您的设置，然后重试。",
   "Phone number not found. Please enter a valid phone number.": "未找到电话号码。请输入有效的电话号码。",
-  "Starting. Please wait...": "正在启动。请稍候……"
+  "Starting. Please wait...": "正在启动。请稍候……",
+  "Concepts Covered": "涵盖的概念",
+  "Session Highlights": "会话亮点",
+  "Insights": "见解",
+  "Topics Discussed": "讨论的主题",
+  "Notable Comments": "值得注意的评论",
+  "Ambiance": "氛围",
+  "Decisions": "决定",
+  "Discussion Points": "讨论要点",
+  "Action Items": "行动项目",
+  "Deadlines": "截止日期"
 }

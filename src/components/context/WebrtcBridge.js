@@ -313,6 +313,8 @@ export const WebRTCBridge = ({ children }) => {
             isAudioOnly: audioOnlyRef.current,
           });
 
+          localStorage.setItem('endedMeetingId', enteredMeetingId);
+
           socket.on(
             'existing-participants-audio-only-states',
             ({ audioOnlyStates }) => {
@@ -435,7 +437,7 @@ export const WebRTCBridge = ({ children }) => {
       setCallStarted(false);
       localStorage.removeItem('meetingData');
 
-      navigate(`/meetingEnded?meetingId=${meetingId || ''}`);
+      navigate(`/meetingEnded?meetingId`);
     },
   };
 

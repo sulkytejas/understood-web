@@ -68,5 +68,15 @@
   "Video stream error occurred": "Ein Fehler im Videostream ist aufgetreten",
   "No camera detected. Please check your settings and try again.": "Keine Kamera erkannt. Bitte überprüfen Sie Ihre Einstellungen und versuchen Sie es erneut.",
   "Phone number not found. Please enter a valid phone number.": "Telefonnummer nicht gefunden. Bitte geben Sie eine gültige Telefonnummer ein.",
-  "Starting. Please wait...": "Starten. Bitte warten..."
+  "Starting. Please wait...": "Starten. Bitte warten...",
+  "Concepts Covered": "Behandelte Konzepte",
+  "Session Highlights": "Sitzungshöhepunkte",
+  "Insights": "Erkenntnisse",
+  "Topics Discussed": "Diskutierte Themen",
+  "Notable Comments": "Bemerkenswerte Kommentare",
+  "Ambiance": "Ambiente",
+  "Decisions": "Entscheidungen",
+  "Discussion Points": "Diskussionspunkte",
+  "Action Items": "Aktionspunkte",
+  "Deadlines": "Fristen"
 }

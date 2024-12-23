@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
-import { Box, Typography, Button, Rating, Modal } from '@mui/material';
+import { Box, Typography, Button, Rating } from '@mui/material';
 import { styled } from '@mui/system';
 import { ReactComponent as LogoIcon } from '../assets/understood_logo_text.svg';
 import { useNavigate } from 'react-router-dom';
-import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import SummaryModal from './SummaryModal';
 
 const PageContainer = styled(Box)(() => ({
   display: 'flex',
@@ -47,17 +47,14 @@ const StyledLogoBox = styled(Box)(() => ({
 
 const MeetingEnded = () => {
   const [value, setValue] = useState(0);
-  const [meetingSummary, setMeetingSummary] = useState(null);
+
   const [openModal, setOpenModal] = useState(false);
   const [ratingWidth, setRatingWidth] = useState(0);
   const ratingRef = useRef(null);
   const navigate = useNavigate();
   const { t } = useTranslation();
 
-  const [searchParams] = useSearchParams();
-
-  // Get the "meetingId" query parameter
-  const meetingId = searchParams.get('meetingId');
+  const meetingId = localStorage.getItem('endedMeetingId');
 
   useEffect(() => {
     if (ratingRef.current) {
@@ -88,6 +85,7 @@ const MeetingEnded = () => {
 
         if (response.ok) {
           console.log('Rating submitted successfully');
+          localStorage.removeItem('endedMeetingId');
           navigate('/login', { state: { fromMeetingEnded: true } });
           // window.location.reload();
         } else {
@@ -97,33 +95,11 @@ const MeetingEnded = () => {
         console.error('Error submitting rating:', error);
       }
     } else {
+      localStorage.removeItem('endedMeetingId');
       navigate('/login', { state: { fromMeetingEnded: true } });
       // window.location.reload();
     }
   };
-
-  useEffect(() => {
-    const handleSummary = async () => {
-      const apiUrl = process.env.REACT_APP_API_URL;
-      const locale = 'en-US';
-      const res = await fetch(
-        `${apiUrl}/api/meetingNotes/${meetingId}/${locale}`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        },
-      );
-
-      if (res.ok) {
-        const response = await res.json();
-        setMeetingSummary({ ...response?.response });
-      }
-    };
-
-    handleSummary();
-  }, []);
 
   return (
     <PageContainer>
@@ -217,52 +193,11 @@ const MeetingEnded = () => {
           {t('View Summary')}
         </JoinButton>
       </Container>
-      <Modal
+      <SummaryModal
         open={openModal}
-        onClose={() => setOpenModal(false)}
-        aria-labelledby="modal-modal-title"
-        aria-describedby="modal-modal-description"
-      >
-        <Box
-          sx={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            bgcolor: 'background.paper',
-            borderRadius: 2,
-            boxShadow: 24,
-            p: 4,
-            outline: 'none',
-            textAlign: 'center',
-            width: { xs: '100%', md: 'unset' },
-            maxWidth: '800px',
-          }}
-        >
-          <Typography
-            id="custom-modal-title"
-            variant="h6"
-            component="h2"
-            sx={{
-              fontWeight: 700,
-              fontSize: '36px',
-              lineHeight: '50.4px',
-              paddingBottom: '20px',
-            }}
-          >
-            {t('Meeting Summary')}
-          </Typography>
-          <Typography
-            id="custom-modal-description"
-            sx={{
-              fontSize: '20px',
-              lineHeight: '28.9px',
-            }}
-          >
-            {meetingSummary && meetingSummary.summary}
-          </Typography>
-        </Box>
-      </Modal>
+        setOpen={setOpenModal}
+        meetingId={meetingId}
+      />
     </PageContainer>
   );
 };
