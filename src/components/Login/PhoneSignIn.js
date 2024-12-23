@@ -28,7 +28,7 @@ import PhoneInput, {
   getCountryCallingCode,
 } from 'react-phone-number-input';
 import enLabels from 'react-phone-number-input/locale/en.json'; // Country name labels
-import flags from 'react-phone-number-input/flags';
+import ReactCountryFlag from 'react-country-flag';
 import 'react-phone-number-input/style.css';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -38,7 +38,6 @@ import { useTranslation } from 'react-i18next';
 import { keyframes } from '@mui/system';
 import { setUserPhoneNumber, setUserName, setUid } from '../../redux/userSlice';
 import OtpVerification from './OtpVerification';
-import { t } from 'i18next';
 
 const pulseAnimation = keyframes`
   0% { transform: scale(1); opacity: 1; }
@@ -127,7 +126,6 @@ function SearchableCountrySelect({ value, onChange, labels, ...rest }) {
     code: country,
     label: labels[country],
     callingCode: `+${getCountryCallingCode(country)}`,
-    flag: flags[country],
   }));
 
   // Find selected option or default
@@ -159,8 +157,9 @@ function SearchableCountrySelect({ value, onChange, labels, ...rest }) {
         }}
       >
         {selectedOption && (
-          <selectedOption.flag
-            alt={selectedOption.code}
+          <ReactCountryFlag
+            countryCode={selectedOption.code.toUpperCase()}
+            svg
             style={{
               width: '20px',
               height: 'auto',
@@ -192,8 +191,9 @@ function SearchableCountrySelect({ value, onChange, labels, ...rest }) {
                 }}
               >
                 <ListItemIcon sx={{ minWidth: '32px' }}>
-                  <option.flag
-                    alt={option.code}
+                  <ReactCountryFlag
+                    countryCode={option.code}
+                    svg
                     style={{
                       width: '20px',
                       height: 'auto',
@@ -406,7 +406,6 @@ const PhoneSignIn = forwardRef(
                 {t('Your Number—Your Key to Connect')}
               </InputLabel> */}
               <PhoneInput
-                flags={flags}
                 international={false}
                 countryCallingCodeEditable={false}
                 defaultCountry={selectedCountry}

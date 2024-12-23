@@ -4,7 +4,6 @@
  * Handles connection lifecycle, media management, and transport coordination.
  */
 
-import { Device } from 'mediasoup-client';
 import SignalingLayer from './SignalingLayer';
 import MediaManager from './MediaManager';
 import ConnectionPool from './ConnectionPool';
@@ -488,6 +487,9 @@ class ConnectionManager extends EventEmitter {
       // Step 2: Store role information
       this.isHost = joinResponse.ishost;
       this.hostSocketId = joinResponse.hostSocketId;
+
+      const mediasoupClient = await import('mediasoup-client');
+      const { Device } = mediasoupClient;
 
       // Step 3: Initialize mediasoup device
       this.device = new Device();
