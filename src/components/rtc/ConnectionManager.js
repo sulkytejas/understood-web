@@ -219,7 +219,8 @@ class ConnectionManager extends EventEmitter {
     this.userSpokenLanguage = userSpokenLanguage;
     this.device = null;
     this.uid = uid;
-    this.producerTransportId = null;
+    this.audioProducerTransport = null;
+    this.videoProducerTransport = null;
     this.consumerTransportId = null;
 
     // Callback handlers
@@ -756,26 +757,46 @@ class ConnectionManager extends EventEmitter {
 
       if (isReconnecting) {
         // Clear any existing transports first
-        if (this.producerTransportId) {
-          this.connectionPool.removeProducerTransport(this.producerTransportId);
+        if (this.audioProducerTransportId) {
+          this.connectionPool.removeProducerTransport(
+            this.audioProducerTransportId,
+          );
+        }
+        if (this.videoProducerTransportId) {
+          this.connectionPool.removeProducerTransport(
+            this.videoProducerTransportId,
+          );
         }
         if (this.consumerTransportId) {
           this.connectionPool.removeConsumerTransport(this.consumerTransportId);
         }
       }
 
-      // Setup producer transport
-      const producerTransportOptions =
-        await this.signaling.createProducerTransport();
-      const producerTransport = await this.createProducerTransport(
-        producerTransportOptions,
+      // ----- CREATE AUDIO PRODUCER TRANSPORT -----
+      const audioTransportOptions =
+        await this.signaling.createProducerTransport('audio');
+      this.audioProducerTransport = await this.createProducerTransport(
+        audioTransportOptions,
+        'audio',
       );
 
-      this.producerTransportId = producerTransport.id;
-
+      this.audioProducerTransportId = this.audioProducerTransport.id;
       this.connectionPool.addProducerTransport(
-        producerTransport.id,
-        producerTransport,
+        this.audioProducerTransportId,
+        this.audioProducerTransport,
+      );
+
+      // ----- CREATE VIDEO PRODUCER TRANSPORT -----
+      const videoTransportOptions =
+        await this.signaling.createProducerTransport('video');
+      this.videoProducerTransport = await this.createProducerTransport(
+        videoTransportOptions,
+        'video',
+      );
+      this.videoProducerTransportId = this.videoProducerTransport.id;
+      this.connectionPool.addProducerTransport(
+        this.videoProducerTransportId,
+        this.videoProducerTransport,
       );
 
       // Setup consumer transport
@@ -805,7 +826,7 @@ class ConnectionManager extends EventEmitter {
    * @param {Object} transportOptions - Transport options from server
    * @returns {Promise<Object>} Created transport
    */
-  async createProducerTransport(transportOptions) {
+  async createProducerTransport(transportOptions, kind) {
     const transport = this.device.createSendTransport(transportOptions);
 
     transport.on('connect', async ({ dtlsParameters }, callback, errback) => {
@@ -813,6 +834,7 @@ class ConnectionManager extends EventEmitter {
         await this.signaling.connectProducerTransport({
           dtlsParameters,
           transportId: transport.id,
+          kind,
         });
         callback();
       } catch (error) {
@@ -830,6 +852,7 @@ class ConnectionManager extends EventEmitter {
             rtpParameters,
             userSpokenLanguage: this.userSpokenLanguage,
             meetingId: this.meetingId,
+            priority: kind === 'video' ? 128 : 255,
           });
           callback({ id: producerId });
         } catch (error) {
@@ -959,7 +982,7 @@ class ConnectionManager extends EventEmitter {
           .map((t) => ({ kind: t.kind, enabled: t.enabled })),
       });
 
-      if (!this.producerTransportId) {
+      if (!this.audioProducerTransportId || !this.videoProducerTransportId) {
         throw new Error('Producer transport ID not found');
       }
 
@@ -969,14 +992,6 @@ class ConnectionManager extends EventEmitter {
         console.log('Some tracks have ended, re-acquiring media');
         stream = await this.mediaManager.acquireMedia();
         tracks = stream.getTracks();
-      }
-
-      const producerTransport = this.connectionPool.getProducerTransport(
-        this.producerTransportId,
-      );
-
-      if (!producerTransport) {
-        throw new Error('Producer transport not found');
       }
 
       // Add delay to ensure consumer is ready
@@ -1018,7 +1033,18 @@ class ConnectionManager extends EventEmitter {
           continue;
         }
 
-        const producer = await producerTransport.produce({ track });
+        const priority = track.kind === 'video' ? 128 : 255;
+
+        const producerTransport =
+          track.kind === 'audio'
+            ? this.connectionPool.getProducerTransport(
+                this.audioProducerTransportId,
+              )
+            : this.connectionPool.getProducerTransport(
+                this.videoProducerTransportId,
+              );
+
+        const producer = await producerTransport.produce({ track, priority });
 
         this.mediaManager.addProducer(producer);
         console.log('Producer added to media manager');

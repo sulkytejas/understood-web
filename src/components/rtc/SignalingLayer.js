@@ -114,9 +114,10 @@ class SignalingLayer {
     });
   }
 
-  async createProducerTransport() {
+  async createProducerTransport(kind) {
     return this.emitWithTimeout('create-producer-transport', {
       meetingId: this.meetingId,
+      kind,
     });
   }
 
@@ -130,6 +131,7 @@ class SignalingLayer {
     return this.emitWithTimeout('connect-producer-transport', {
       ...params,
       meetingId: this.meetingId,
+      kind: params.kind,
     });
   }
 
@@ -144,6 +146,7 @@ class SignalingLayer {
     return this.emitWithTimeout('produce', {
       ...params,
       meetingId: this.meetingId,
+      kind: params.kind,
     });
   }
 
