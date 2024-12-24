@@ -1264,7 +1264,43 @@ class ConnectionManager extends EventEmitter {
    * @param {boolean} enabled - Enable/disable video
    */
   async setVideoEnabled(enabled) {
-    await this.mediaManager.setTrackEnabled('video', enabled);
+    // 1) Retrieve "video" producer
+    const videoProducer = this.mediaManager.getProducer('video');
+
+    if (!videoProducer) {
+      console.warn('No video producer found; cannot toggle video');
+      return;
+    }
+
+    // 2) Pause or resume
+    try {
+      if (enabled) {
+        await videoProducer.resume();
+        console.log('Video producer resumed');
+      } else {
+        await videoProducer.pause();
+        console.log('Video producer paused');
+      }
+    } catch (err) {
+      console.error('Failed to toggle video producer state:', err);
+    }
+
+    // 3) Reflect in local MediaStream track
+    if (this.mediaManager.localStream) {
+      const videoTrack = this.mediaManager.localStream
+        .getVideoTracks()
+        .find((t) => t.kind === 'video');
+
+      if (videoTrack) {
+        videoTrack.enabled = enabled;
+        console.log(
+          `Local video track has been ${enabled ? 'enabled' : 'disabled'}`,
+        );
+      }
+    }
+
+    // This triggers your UI or local state to reflect audio-only vs. not
+    this.onAudioOnly?.(!enabled);
   }
 
   /**
@@ -1403,14 +1439,95 @@ class ConnectionManager extends EventEmitter {
     return aggregate;
   }
 
+  adjustVideoBitrate(newBitrate) {
+    // Suppose we have a reference to our "video" Producer
+    const videoProducer = this.mediaManager.getProducer('video');
+
+    if (!videoProducer) {
+      console.warn('No video producer found to adjust bitrate');
+      return;
+    }
+
+    try {
+      videoProducer.setParameters({
+        encodings: [
+          {
+            maxBitrate: newBitrate, // in bps
+          },
+        ],
+      });
+      console.log(`Video bitrate set to ${newBitrate} bps`);
+    } catch (err) {
+      console.error('Error adjusting video bitrate:', err);
+    }
+  }
+
+  async handleNetworkQuality(result) {
+    console.log('Handling network quality:', result);
+
+    let measuredKbps;
+    switch (result) {
+      case 'poor':
+      case 'unavailable':
+        // let's assume ~ 500 kbps total
+        measuredKbps = 500;
+        break;
+      case 'fair':
+        // let's assume ~ 800 kbps total
+        measuredKbps = 800;
+        break;
+      case 'good':
+        // let's assume ~ 1500 kbps total
+        measuredKbps = 1500;
+        break;
+      default:
+        measuredKbps = 800;
+        break;
+    }
+
+    const baseAudioTextKbps = 500;
+    const leftover = measuredKbps - baseAudioTextKbps;
+
+    if (leftover <= 0) {
+      console.warn('No leftover for video -> disable video');
+      await this.setVideoEnabled(false);
+      return;
+    }
+
+    // We do have leftover for video, let's enable video
+    await this.setVideoEnabled(true);
+
+    const leftoverBps = leftover * 1000;
+    let targetBitrateBps = Math.min(leftoverBps, 1_500_000);
+
+    if (leftover < 200) {
+      console.warn('Very little leftover for video, forcibly low');
+      targetBitrateBps = 200_000;
+    }
+
+    console.log(
+      `Leftover for video is ${leftover} kbps, setting bitrate to`,
+      targetBitrateBps,
+    );
+
+    this.adjustVideoBitrate(targetBitrateBps);
+
+    if (leftover < 300) {
+      console.info('Leftover < 300, forcing low constraints in MediaManager');
+      await this.mediaManager.adjustQualityForPoorConnection();
+    } else if (leftover < 800) {
+      console.info('Moderate leftover, choose medium?');
+      await this.mediaManager.changeQuality('medium');
+    } else {
+      console.info('Plenty leftover -> high constraints');
+      await this.mediaManager.optimizeQualityForGoodConnection();
+    }
+  }
+
   handleQualityChange(newLevel, oldLevel) {
     console.log(`Connection quality changed: ${oldLevel} -> ${newLevel}`);
 
-    if (newLevel === QualityMonitor.Levels.POOR) {
-      this.mediaManager.adjustQualityForPoorConnection();
-    } else if (newLevel === QualityMonitor.Levels.EXCELLENT) {
-      this.mediaManager.optimizeQualityForGoodConnection();
-    }
+    this.handleNetworkQuality(newLevel);
   }
 
   async runUploadTest() {
@@ -1437,9 +1554,9 @@ class ConnectionManager extends EventEmitter {
 
     console.log(`Upload bandwidth: ${bandwidthMbps.toFixed(2)} Mbps`);
 
-    if (bandwidthMbps < 0.5) {
+    if (bandwidthMbps < 0.75) {
       return 'poor';
-    } else if (bandwidthMbps < 5) {
+    } else if (bandwidthMbps < 1.25) {
       return 'fair';
     } else {
       return 'good';
