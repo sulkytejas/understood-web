@@ -1,7 +1,7 @@
 // Disable es in this file
 /* eslint-disable */
 import { useEffect, useRef, useState } from 'react';
-import { Box, Alert, Typography } from '@mui/material';
+import { Box, Alert, Typography, Snackbar } from '@mui/material';
 import CallOutlinedIcon from '@mui/icons-material/CallOutlined';
 import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
@@ -407,6 +407,14 @@ const VideoPlayer = ({
           <Alert severity="error">{t('Video stream error occurred')}</Alert>
         </Box>
       )}
+
+      <Snackbar
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        open={isLocalAudioOnly}
+        autoHideDuration={5000}
+        message={t('Network bandwidth is low. Switching to audio only mode.')}
+        key="audio-only"
+      />
     </div>
   );
 };
