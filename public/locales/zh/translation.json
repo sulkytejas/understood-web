@@ -79,5 +79,5 @@
   "Discussion Points": "讨论要点",
   "Action Items": "行动项目",
   "Deadlines": "截止日期",
-  "Network bandwidth is low. Switching to audio only mode.": "网络带宽较低。正在切换到仅音频模式。"
+  "Network bandwidth or device are not sufficient for video.Switching to audio only mode.": "网络带宽或设备不足以支持视频。正在切换到仅音频模式。"
 }

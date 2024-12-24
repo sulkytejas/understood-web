@@ -79,5 +79,5 @@
   "Discussion Points": "Темы обсуждения",
   "Action Items": "Действия",
   "Deadlines": "Сроки",
-  "Network bandwidth is low. Switching to audio only mode.": "Скорость сети низкая. Переключение в режим только аудио."
+  "Network bandwidth or device are not sufficient for video.Switching to audio only mode.": "Сетевая пропускная способность или устройство недостаточны для видео. Переключение в режим только аудио."
 }

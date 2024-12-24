@@ -79,5 +79,5 @@
   "Discussion Points": "Diskussionspunkte",
   "Action Items": "Aktionspunkte",
   "Deadlines": "Fristen",
-  "Network bandwidth is low. Switching to audio only mode.": "Netzwerkbandbreite ist niedrig. Wechsel in den Nur-Audio-Modus."
+  "Network bandwidth or device are not sufficient for video.Switching to audio only mode.": "Das Netzwerkbandbreite oder das Gerät sind nicht ausreichend für Video. Wechseln in den reinen Audio-Modus."
 }

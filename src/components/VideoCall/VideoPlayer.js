@@ -99,6 +99,7 @@ const VideoPlayer = ({
   const [streamError, setStreamError] = useState(null);
   const [hasMediaFlow, setHasMediaFlow] = useState(false);
   const [opacity, setOpacity] = useState(0);
+  const [openSnackbar, setOpenSnackbar] = useState(isLocalAudioOnly);
   const maxAttempts = 5;
   const baseDelay = 1000; // 1s between checks
   const attemptRef = useRef(0);
@@ -114,6 +115,14 @@ const VideoPlayer = ({
       // Only show error for non-abort errors
       setStreamError(error);
     }
+  };
+
+  const handleCloseSnackBar = (event, reason) => {
+    // Ignore clickaway if you don’t want to close on clicks outside the snackbar
+    if (reason === 'clickaway') {
+      return;
+    }
+    setOpenSnackbar(false);
   };
 
   // Add stream attachment hooks
@@ -410,9 +419,11 @@ const VideoPlayer = ({
 
       <Snackbar
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-        open={isLocalAudioOnly}
+        open={openSnackbar}
         autoHideDuration={5000}
-        message={t('Network bandwidth is low. Switching to audio only mode.')}
+        message={t(
+          'Network bandwidth or device are not sufficient for video.Switching to audio only mode.',
+        )}
         key="audio-only"
       />
     </div>
