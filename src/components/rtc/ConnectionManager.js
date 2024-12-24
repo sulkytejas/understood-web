@@ -1531,7 +1531,7 @@ class ConnectionManager extends EventEmitter {
   }
 
   async runUploadTest() {
-    const size = 500_000; // ~0.5 MB
+    const size = 30000; // ~0.5 MB
     const data = new Uint8Array(size);
     const start = Date.now();
     const apiURL = process.env.REACT_APP_API_URL;
