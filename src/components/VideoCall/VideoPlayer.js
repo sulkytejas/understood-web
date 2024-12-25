@@ -99,7 +99,7 @@ const VideoPlayer = ({
   const [streamError, setStreamError] = useState(null);
   const [hasMediaFlow, setHasMediaFlow] = useState(false);
   const [opacity, setOpacity] = useState(0);
-
+  const [snackbarOpen, setSnackbarOpen] = useState(isLocalAudioOnly);
   const maxAttempts = 5;
   const baseDelay = 1000; // 1s between checks
   const attemptRef = useRef(0);
@@ -115,6 +115,15 @@ const VideoPlayer = ({
       // Only show error for non-abort errors
       setStreamError(error);
     }
+  };
+
+  const handleCloseSnackbar = (_, reason) => {
+    // MUI calls onClose with `reason` = 'timeout' after autoHideDuration
+    // or user dismiss
+    if (reason === 'clickaway') {
+      return;
+    }
+    setSnackbarOpen(false);
   };
 
   // Add stream attachment hooks
@@ -133,6 +142,14 @@ const VideoPlayer = ({
     // Reset opacity when stream changes
     setOpacity(0);
   }, [localStream, remoteTrack]);
+
+  useEffect(() => {
+    if (isLocalAudioOnly || isRemoteAudioOnly) {
+      setSnackbarOpen(true);
+    } else {
+      setSnackbarOpen(false);
+    }
+  }, [isLocalAudioOnly, isRemoteAudioOnly]);
 
   const { startFaceTracking, stopFaceTracking } = useFaceTracking({
     stream: callStarted ? remoteTrack : localStream,
@@ -304,6 +321,18 @@ const VideoPlayer = ({
             display: connectionStatus?.isAlert ? 'none' : 'block',
           }}
         />
+
+        <Snackbar
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+          // open={isLocalAudioOnly || isRemoteAudioOnly}
+          open={snackbarOpen}
+          onClose={handleCloseSnackbar}
+          autoHideDuration={5000}
+          message={t(
+            'Network bandwidth or device are not sufficient for video.Switching to audio only mode.',
+          )}
+          key="audio-only"
+        />
       </Box>
 
       {showList && (
@@ -408,16 +437,6 @@ const VideoPlayer = ({
           <Alert severity="error">{t('Video stream error occurred')}</Alert>
         </Box>
       )}
-
-      <Snackbar
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-        open={isLocalAudioOnly || isRemoteAudioOnly}
-        autoHideDuration={5000}
-        message={t(
-          'Network bandwidth or device are not sufficient for video.Switching to audio only mode.',
-        )}
-        key="audio-only"
-      />
     </div>
   );
 };

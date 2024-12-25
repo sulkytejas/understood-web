@@ -1531,22 +1531,33 @@ class ConnectionManager extends EventEmitter {
   }
 
   async runUploadTest() {
-    const size = 30000; // ~0.5 MB
+    const size = 200_000; // ~0.2 MB
     const data = new Uint8Array(size);
     const start = Date.now();
     const apiURL = process.env.REACT_APP_API_URL;
+    const TIMEOUT_MS = 5000; // 5 seconds
+
+    const controller = new AbortController();
+    const signal = controller.signal;
+
+    // Timer to abort the request after TIMEOUT_MS
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+    }, TIMEOUT_MS);
 
     try {
       await fetch(`${apiURL}/api/uploadTest`, {
         method: 'POST',
         body: data,
+        signal,
       });
     } catch (error) {
-      // If the upload test fails (e.g. server restart),
-      // we can treat it as a "poor" network or skip it.
-      console.warn('Upload test failed, returning "poor".', error);
-      return 'unavailable';
+      clearTimeout(timeoutId);
+      console.warn('Upload test timed out or failed, returning "poor".', error);
+      return 'poor'; // or "unavailable", up to your preference
     }
+
+    clearTimeout(timeoutId);
 
     const end = Date.now();
     const durationSec = (end - start) / 1000;
@@ -1554,7 +1565,7 @@ class ConnectionManager extends EventEmitter {
 
     console.log(`Upload bandwidth: ${bandwidthMbps.toFixed(2)} Mbps`);
 
-    if (bandwidthMbps < 0.75) {
+    if (bandwidthMbps < 0.5) {
       return 'poor';
     } else if (bandwidthMbps < 1.25) {
       return 'fair';
