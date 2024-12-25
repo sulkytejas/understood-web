@@ -1565,7 +1565,7 @@ class ConnectionManager extends EventEmitter {
 
     console.log(`Upload bandwidth: ${bandwidthMbps.toFixed(2)} Mbps`);
 
-    if (bandwidthMbps < 0.5) {
+    if (bandwidthMbps < 0.75) {
       return 'poor';
     } else if (bandwidthMbps < 1.25) {
       return 'fair';
