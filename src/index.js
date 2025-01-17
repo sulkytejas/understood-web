@@ -22,6 +22,7 @@ Sentry.init({
   dsn: 'https://7b3b94b9868bc33db21f7729a665e5be@o4508654193541120.ingest.us.sentry.io/4508654213988352',
 
   integrations: [
+    Sentry.replayIntegration(),
     // React Router v6 integration:
     Sentry.reactRouterV6BrowserTracingIntegration({
       // This instrumentation is needed to properly track
