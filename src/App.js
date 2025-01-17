@@ -25,7 +25,8 @@ import UserLogin from './components/Login/UserLogin';
 import MeetingEnded from './components/Meeting/MeetingEnded';
 import GoogleCallback from './components/Login/GoogleCallback';
 import ProtectedRoute from './components/onBoarding/ProtectedRoute';
-
+import ReportBugButton from './components/utils/ReportBugButton';
+import ErrorBoundary from './components/utils/ErrorBoundary';
 // import { initializeTensorFlow } from './components/utils/tensorFlowUtils';
 import WelcomeScreen from './components/onBoarding/WelcomeScreen';
 import LoadingSpinner from './components/onBoarding/LoadingSpinner';
@@ -269,69 +270,72 @@ function App() {
             boxSizing: 'border-box',
           }}
         >
-          <WebRTCBridge>
-            <AudioTranscriptionProvider>
-              <Routes location={location}>
-                <Route
-                  path="/"
-                  element={
-                    !isLocaleAndSpokenSet ? (
-                      <AnimatedRoute element={<WelcomeScreen />} />
-                    ) : userDetails?.username ? (
-                      <Navigate to="/meeting" />
-                    ) : (
-                      <Navigate to="/login" />
-                    )
-                  }
-                />
-                <Route
-                  path="/login"
-                  element={
-                    !isLocaleAndSpokenSet ? (
-                      // If locale is not set, show the WelcomeScreen
-                      <Navigate to="/" />
-                    ) : !userData?.username ? (
-                      // If locale is set and user not authenticated, show login
-                      <AnimatedRoute element={<UserLogin />} />
-                    ) : (
-                      // If locale is set and user is authenticated, go to meeting
-                      <Navigate to="/meeting" />
-                    )
-                  }
-                />
-                <Route path="/googleCallback" element={<GoogleCallback />} />
-                <Route
-                  path="/meeting"
-                  element={
-                    <ProtectedRoute>
-                      <AnimatedRoute element={<CreateMeetingPage />} />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/videocall/:meetingId"
-                  element={
-                    <ProtectedRoute>
-                      <VideoCall />
-                      {/* <AnimatedRoute element={<VideoCall />} /> */}
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/vibe/:practiceSessionId"
-                  element={
-                    <ProtectedRoute>
-                      <AnimatedRoute element={<PracticeMain />} />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/meetingEnded"
-                  element={<AnimatedRoute element={<MeetingEnded />} />}
-                />
-              </Routes>
-            </AudioTranscriptionProvider>
-          </WebRTCBridge>
+          <ErrorBoundary>
+            <WebRTCBridge>
+              <AudioTranscriptionProvider>
+                <Routes location={location}>
+                  <Route
+                    path="/"
+                    element={
+                      !isLocaleAndSpokenSet ? (
+                        <AnimatedRoute element={<WelcomeScreen />} />
+                      ) : userDetails?.username ? (
+                        <Navigate to="/meeting" />
+                      ) : (
+                        <Navigate to="/login" />
+                      )
+                    }
+                  />
+                  <Route
+                    path="/login"
+                    element={
+                      !isLocaleAndSpokenSet ? (
+                        // If locale is not set, show the WelcomeScreen
+                        <Navigate to="/" />
+                      ) : !userData?.username ? (
+                        // If locale is set and user not authenticated, show login
+                        <AnimatedRoute element={<UserLogin />} />
+                      ) : (
+                        // If locale is set and user is authenticated, go to meeting
+                        <Navigate to="/meeting" />
+                      )
+                    }
+                  />
+                  <Route path="/googleCallback" element={<GoogleCallback />} />
+                  <Route
+                    path="/meeting"
+                    element={
+                      <ProtectedRoute>
+                        <AnimatedRoute element={<CreateMeetingPage />} />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/videocall/:meetingId"
+                    element={
+                      <ProtectedRoute>
+                        <VideoCall />
+                        {/* <AnimatedRoute element={<VideoCall />} /> */}
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/vibe/:practiceSessionId"
+                    element={
+                      <ProtectedRoute>
+                        <AnimatedRoute element={<PracticeMain />} />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/meetingEnded"
+                    element={<AnimatedRoute element={<MeetingEnded />} />}
+                  />
+                </Routes>
+              </AudioTranscriptionProvider>
+            </WebRTCBridge>
+            <ReportBugButton />
+          </ErrorBoundary>
         </Box>
       </ThemeProvider>
     </CacheProvider>

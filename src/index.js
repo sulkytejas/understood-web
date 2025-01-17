@@ -23,6 +23,7 @@ Sentry.init({
 
   integrations: [
     Sentry.replayIntegration(),
+
     // React Router v6 integration:
     Sentry.reactRouterV6BrowserTracingIntegration({
       // This instrumentation is needed to properly track

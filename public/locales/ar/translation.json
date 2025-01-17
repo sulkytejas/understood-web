@@ -79,5 +79,6 @@
   "Discussion Points": "نقاط النقاش",
   "Action Items": "العناصر الفعلية",
   "Deadlines": "المواعيد النهائية",
-  "Network bandwidth or device are not sufficient for video.Switching to audio only mode.": "عرض النطاق الترددي للشبكة أو الجهاز غير كافٍ للفيديو. يتم التبديل إلى وضع الصوت فقط."
+  "Network bandwidth or device are not sufficient for video.Switching to audio only mode.": "عرض النطاق الترددي للشبكة أو الجهاز غير كافٍ للفيديو. يتم التبديل إلى وضع الصوت فقط.",
+  "Something went wrong? Report a bug!": "هل حدث خطأ؟ أبلغ عن خلل!"
 }

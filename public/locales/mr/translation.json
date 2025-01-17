@@ -79,5 +79,6 @@
   "Discussion Points": "चर्चा बिंदू",
   "Action Items": "क्रियाकलाप",
   "Deadlines": "शेवटची तारखा",
-  "Network bandwidth or device are not sufficient for video.Switching to audio only mode.": "नेटवर्क बॅंडविड्थ किंवा डिव्हाइस व्हिडिओसाठी पर्याप्त नाहीत. केवळ ऑडिओ मोडमध्ये स्विच करत आहोत."
+  "Network bandwidth or device are not sufficient for video.Switching to audio only mode.": "नेटवर्क बॅंडविड्थ किंवा डिव्हाइस व्हिडिओसाठी पर्याप्त नाहीत. केवळ ऑडिओ मोडमध्ये स्विच करत आहोत.",
+  "Something went wrong? Report a bug!": "काहीतरी चुकलं? बग रिपोर्ट करा!"
 }

@@ -16,6 +16,8 @@ import {
   ContentCopy as CopyIcon,
   Settings as SettingsIcon,
 } from '@mui/icons-material';
+import * as Sentry from '@sentry/react';
+
 import { styled } from '@mui/system';
 import { useDispatch, useSelector } from 'react-redux';
 import { useSocket } from '../context/SocketContext';
@@ -129,6 +131,9 @@ const HostControl = ({
         },
         ({ meetingId, hostSocketId, error, meetingPhrase }) => {
           if (error) {
+            Sentry.captureException(
+              new Error(`Create meeting failed: ${error}`),
+            );
             setError(error);
             setLoading(false);
             return;

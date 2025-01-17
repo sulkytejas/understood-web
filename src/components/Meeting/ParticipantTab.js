@@ -22,6 +22,7 @@ import {
 } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
 import { styled } from '@mui/system';
+import * as Sentry from '@sentry/react';
 
 import { useSocket } from '../context/SocketContext';
 import { setPendingMeetingId } from '../../redux/meetingSlice';
@@ -167,6 +168,7 @@ const ParticipantTab = ({ onSetOpenSettingMenu, persistedUserName }) => {
           );
         });
       } catch (e) {
+        Sentry.captureException(e);
         setLoading(false);
         return;
       }

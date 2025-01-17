@@ -16,6 +16,8 @@ import {
   setlocalAudioOnly,
   setRemoteAudioOnly,
 } from '../../redux/videoPlayerSlice';
+
+import * as Sentry from '@sentry/react';
 const WebRTCContext = createContext();
 
 export const useWebRTC = () => useContext(WebRTCContext);
@@ -87,6 +89,17 @@ export const WebRTCBridge = ({ children }) => {
           console.error('Connection error:', error);
           setConnectionError(error);
           // Handle UI errors appropriately
+
+          const eventId = Sentry.captureException(error);
+          Sentry.showReportDialog({
+            eventId,
+            title: 'Call dropped abruptly',
+            subtitle: 'Please describe what happened before the drop.',
+            labelName: 'Name',
+            labelEmail: 'Email',
+            labelComments: 'More details',
+            labelSubmit: 'Send',
+          });
         },
         onQualityChange: (quality) => {
           setConnectionQuality(quality);
@@ -340,6 +353,21 @@ export const WebRTCBridge = ({ children }) => {
         };
       } catch (error) {
         console.error('Failed to join room:', error);
+
+        Sentry.captureException(error);
+
+        // Also show Sentry's dialog
+        const eventId = Sentry.captureException(error);
+        Sentry.showReportDialog({
+          eventId,
+          title: 'Joining error',
+          subtitle: 'Please describe what happened.',
+          labelName: 'Name',
+          labelEmail: 'Email',
+          labelComments: 'More details',
+          labelSubmit: 'Send',
+        });
+
         throw error;
       }
     },
@@ -348,6 +376,20 @@ export const WebRTCBridge = ({ children }) => {
       try {
         await connectionManager.current.startStreaming();
       } catch (error) {
+        Sentry.captureException(error);
+
+        // Also show Sentry's dialog
+        const eventId = Sentry.captureException(error);
+        Sentry.showReportDialog({
+          eventId,
+          title: 'Connection/Streaming Error',
+          subtitle: 'Please describe what happened.',
+          labelName: 'Name',
+          labelEmail: 'Email',
+          labelComments: 'More details',
+          labelSubmit: 'Send',
+        });
+
         console.error('Failed to start streaming:', error);
         throw error;
       }
