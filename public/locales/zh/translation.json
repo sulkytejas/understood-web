@@ -80,5 +80,7 @@
   "Action Items": "行动项目",
   "Deadlines": "截止日期",
   "Network bandwidth or device are not sufficient for video.Switching to audio only mode.": "网络带宽或设备不足以支持视频。正在切换到仅音频模式。",
-  "Something went wrong? Report a bug!": "出现问题？报告错误！"
+  "Something went wrong? Report a bug!": "出现问题？报告错误！",
+  "Please note": "请注意",
+  "Video will be turned off when you join the meeting.Please check the connection and translation speed before turning on the video.": "加入会议时将关闭视频。请在打开视频之前检查连接和翻译速度。"
 }

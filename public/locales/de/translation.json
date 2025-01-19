@@ -80,5 +80,7 @@
   "Action Items": "Aktionspunkte",
   "Deadlines": "Fristen",
   "Network bandwidth or device are not sufficient for video.Switching to audio only mode.": "Das Netzwerkbandbreite oder das Gerät sind nicht ausreichend für Video. Wechseln in den reinen Audio-Modus.",
-  "Something went wrong? Report a bug!": "Ist etwas schief gelaufen? Fehler melden!"
+  "Something went wrong? Report a bug!": "Ist etwas schief gelaufen? Fehler melden!",
+  "Please note": "Bitte beachten",
+  "Video will be turned off when you join the meeting.Please check the connection and translation speed before turning on the video.": "Das Video wird beim Beitritt zum Meeting ausgeschaltet. Bitte überprüfen Sie die Verbindung und die Übersetzungsgeschwindigkeit, bevor Sie das Video einschalten."
 }

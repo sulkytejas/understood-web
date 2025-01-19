@@ -11,6 +11,10 @@ import {
   Snackbar,
   CircularProgress,
   Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import LinkIcon from '@mui/icons-material/Link';
@@ -89,6 +93,7 @@ const ParticipantTab = ({ onSetOpenSettingMenu, persistedUserName }) => {
   const [copiedToClipboard, setCopiedToClipboard] = useState(false);
   const [loading, setLoading] = useState(false);
   const [importantError, setImportantError] = useState(null);
+  const [openNoteDialog, setOpenNoteDialog] = useState(false);
 
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -228,6 +233,15 @@ const ParticipantTab = ({ onSetOpenSettingMenu, persistedUserName }) => {
 
   const tooltipTitle = t('Language and settings');
 
+  const handleConfirm = async () => {
+    setOpenNoteDialog(false);
+    onClickHandler();
+  };
+
+  const handleCloseDialog = () => {
+    setOpenNoteDialog(false);
+  };
+
   useEffect(() => {
     if (reduxMeetingPhrase && !typedMeetingId) {
       setTypedPhrase(reduxMeetingPhrase);
@@ -362,12 +376,31 @@ const ParticipantTab = ({ onSetOpenSettingMenu, persistedUserName }) => {
         color="primary"
         fullWidth
         className="create-invite-button"
-        onClick={onClickHandler}
+        onClick={() => {
+          setOpenNoteDialog(true);
+        }}
         disabled={!isValidInput()}
         sx={{ marginTop: '45px', color: '#fff', fontSize: '18px' }}
       >
         {loading ? <CircularProgress size={24} color="inherit" /> : t('Join')}
       </Button>
+
+      {/* The actual popup (Dialog) */}
+      <Dialog open={openNoteDialog} onClose={handleCloseDialog}>
+        <DialogTitle>{t('Please note')}</DialogTitle>
+        <DialogContent>
+          <Typography>
+            {t(
+              'Video will be turned off when you join the meeting.Please check the connection and translation speed before turning on the video.',
+            )}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleConfirm} variant="contained" color="primary">
+            {t('OK')}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 };

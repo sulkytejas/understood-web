@@ -80,5 +80,7 @@
   "Action Items": "Action Items",
   "Deadlines": "Deadlines",
   "Network bandwidth or device are not sufficient for video.Switching to audio only mode.": "Network bandwidth or device are not sufficient for video.Switching to audio only mode.",
-  "Something went wrong? Report a bug!": "Something went wrong? Report a bug!"
+  "Something went wrong? Report a bug!": "Something went wrong? Report a bug!",
+  "Please note": "Please note",
+  "Video will be turned off when you join the meeting.Please check the connection and translation speed before turning on the video.": "Video will be turned off when you join the meeting.Please check the connection and translation speed before turning on the video."
 }

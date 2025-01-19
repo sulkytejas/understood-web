@@ -2,7 +2,7 @@ import { createSlice } from '@reduxjs/toolkit';
 import { cleanupState, meetingEndedCleanup } from './actions';
 
 const initialState = {
-  videoPause: false,
+  videoPause: true,
   audioPause: false,
   localAudioOnly: false,
   remoteAudioOnly: false,

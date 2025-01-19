@@ -1046,6 +1046,10 @@ class ConnectionManager extends EventEmitter {
 
         const producer = await producerTransport.produce({ track, priority });
 
+        if (track.kind === 'video') {
+          await producer.pause();
+        }
+
         this.mediaManager.addProducer(producer);
         console.log('Producer added to media manager');
       }

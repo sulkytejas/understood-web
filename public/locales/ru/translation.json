@@ -80,5 +80,7 @@
   "Action Items": "Действия",
   "Deadlines": "Сроки",
   "Network bandwidth or device are not sufficient for video.Switching to audio only mode.": "Сетевая пропускная способность или устройство недостаточны для видео. Переключение в режим только аудио.",
-  "Something went wrong? Report a bug!": "Что-то пошло не так? Сообщите об ошибке!"
+  "Something went wrong? Report a bug!": "Что-то пошло не так? Сообщите об ошибке!",
+  "Please note": "Обратите внимание",
+  "Video will be turned off when you join the meeting.Please check the connection and translation speed before turning on the video.": "Видео будет отключено при входе во встречу. Пожалуйста, проверьте соединение и скорость перевода перед включением"
 }

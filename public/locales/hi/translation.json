@@ -80,5 +80,7 @@
   "Action Items": "कार्रवाई के आइटम",
   "Deadlines": "समय सीमा",
   "Network bandwidth or device are not sufficient for video.Switching to audio only mode.": "नेटवर्क बैंडविड्थ या डिवाइस वीडियो के लिए पर्याप्त नहीं हैं। ऑडियो केवल मोड में स्विच कर रहे हैं।",
-  "Something went wrong? Report a bug!": "कुछ गलत हो गया? बग रिपोर्ट करें!"
+  "Something went wrong? Report a bug!": "कुछ गलत हो गया? बग रिपोर्ट करें!",
+  "Please note": "कृपया ध्यान दें",
+  "Video will be turned off when you join the meeting.Please check the connection and translation speed before turning on the video.": "जब आप मिटिंग में शामिल होंगे तो वीडियो बंद हो जाएगा। कृपया वीडियो चालू करने से पहले कनेक्शन और अनुवाद की गति की जाँच करें।"
 }
