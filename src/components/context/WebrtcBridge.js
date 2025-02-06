@@ -22,7 +22,7 @@ const WebRTCContext = createContext();
 
 export const useWebRTC = () => useContext(WebRTCContext);
 
-export const WebRTCBridge = ({ children }) => {
+export const WebRTCBridge = ({ children, isTranslationOnly = false }) => {
   const { socket, isSocketConnected } = useSocket();
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -77,6 +77,7 @@ export const WebRTCBridge = ({ children }) => {
         meetingId: managerId,
         userSpokenLanguage,
         uid,
+        isTranslationOnly,
         onStateChange: (state) => {
           setConnectionState(state);
         },

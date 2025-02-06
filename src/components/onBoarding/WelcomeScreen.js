@@ -109,7 +109,10 @@ const WelcomeScreen = () => {
 
   const handleClick = () => {
     dispatch(setLocalSpokenLanguage(languageCode));
-    localStorage.setItem('spokenLanguage', languageCode);
+
+    const spokenLanguageCode =
+      languageCode === 'zh-CN' ? 'cmn-CN' : languageCode;
+    localStorage.setItem('spokenLanguage', spokenLanguageCode);
     localStorage.setItem('translationLanguagePreference', languageCode);
     localStorage.setItem('locale', locale);
     navigate('/login');

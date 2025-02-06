@@ -417,117 +417,136 @@ class MediaManager {
    * @param {Object} [customConstraints] - Optional custom constraints
    * @returns {Promise<MediaStream>} The acquired media stream
    */
-  async acquireMedia(customConstraints = {}) {
-    try {
-      // Check if HD is available on the device before proceeding
-      const capabilities = await this.getDeviceCapabilities();
-      const canSupportHD = capabilities.supportsHD;
+  async acquireMedia(customConstraints = {}, isTranslationOnly = false) {
+    if (isTranslationOnly) {
+      await this.checkMediaPermissions({ audio: true, video: false });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: false,
+      });
 
-      // If HD is requested but not supported, log a warning and continue with standard quality
-      if (this.isHDEnabled && !canSupportHD) {
-        console.warn(
-          'HD requested but device does not support it. Falling back to standard quality.',
-        );
-        this.isHDEnabled = false;
-      }
-
-      // Get appropriate constraints based on HD preference and browser
-      const baseConstraints = this.getDefaultConstraints();
-      let constraints = this.mergeConstraints(
-        baseConstraints,
-        customConstraints,
-      );
-
-      // Modify video constraints based on HD preference
-      if (this.isHDEnabled && canSupportHD) {
-        constraints.video = {
-          ...constraints.video,
-          ...this.deviceConstraints.qualityProfiles.hd.video,
-        };
-      }
-
-      // First check permission
-      await this.checkMediaPermissions(constraints);
-
-      // Try to get the stream with preferred constraints
-      let stream;
-      try {
-        stream = await navigator.mediaDevices.getUserMedia(constraints);
-      } catch (error) {
-        // If failed and was trying HD, fallback to standard high quality
-        if (this.isHDEnabled && error.name === 'OverconstrainedError') {
-          console.warn(
-            'Failed to get HD stream, falling back to standard quality',
-          );
-          this.isHDEnabled = false;
-          constraints.video = {
-            ...this.deviceConstraints.qualityProfiles.high.video,
-          };
-          stream = await navigator.mediaDevices.getUserMedia(constraints);
-        } else {
-          throw error;
-        }
-      }
-
-      // Store the stream
       this.localStream = stream;
 
-      // Get tracks
-      const videoTrack = stream.getVideoTracks()[0];
       const audioTrack = stream.getAudioTracks()[0];
-
-      // Log initial settings
-      if (videoTrack) {
-        const settings = videoTrack.getSettings();
-        console.log('Initial video settings:', {
-          width: settings.width,
-          height: settings.height,
-          frameRate: settings.frameRate,
-          deviceId: settings.deviceId,
-        });
-      }
-
-      // Apply advanced controls
-      if (videoTrack) {
-        const appliedCamera =
-          await this.applyAdvancedCameraControls(videoTrack);
-        if (!appliedCamera) {
-          console.warn('Some camera controls could not be applied');
-        }
-      }
-
       if (audioTrack) {
-        const appliedAudio = await this.applyAdvancedAudioControls(audioTrack);
-        if (!appliedAudio) {
-          console.warn('Some audio controls could not be applied');
-        }
+        await this.applyAdvancedAudioControls(audioTrack);
       }
 
-      // Update device information
-      await this.updateActiveDevices(stream);
-
-      // Verify final stream quality
-      if (videoTrack) {
-        const finalSettings = videoTrack.getSettings();
-        console.log('Final video settings:', {
-          width: finalSettings.width,
-          height: finalSettings.height,
-          frameRate: finalSettings.frameRate,
-        });
-
-        // Check if we got the quality we wanted
-        if (
-          this.isHDEnabled &&
-          (finalSettings.width < 1920 || finalSettings.height < 1080)
-        ) {
-          console.warn('Stream is not full HD despite HD being enabled');
-        }
-      }
-
+      console.log('Got audio-only stream successfully.');
       return stream;
-    } catch (error) {
-      console.error('Failed to acquire media:', error);
-      throw new Error(`Media acquisition failed: ${error.message}`);
+    } else {
+      try {
+        // Check if HD is available on the device before proceeding
+        const capabilities = await this.getDeviceCapabilities();
+        const canSupportHD = capabilities.supportsHD;
+
+        // If HD is requested but not supported, log a warning and continue with standard quality
+        if (this.isHDEnabled && !canSupportHD) {
+          console.warn(
+            'HD requested but device does not support it. Falling back to standard quality.',
+          );
+          this.isHDEnabled = false;
+        }
+
+        // Get appropriate constraints based on HD preference and browser
+        const baseConstraints = this.getDefaultConstraints();
+        let constraints = this.mergeConstraints(
+          baseConstraints,
+          customConstraints,
+        );
+
+        // Modify video constraints based on HD preference
+        if (this.isHDEnabled && canSupportHD) {
+          constraints.video = {
+            ...constraints.video,
+            ...this.deviceConstraints.qualityProfiles.hd.video,
+          };
+        }
+
+        // First check permission
+        await this.checkMediaPermissions(constraints);
+
+        // Try to get the stream with preferred constraints
+        let stream;
+        try {
+          stream = await navigator.mediaDevices.getUserMedia(constraints);
+        } catch (error) {
+          // If failed and was trying HD, fallback to standard high quality
+          if (this.isHDEnabled && error.name === 'OverconstrainedError') {
+            console.warn(
+              'Failed to get HD stream, falling back to standard quality',
+            );
+            this.isHDEnabled = false;
+            constraints.video = {
+              ...this.deviceConstraints.qualityProfiles.high.video,
+            };
+            stream = await navigator.mediaDevices.getUserMedia(constraints);
+          } else {
+            throw error;
+          }
+        }
+
+        // Store the stream
+        this.localStream = stream;
+
+        // Get tracks
+        const videoTrack = stream.getVideoTracks()[0];
+        const audioTrack = stream.getAudioTracks()[0];
+
+        // Log initial settings
+        if (videoTrack) {
+          const settings = videoTrack.getSettings();
+          console.log('Initial video settings:', {
+            width: settings.width,
+            height: settings.height,
+            frameRate: settings.frameRate,
+            deviceId: settings.deviceId,
+          });
+        }
+
+        // Apply advanced controls
+        if (videoTrack) {
+          const appliedCamera =
+            await this.applyAdvancedCameraControls(videoTrack);
+          if (!appliedCamera) {
+            console.warn('Some camera controls could not be applied');
+          }
+        }
+
+        if (audioTrack) {
+          const appliedAudio =
+            await this.applyAdvancedAudioControls(audioTrack);
+          if (!appliedAudio) {
+            console.warn('Some audio controls could not be applied');
+          }
+        }
+
+        // Update device information
+        await this.updateActiveDevices(stream);
+
+        // Verify final stream quality
+        if (videoTrack) {
+          const finalSettings = videoTrack.getSettings();
+          console.log('Final video settings:', {
+            width: finalSettings.width,
+            height: finalSettings.height,
+            frameRate: finalSettings.frameRate,
+          });
+
+          // Check if we got the quality we wanted
+          if (
+            this.isHDEnabled &&
+            (finalSettings.width < 1920 || finalSettings.height < 1080)
+          ) {
+            console.warn('Stream is not full HD despite HD being enabled');
+          }
+        }
+
+        return stream;
+      } catch (error) {
+        console.error('Failed to acquire media:', error);
+        throw new Error(`Media acquisition failed: ${error.message}`);
+      }
     }
   }
 

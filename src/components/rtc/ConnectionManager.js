@@ -207,6 +207,7 @@ class ConnectionManager extends EventEmitter {
     onParticipantJoined,
     onMediaFlowing,
     onAudioOnly,
+    isTranslationOnly = false,
   }) {
     super();
     // Validate required parameters
@@ -222,6 +223,7 @@ class ConnectionManager extends EventEmitter {
     this.audioProducerTransport = null;
     this.videoProducerTransport = null;
     this.consumerTransportId = null;
+    this.isTranslationOnly = isTranslationOnly;
 
     // Callback handlers
     this.onStateChange = onStateChange;
@@ -432,6 +434,11 @@ class ConnectionManager extends EventEmitter {
   }
 
   async handleNewProducer(data) {
+    if (this.isTranslationOnly) {
+      // do nothing
+      return;
+    }
+
     {
       try {
         console.log('New producer event:', data);
@@ -469,7 +476,7 @@ class ConnectionManager extends EventEmitter {
       // Step: Check network conditions
       const networkQuality = await this.runUploadTest();
       console.log('Network quality:', networkQuality);
-      let isAudioOnly = false;
+      let isAudioOnly = this.isTranslationOnly;
       if (networkQuality === 'poor') {
         isAudioOnly = true;
         this.onAudioOnly?.(isAudioOnly);
@@ -511,7 +518,7 @@ class ConnectionManager extends EventEmitter {
       await this.setupTransports();
 
       // 6: Mark consumer as ready and process any pending producers
-      this.isConsumerReady = true;
+      this.isConsumerReady = !this.isTranslationOnly;
 
       await this.processPendingProducers();
 
@@ -661,7 +668,7 @@ class ConnectionManager extends EventEmitter {
 
       const networkQuality = await this.runUploadTest();
 
-      let isAudioOnly = false;
+      let isAudioOnly = this.isTranslationOnly;
 
       if (networkQuality === 'unavailable') {
         console.warn('Server might be down; skipping normal connect flow.');
@@ -685,7 +692,7 @@ class ConnectionManager extends EventEmitter {
 
       try {
         await this.setupTransports();
-        this.isConsumerReady = true;
+        this.isConsumerReady = !this.isTranslationOnly;
       } catch (transportError) {
         console.error('Transport setup failed:', transportError);
         throw new Error(
@@ -799,18 +806,22 @@ class ConnectionManager extends EventEmitter {
         this.videoProducerTransport,
       );
 
-      // Setup consumer transport
-      const consumerTransportOptions =
-        await this.signaling.createConsumerTransport();
-      const consumerTransport = await this.createConsumerTransport(
-        consumerTransportOptions,
-      );
+      if (!this.isTranslationOnly) {
+        const consumerTransportOptions =
+          await this.signaling.createConsumerTransport();
+        const consumerTransport = await this.createConsumerTransport(
+          consumerTransportOptions,
+        );
 
-      this.consumerTransportId = consumerTransport.id;
-      this.connectionPool.addConsumerTransport(
-        consumerTransport.id,
-        consumerTransport,
-      );
+        this.consumerTransportId = consumerTransport.id;
+        this.connectionPool.addConsumerTransport(
+          consumerTransport.id,
+          consumerTransport,
+        );
+      } else {
+        // Just make sure we set them to null if no consumer
+        this.consumerTransportId = null;
+      }
 
       if (isReconnecting) {
         console.log('Reconnection: Transports setup complete');
@@ -990,7 +1001,10 @@ class ConnectionManager extends EventEmitter {
       const anyEnded = tracks.some((track) => track.readyState === 'ended');
       if (anyEnded) {
         console.log('Some tracks have ended, re-acquiring media');
-        stream = await this.mediaManager.acquireMedia();
+        stream = await this.mediaManager.acquireMedia(
+          {},
+          this.isTranslationOnly,
+        );
         tracks = stream.getTracks();
       }
 

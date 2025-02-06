@@ -82,13 +82,8 @@ function AccountSettingDialog(props) {
 
       if (response.ok) {
         console.log('Logout successful');
-        // Clear localStorage if needed
-
         dispatch(cleanupState());
-
         navigate('/login');
-
-        // Close the dialog if still needed
         onClose();
       } else {
         console.error('Failed to log out.');
@@ -136,14 +131,12 @@ function AccountSettingDialog(props) {
               {countries.map((option) => (
                 <ListItem
                   disableGutters
-                  key={option.name}
+                  key={option.spokenName || option.name}
                   sx={{ display: 'flex' }}
                 >
                   <ListItemButton
                     disableGutters
-                    onClick={() =>
-                      setSelectedSpokenLanguage(option.languageCode)
-                    }
+                    onClick={() => setSelectedSpokenLanguage(option.speechCode)}
                   >
                     <ListItemAvatar>
                       <Avatar
@@ -160,8 +153,10 @@ function AccountSettingDialog(props) {
                         {option.avatar}
                       </Avatar>
                     </ListItemAvatar>
-                    <ListItemText primary={t(option.name)} />
-                    {option.languageCode === selectedSpokenLanguage && (
+                    <ListItemText
+                      primary={t(option.spokenName || option.name)}
+                    />
+                    {option.speechCode === selectedSpokenLanguage && (
                       <Check
                         sx={{
                           height: '30px',
@@ -236,7 +231,6 @@ function AccountSettingDialog(props) {
         )}
       </DialogContent>
       <DialogActions sx={{ textTransform: 'uppercase' }}>
-        {/* Logout Option */}
         <Button color="error" onClick={handleLogout}>
           {t('logout')}
         </Button>

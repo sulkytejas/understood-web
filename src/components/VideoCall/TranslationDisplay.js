@@ -10,6 +10,8 @@ const TranslationDisplay = React.memo(
     userTranslationLanguage,
     translationTextBoxRef,
     translationLanguage,
+    onFinalText,
+    isCardMode = false,
   }) => {
     const { socket } = useSocket();
     const [translatedTexts, setTranslatedTexts] = useState({ text: '' });
@@ -23,7 +25,7 @@ const TranslationDisplay = React.memo(
 
     useEffect(() => {
       const handleTranslatedText = ({ text, isFinal }) => {
-        console.log(' handleTranslatedText', isFinal);
+        console.log(' handleTranslatedText', text);
         addOrUpdateTranslatedText(text, isFinal);
       };
 
@@ -31,6 +33,11 @@ const TranslationDisplay = React.memo(
         // Listen to translatedText events from the socket
         socket.on('translatedText', handleTranslatedText);
       }
+      console.log(
+        translatedTexts?.isFinal,
+        translatedTexts?.text.trim(),
+        'onFinalTexts',
+      );
 
       return () => {
         if (socket) {
@@ -38,6 +45,18 @@ const TranslationDisplay = React.memo(
         }
       };
     }, [socket, setTranslatedTexts]);
+
+    useEffect(() => {
+      if (
+        translatedTexts.isFinal &&
+        translatedTexts.text.trim() !== '' &&
+        onFinalText
+      ) {
+        onFinalText(translatedTexts.text);
+
+        setTranslatedTexts({ text: '', isFinal: false });
+      }
+    }, [translatedTexts]);
 
     const checkOverFlow = () => {
       const container = translationTextBoxRef.current;
@@ -87,7 +106,16 @@ const TranslationDisplay = React.memo(
       checkOverFlow();
     }, [translatedTexts]);
 
-    return (
+    return isCardMode ? (
+      userTranslationLanguage &&
+        translatedTexts?.text &&
+        translatedTexts.text.length > 0 && (
+          <TranslatedTextView
+            translatedTexts={translatedTexts}
+            translationLanguage={translationLanguage}
+          />
+        )
+    ) : (
       <div
         id="translationTextBox"
         style={{

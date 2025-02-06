@@ -27,6 +27,7 @@ import GoogleCallback from './components/Login/GoogleCallback';
 import ProtectedRoute from './components/onBoarding/ProtectedRoute';
 import ReportBugButton from './components/utils/ReportBugButton';
 import ErrorBoundary from './components/utils/ErrorBoundary';
+import GuestTranslation from './components/Translation/GuestTranslation';
 // import { initializeTensorFlow } from './components/utils/tensorFlowUtils';
 import WelcomeScreen from './components/onBoarding/WelcomeScreen';
 import LoadingSpinner from './components/onBoarding/LoadingSpinner';
@@ -318,6 +319,10 @@ function App() {
                         {/* <AnimatedRoute element={<VideoCall />} /> */}
                       </ProtectedRoute>
                     }
+                  />
+                  <Route
+                    path="/guestTranslation/:meetingId"
+                    element={<GuestTranslation />}
                   />
                   <Route
                     path="/vibe/:practiceSessionId"
