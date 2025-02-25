@@ -28,6 +28,7 @@ import ProtectedRoute from './components/onBoarding/ProtectedRoute';
 import ReportBugButton from './components/utils/ReportBugButton';
 import ErrorBoundary from './components/utils/ErrorBoundary';
 import GuestTranslation from './components/Translation/GuestTranslation';
+import ApiCheckLink from './components/utils/ApiCheckLink';
 // import { initializeTensorFlow } from './components/utils/tensorFlowUtils';
 import WelcomeScreen from './components/onBoarding/WelcomeScreen';
 import LoadingSpinner from './components/onBoarding/LoadingSpinner';
@@ -335,6 +336,14 @@ function App() {
                   <Route
                     path="/meetingEnded"
                     element={<AnimatedRoute element={<MeetingEnded />} />}
+                  />
+
+                  <Route
+                    path="/apiCheck"
+                    element={
+                      // If you need it public, just show it directly:
+                      <AnimatedRoute element={<ApiCheckLink />} />
+                    }
                   />
                 </Routes>
               </AudioTranscriptionProvider>
