@@ -2,22 +2,22 @@ import { useState } from 'react';
 import { Box } from '@mui/system';
 import GradientButton from './GradientButton';
 // import StyledTextField from './StyledTextField';
-import { Typography } from '@mui/material';
+import { Typography, useMediaQuery } from '@mui/material';
 import SupplierForm from './SupplierForm';
 
-const Intro = ({ onSetStage }) => (
+const Intro = ({ onSetStage, isMediumScreen }) => (
   <Box>
     <Box>
       <Typography
         sx={{
-          fontSize: { xs: '26px', md: '48px' },
+          fontSize: isMediumScreen ? '48px' : '26px',
           fontWeight: 700,
-          lineHeight: { xs: '28px', md: '58px' },
+          lineHeight: isMediumScreen ? '58px' : '28px',
           fontFamily: 'Exo 2',
           color: '#0C2617',
           paddingBottom: '40px',
           textTransform: 'uppercase',
-          padding: { xs: '20px  10px 0 10px', md: 'unset' },
+          padding: !isMediumScreen ? '20px  10px 0 10px' : '40px 0 0 0 0',
         }}
       >
         Instant Confidence in Your Suppliers
@@ -26,14 +26,14 @@ const Intro = ({ onSetStage }) => (
         sx={{
           paddingBottom: '50px',
           fontFamily: 'Jost',
-          fontSize: { xs: '16px', md: '18px' },
-          lineHeight: { xs: '23px', md: '29px' },
+          fontSize: isMediumScreen ? '18px' : '16px',
+          lineHeight: isMediumScreen ? '29px' : '23px',
           fontWeight: 400,
           color: '#5A6D62',
           maxWidth: '600px',
           textAlign: 'center',
           margin: '0 auto',
-          padding: { xs: '30px 10px 30px 10px', md: 'unset' },
+          padding: !isMediumScreen ? '30px 10px 30px 10px' : '30px 0 50px 0 ',
         }}
       >
         Get a personalized, analyst-reviewed supplier vetting report for your
@@ -74,7 +74,9 @@ const Intro = ({ onSetStage }) => (
         /> */}
       <GradientButton
         responsiveStyles={{
-          padding: { xs: '8px 24px 8px 24px', md: '12px 40px 16px 40px' },
+          padding: !isMediumScreen
+            ? '8px 24px 8px 24px'
+            : '12px 40px 16px 40px',
           marginTop: 0,
         }}
         onClick={() => onSetStage(1)}
@@ -85,13 +87,13 @@ const Intro = ({ onSetStage }) => (
   </Box>
 );
 
-const Conclusion = () => (
+const Conclusion = ({ isMediumScreen }) => (
   <Box>
     <Typography
       sx={{
-        fontSize: { xs: '26px', md: '48px' },
+        fontSize: isMediumScreen ? '48px' : '26px',
         fontWeight: 700,
-        lineHeight: { xs: '28px', md: '58px' },
+        lineHeight: isMediumScreen ? '58px' : '28px',
         fontFamily: 'Exo 2',
         color: '#0C2617',
         paddingBottom: '40px',
@@ -120,6 +122,7 @@ const Conclusion = () => (
 );
 
 const SupplierVetting = () => {
+  const isMediumScreen = useMediaQuery('(min-width:900px)');
   const [stage, setStage] = useState(0);
 
   return (
@@ -129,8 +132,12 @@ const SupplierVetting = () => {
         textAlign: 'center',
       }}
     >
-      {stage === 0 && <Intro onSetStage={setStage} />}
-      {stage === 1 && <SupplierForm onSetStage={setStage} />}
+      {stage === 0 && (
+        <Intro onSetStage={setStage} isMediumScreen={isMediumScreen} />
+      )}
+      {stage === 1 && (
+        <SupplierForm onSetStage={setStage} isMediumScreen={isMediumScreen} />
+      )}
       {stage === 2 && <Conclusion />}
     </Box>
   );
