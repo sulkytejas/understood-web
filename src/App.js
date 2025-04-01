@@ -48,6 +48,7 @@ import { CacheProvider } from '@emotion/react';
 import createCache from '@emotion/cache';
 import { prefixer } from 'stylis';
 import rtlPlugin from 'stylis-plugin-rtl';
+import MicroFeatures from './components/Vetting/MicroFeatures';
 
 function App() {
   const location = useLocation();
@@ -267,89 +268,97 @@ function App() {
         <Box
           sx={{
             width: '100%',
-            maxWidth: { xs: '100vw', md: '430px' },
+            maxWidth: { xs: '100vw', md: '1430px' },
             margin: '0 auto',
             boxSizing: 'border-box',
           }}
         >
-          <ErrorBoundary>
-            <WebRTCBridge>
-              <AudioTranscriptionProvider>
-                <Routes location={location}>
-                  <Route
-                    path="/"
-                    element={
-                      !isLocaleAndSpokenSet ? (
-                        <AnimatedRoute element={<WelcomeScreen />} />
-                      ) : userDetails?.username ? (
-                        <Navigate to="/meeting" />
-                      ) : (
-                        <Navigate to="/login" />
-                      )
-                    }
-                  />
-                  <Route
-                    path="/login"
-                    element={
-                      !isLocaleAndSpokenSet ? (
-                        // If locale is not set, show the WelcomeScreen
-                        <Navigate to="/" />
-                      ) : !userData?.username ? (
-                        // If locale is set and user not authenticated, show login
-                        <AnimatedRoute element={<UserLogin />} />
-                      ) : (
-                        // If locale is set and user is authenticated, go to meeting
-                        <Navigate to="/meeting" />
-                      )
-                    }
-                  />
-                  <Route path="/googleCallback" element={<GoogleCallback />} />
-                  <Route
-                    path="/meeting"
-                    element={
-                      <ProtectedRoute>
-                        <AnimatedRoute element={<CreateMeetingPage />} />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/videocall/:meetingId"
-                    element={
-                      <ProtectedRoute>
-                        <VideoCall />
-                        {/* <AnimatedRoute element={<VideoCall />} /> */}
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/guestTranslation/:meetingId"
-                    element={<GuestTranslation />}
-                  />
-                  <Route
-                    path="/vibe/:practiceSessionId"
-                    element={
-                      <ProtectedRoute>
-                        <AnimatedRoute element={<PracticeMain />} />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/meetingEnded"
-                    element={<AnimatedRoute element={<MeetingEnded />} />}
-                  />
+          {/* <ErrorBoundary> */}
+          <WebRTCBridge>
+            <AudioTranscriptionProvider>
+              <Routes location={location}>
+                <Route
+                  path="/"
+                  element={
+                    // If you need it public, just show it directly:
+                    <AnimatedRoute element={<MicroFeatures />} />
+                  }
+                />
 
-                  <Route
-                    path="/apiCheck"
-                    element={
-                      // If you need it public, just show it directly:
-                      <AnimatedRoute element={<ApiCheckLink />} />
-                    }
-                  />
-                </Routes>
-              </AudioTranscriptionProvider>
-            </WebRTCBridge>
-            <ReportBugButton />
-          </ErrorBoundary>
+                <Route
+                  path="/demo"
+                  element={
+                    !isLocaleAndSpokenSet ? (
+                      <AnimatedRoute element={<WelcomeScreen />} />
+                    ) : userDetails?.username ? (
+                      <Navigate to="/meeting" />
+                    ) : (
+                      <Navigate to="/login" />
+                    )
+                  }
+                />
+                <Route
+                  path="/login"
+                  element={
+                    !isLocaleAndSpokenSet ? (
+                      // If locale is not set, show the WelcomeScreen
+                      <Navigate to="/demo" />
+                    ) : !userData?.username ? (
+                      // If locale is set and user not authenticated, show login
+                      <AnimatedRoute element={<UserLogin />} />
+                    ) : (
+                      // If locale is set and user is authenticated, go to meeting
+                      <Navigate to="/meeting" />
+                    )
+                  }
+                />
+                <Route path="/googleCallback" element={<GoogleCallback />} />
+                <Route
+                  path="/meeting"
+                  element={
+                    <ProtectedRoute>
+                      <AnimatedRoute element={<CreateMeetingPage />} />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/videocall/:meetingId"
+                  element={
+                    <ProtectedRoute>
+                      <VideoCall />
+                      {/* <AnimatedRoute element={<VideoCall />} /> */}
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/guestTranslation/:meetingId"
+                  element={<GuestTranslation />}
+                />
+                <Route
+                  path="/vibe/:practiceSessionId"
+                  element={
+                    <ProtectedRoute>
+                      <AnimatedRoute element={<PracticeMain />} />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/meetingEnded"
+                  element={<AnimatedRoute element={<MeetingEnded />} />}
+                />
+
+                <Route
+                  path="/apiCheck"
+                  element={
+                    // If you need it public, just show it directly:
+                    <AnimatedRoute element={<ApiCheckLink />} />
+                  }
+                />
+              </Routes>
+            </AudioTranscriptionProvider>
+          </WebRTCBridge>
+          <ReportBugButton />
+          {/* </ErrorBoundary> */}
         </Box>
       </ThemeProvider>
     </CacheProvider>
