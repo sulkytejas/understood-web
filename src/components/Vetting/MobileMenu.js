@@ -1,5 +1,13 @@
 import React from 'react';
-import { Stack, Button, Drawer, Box, styled, Typography } from '@mui/material';
+import {
+  Stack,
+  Button,
+  Drawer,
+  Box,
+  styled,
+  Typography,
+  Link,
+} from '@mui/material';
 
 import SolidButton from './SolidButton';
 import StyledTextField from './StyledTextField';
@@ -34,10 +42,7 @@ const BodyText = styled(Typography)(({ theme }) => ({
 const MobileMenu = ({
   isDrawerOpen,
   setIsDrawerOpen,
-  FeatureListRef,
-  HowItWorksRef,
-  ReleasePlanRef,
-  scrollToSection,
+
   setIsOpenSignUpModal,
 }) => {
   const handleDrawerClose = () => {
@@ -82,42 +87,35 @@ const MobileMenu = ({
           <CloseIcon />
         </IconButton> */}
         <Stack spacing={2} sx={{ mt: 2 }}>
-          <Button
-            onClick={() => scrollToSection(FeatureListRef)}
+          <Link
+            href="https://www.myunderstood.com/"
             sx={{
               color: '#5A6D62',
               fontSize: '20px',
               fontWeight: '600',
               fontFamily: "'Exo 2', 'sans-serif'",
               textTransform: 'none',
+              alignSelf: 'center',
+              textDecoration: 'none',
+            }}
+          >
+            Home
+          </Link>
+          <Link
+            href="https://www.myunderstood.com/#features"
+            sx={{
+              color: '#5A6D62',
+              fontSize: '20px',
+              fontWeight: '600',
+              fontFamily: "'Exo 2', 'sans-serif'",
+              textTransform: 'none',
+              alignSelf: 'center',
+              textDecoration: 'none',
             }}
           >
             Features
-          </Button>
-          <Button
-            onClick={() => scrollToSection(HowItWorksRef)}
-            sx={{
-              color: '#5A6D62',
-              fontSize: '20px',
-              fontWeight: '600',
-              fontFamily: "'Exo 2', 'sans-serif'",
-              textTransform: 'none',
-            }}
-          >
-            How It Works
-          </Button>
-          <Button
-            onClick={() => scrollToSection(ReleasePlanRef)}
-            sx={{
-              color: '#5A6D62',
-              fontSize: '20px',
-              fontWeight: '600',
-              fontFamily: "'Exo 2', 'sans-serif'",
-              textTransform: 'none',
-            }}
-          >
-            Release Plan
-          </Button>
+          </Link>
+
           <Button
             sx={{
               color: '#5A6D62',

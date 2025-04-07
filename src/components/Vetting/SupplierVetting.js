@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { Box } from '@mui/system';
 import GradientButton from './GradientButton';
+import SolidButton from './SolidButton';
 // import StyledTextField from './StyledTextField';
 import { Typography, useMediaQuery } from '@mui/material';
 import SupplierForm from './SupplierForm';
+import SampleReportModal from './SampleReportModal';
 
-const Intro = ({ onSetStage, isMediumScreen }) => (
+const Intro = ({ onSetStage, isMediumScreen, handleOpenModal }) => (
   <Box>
     <Box>
       <Typography
@@ -15,9 +17,9 @@ const Intro = ({ onSetStage, isMediumScreen }) => (
           lineHeight: isMediumScreen ? '58px' : '28px',
           fontFamily: 'Exo 2',
           color: '#0C2617',
-          paddingBottom: '40px',
+          paddingBottom: '30px',
           textTransform: 'uppercase',
-          padding: !isMediumScreen ? '20px  10px 0 10px' : '40px 0 0 0 0',
+          padding: !isMediumScreen ? '20px  10px 30px 10px' : '40px 0 0 0 0',
         }}
       >
         Instant Confidence in Your Suppliers
@@ -33,7 +35,7 @@ const Intro = ({ onSetStage, isMediumScreen }) => (
           maxWidth: '600px',
           textAlign: 'center',
           margin: '0 auto',
-          padding: !isMediumScreen ? '30px 10px 30px 10px' : '30px 0 50px 0 ',
+          padding: !isMediumScreen ? '30px 10px 40px 10px' : '30px 0 60px 0 ',
         }}
       >
         Get a personalized, analyst-reviewed supplier vetting report for your
@@ -46,7 +48,9 @@ const Intro = ({ onSetStage, isMediumScreen }) => (
       sx={{
         display: 'flex',
         gap: '50px',
+        margin: !isMediumScreen ? '0 60px' : '0 250px',
         justifyContent: 'center',
+        flexDirection: 'column',
       }}
     >
       {/* <StyledTextField
@@ -83,6 +87,7 @@ const Intro = ({ onSetStage, isMediumScreen }) => (
       >
         REQUEST FREE REPORT
       </GradientButton>
+      <SolidButton onClick={() => handleOpenModal()}>View Sample</SolidButton>
     </Box>
   </Box>
 );
@@ -124,6 +129,10 @@ const Conclusion = ({ isMediumScreen }) => (
 const SupplierVetting = () => {
   const isMediumScreen = useMediaQuery('(min-width:900px)');
   const [stage, setStage] = useState(0);
+  const [modalOpen, setModalOpen] = useState(false);
+
+  const handleOpenModal = () => setModalOpen(true);
+  const handleCloseModal = () => setModalOpen(false);
 
   return (
     <Box
@@ -133,12 +142,17 @@ const SupplierVetting = () => {
       }}
     >
       {stage === 0 && (
-        <Intro onSetStage={setStage} isMediumScreen={isMediumScreen} />
+        <Intro
+          onSetStage={setStage}
+          isMediumScreen={isMediumScreen}
+          handleOpenModal={handleOpenModal}
+        />
       )}
       {stage === 1 && (
         <SupplierForm onSetStage={setStage} isMediumScreen={isMediumScreen} />
       )}
       {stage === 2 && <Conclusion />}
+      <SampleReportModal open={modalOpen} handleClose={handleCloseModal} />
     </Box>
   );
 };

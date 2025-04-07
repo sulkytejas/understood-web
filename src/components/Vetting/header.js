@@ -3,7 +3,7 @@ import {
   AppBar,
   Toolbar,
   Typography,
-  Button,
+  Link,
   IconButton,
   Stack,
   Box,
@@ -18,14 +18,15 @@ import MobileMenu from './MobileMenu';
 import { ReactComponent as MenuCloseIcon } from '../assets/jam_menu_close.svg';
 import SignUpModal from './SignUpModal';
 
-const StyledDesktopMenuButton = styled(Button)({
+const StyledDesktopMenuButton = styled(Link)({
   fontFamily: "'Exo 2'",
   fontSize: '18px',
-  fontWeight: 600,
+  fontWeight: 700,
   lineHeight: '25.2px',
   textAlign: 'left',
   color: '#5A6D62',
   textTransform: 'none',
+  textDecoration: 'none',
 });
 
 const Header = ({
@@ -93,14 +94,11 @@ const Header = ({
                 marginLeft: '120px',
               }}
             >
-              <StyledDesktopMenuButton variant="text">
+              <StyledDesktopMenuButton href="https://www.myunderstood.com/">
+                Home
+              </StyledDesktopMenuButton>
+              <StyledDesktopMenuButton href="https://www.myunderstood.com/#features">
                 Features
-              </StyledDesktopMenuButton>
-              <StyledDesktopMenuButton variant="text">
-                How It Works
-              </StyledDesktopMenuButton>
-              <StyledDesktopMenuButton variant="text">
-                Release plan
               </StyledDesktopMenuButton>
             </Stack>
           ) : (

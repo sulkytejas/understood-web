@@ -10,6 +10,7 @@
     "@mui/material": "^5.16.4",
     "@mui/system": "^5.16.7",
     "@react-oauth/google": "^0.12.1",
+    "@react-pdf/renderer": "^4.3.0",
     "@reduxjs/toolkit": "^2.2.7",
     "@sentry/cli": "^2.40.0",
     "@sentry/react": "^8.50.0",

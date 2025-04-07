@@ -120,7 +120,7 @@ const SupplierForm = ({ onSetStage }) => {
         margin: '0 auto',
         display: 'flex',
         flexDirection: 'column',
-        padding: { xs: '13px ', md: 'unset' },
+        padding: { xs: '13px 13px 13px 17px', md: 'unset' },
         gap: 2,
         // Remove outlined border:
         '& .MuiOutlinedInput-notchedOutline': {
@@ -145,7 +145,7 @@ const SupplierForm = ({ onSetStage }) => {
           lineHeight: '38px',
           fontFamily: 'Exo 2',
           color: '#0C2617',
-          paddingBottom: '40px',
+          paddingBottom: '25px',
           textTransform: 'uppercase',
           textAlign: 'left',
         }}
