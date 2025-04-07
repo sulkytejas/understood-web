@@ -1513,7 +1513,7 @@ class ConnectionManager extends EventEmitter {
     }
 
     // We do have leftover for video, let's enable video
-    await this.setVideoEnabled(true);
+    //await this.setVideoEnabled(true); //commented for test in live server without video
 
     const leftoverBps = leftover * 1000;
     let targetBitrateBps = Math.min(leftoverBps, 1_500_000);
