@@ -1283,7 +1283,9 @@ class ConnectionManager extends EventEmitter {
    */
   async setVideoEnabled(enabled) {
     // 1) Retrieve "video" producer
-    const videoProducer = this.mediaManager.getProducer('video');
+    //const videoProducer = this.mediaManager.getProducer('video');
+
+    const videoProducer = false;
 
     if (!videoProducer) {
       console.warn('No video producer found; cannot toggle video');
