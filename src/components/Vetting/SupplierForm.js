@@ -9,7 +9,7 @@ import {
 import StyledTextField from './StyledTextField';
 import GradientButton from './GradientButton';
 import SolidButton from './SolidButton';
-
+// Supplier
 const SupplierForm = ({ onSetStage }) => {
   // Step state
   const [activeStep, setActiveStep] = useState(0);
