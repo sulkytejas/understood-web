@@ -1283,7 +1283,9 @@ class ConnectionManager extends EventEmitter {
    */
   async setVideoEnabled(enabled) {
     // 1) Retrieve "video" producer
-    const videoProducer = this.mediaManager.getProducer('video');
+    //const videoProducer = this.mediaManager.getProducer('video');
+
+    const videoProducer = false;
 
     if (!videoProducer) {
       console.warn('No video producer found; cannot toggle video');
@@ -1513,7 +1515,7 @@ class ConnectionManager extends EventEmitter {
     }
 
     // We do have leftover for video, let's enable video
-    await this.setVideoEnabled(true);
+    //await this.setVideoEnabled(true); //commented for test in live server without video
 
     const leftoverBps = leftover * 1000;
     let targetBitrateBps = Math.min(leftoverBps, 1_500_000);
