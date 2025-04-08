@@ -39,8 +39,8 @@ const Intro = ({ onSetStage, isMediumScreen, handleOpenModal }) => (
         }}
       >
         Get a personalized, analyst-reviewed supplier vetting report for your
-        <b> Chinese suppliers</b> within 24 hours—clearly identifying risks,
-        verification status, and reliability, so you can import confidently
+        <b> Chinese suppliers—quickly </b>identifying risks, verification
+        status, and reliability, so you can import confidently.
       </Typography>
     </Box>
 

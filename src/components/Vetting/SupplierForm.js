@@ -8,14 +8,17 @@ import {
 } from '@mui/material';
 import StyledTextField from './StyledTextField';
 import GradientButton from './GradientButton';
+import SolidButton from './SolidButton';
 
 const SupplierForm = ({ onSetStage }) => {
+  // Step state
+  const [activeStep, setActiveStep] = useState(0);
+  const steps = ['Supplier Name or Url', 'Your Email'];
+
   // Form state
   const [formData, setFormData] = useState({
     email: '',
     supplierName: '',
-    supplierWebsite: '',
-    concerns: '',
   });
 
   // Form submission status
@@ -40,10 +43,44 @@ const SupplierForm = ({ onSetStage }) => {
     setSubmitStatus((prev) => ({ ...prev, open: false }));
   };
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
+  // Navigate to next step
+  const handleNext = () => {
+    // Validate current step
+    if (activeStep === 1 && !formData.email) {
+      setSubmitStatus({
+        open: true,
+        message: 'Please enter your email',
+        severity: 'error',
+      });
+      return;
+    }
 
-    // Validate required fields
+    if (activeStep === 0 && !formData.supplierName) {
+      setSubmitStatus({
+        open: true,
+        message: 'Please enter supplier name or URL',
+        severity: 'error',
+      });
+      return;
+    }
+
+    // If we're on the last step, submit the form
+    if (activeStep === steps.length - 1) {
+      handleSubmit();
+      return;
+    }
+
+    // Otherwise, move to next step
+    setActiveStep((prevStep) => prevStep + 1);
+  };
+
+  // Navigate to previous step
+  const handleBack = () => {
+    setActiveStep((prevStep) => prevStep - 1);
+  };
+
+  const handleSubmit = async () => {
+    // Validate all required fields
     if (!formData.email || !formData.supplierName) {
       setSubmitStatus({
         open: true,
@@ -56,9 +93,33 @@ const SupplierForm = ({ onSetStage }) => {
     setIsSubmitting(true);
 
     try {
-      const apiUrl = process.env.REACT_APP_API_URL;
+      // First, submit to Google Sheets - replace with your actual script URL
+      await fetch(
+        'https://script.google.com/macros/s/AKfycbwuQaQ0conBVdumTowpi3Gnl08UzSJZX6RSR0tkjFWizi1HPNuLGSocyBdZqJ3lVrU/exec',
+        {
+          method: 'POST',
+          mode: 'no-cors',
+          body: JSON.stringify({
+            email: formData.email,
+            supplierName: formData.supplierName,
+            timestamp: new Date().toISOString(),
+          }),
+        },
+      );
 
-      const response = await fetch(`${apiUrl}/api/sendSupplierEmail`, {
+      // Show success message immediately
+      setSubmitStatus({
+        open: true,
+        message: 'Your request has been sent successfully!',
+        severity: 'success',
+      });
+
+      // Move to next stage immediately
+      onSetStage(2);
+
+      // Also send to backend (non-blocking)
+      const apiUrl = process.env.REACT_APP_API_URL;
+      fetch(`${apiUrl}/api/sendSupplierEmail`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -66,57 +127,79 @@ const SupplierForm = ({ onSetStage }) => {
         body: JSON.stringify({
           userEmail: formData.email,
           supplierName: formData.supplierName,
-          supplierWebsite: formData.supplierWebsite,
-          concerns: formData.concerns,
-          // Email template information
+          supplierWebsite: 'n/a',
+          concerns: 'n/a',
           emailSubject: "We've Received Your Vetting Request!",
           emailBody:
-            'Thanks for requesting your free supplier vetting report! Our analyst is clearly reviewing your request and will send your personalized report within 24 hours.',
+            'Thanks for requesting your free supplier vetting report! Our analyst is clearly reviewing your request and will send your personalized report soon.',
         }),
+      }).catch((error) => {
+        console.error('Error sending to backend:', error);
       });
 
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
+      // Reset form
+      setFormData({
+        email: '',
+        supplierName: '',
+      });
 
-      // Show success message
+      // Reset step
+      setActiveStep(0);
+    } catch (error) {
+      console.error('Error submitting form:', error);
+
+      // Still show success to user
       setSubmitStatus({
         open: true,
         message: 'Your request has been sent successfully!',
         severity: 'success',
       });
 
-      // Move to next stage if provided
+      // Move to next stage anyway
       onSetStage(2);
-
-      // Reset form
-      setFormData({
-        email: '',
-        supplierName: '',
-        supplierWebsite: '',
-        concerns: '',
-      });
-    } catch (error) {
-      console.error('Error submitting form:', error);
-      setSubmitStatus({
-        open: true,
-        message:
-          'There was an error submitting your request. Please try again.',
-        severity: 'error',
-      });
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // Get content for current step
+  const getStepContent = (step) => {
+    switch (step) {
+      case 0: // Supplier Name
+        return (
+          <StyledTextField
+            label="Supplier Name or Website"
+            name="supplierName"
+            value={formData.supplierName}
+            onChange={handleChange}
+            required
+            placeholder="Supplier's Company Name or Url"
+            autoFocus
+          />
+        );
+      case 1: // Email
+        return (
+          <StyledTextField
+            label="Your Email"
+            type="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            required
+            placeholder="yourname@example.com"
+            autoFocus
+          />
+        );
+
+      default:
+        return 'Unknown step';
+    }
+  };
+
   return (
     <Box
-      component="form"
-      noValidate
-      autoComplete="off"
-      onSubmit={handleSubmit}
       sx={{
-        maxWidth: 400,
+        maxWidth: 800,
         margin: '0 auto',
         display: 'flex',
         flexDirection: 'column',
@@ -145,7 +228,7 @@ const SupplierForm = ({ onSetStage }) => {
           lineHeight: '38px',
           fontFamily: 'Exo 2',
           color: '#0C2617',
-          paddingBottom: '25px',
+          paddingBottom: '15px',
           textTransform: 'uppercase',
           textAlign: 'left',
         }}
@@ -153,84 +236,77 @@ const SupplierForm = ({ onSetStage }) => {
         Request Your Free Supplier Vetting Report
       </Typography>
 
-      {/* 1. Your Email (required) */}
-      <StyledTextField
-        label="Your Email"
-        type="email"
-        name="email"
-        value={formData.email}
-        onChange={handleChange}
-        required
-        placeholder="yourname@example.com"
-      />
-
-      {/* 2. Supplier Name (required) */}
-      <StyledTextField
-        label="Supplier Name"
-        name="supplierName"
-        value={formData.supplierName}
-        onChange={handleChange}
-        required
-        placeholder="Supplier's Company Name"
-      />
-
-      {/* 3. Supplier Website or Link (optional) */}
-      <StyledTextField
-        label="Supplier Website or Link"
-        name="supplierWebsite"
-        value={formData.supplierWebsite}
-        onChange={handleChange}
-        placeholder="https://supplierwebsite.com"
-      />
-
-      {/* 4. Specific Concerns or Checks You Want (optional) */}
-      <StyledTextField
-        label="Specific Concerns or Checks You Want"
-        name="concerns"
-        value={formData.concerns}
-        onChange={handleChange}
-        placeholder="Any particular concerns? (e.g., reliability, certifications, financial health)"
-        multiline
-        rows={3}
-      />
-
-      <GradientButton
-        type="submit"
-        variant="contained"
-        disabled={isSubmitting}
-        responsiveStyles={{
-          padding: '8px 30px ',
-          marginTop: 30,
-          maxWidth: '200px',
-          alignSelf: 'left',
+      {/* Step Title */}
+      <Typography
+        sx={{
+          fontSize: '18px',
+          fontWeight: 600,
+          fontFamily: 'Exo 2',
+          color: '#0C2617',
+          mb: 2,
         }}
       >
-        {isSubmitting ? (
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <CircularProgress
-              size={24}
-              color="inherit"
-              sx={{ position: 'absolute' }}
-            />
-            <span style={{ visibility: 'hidden' }}>Submit</span>
-          </Box>
-        ) : (
-          'Submit'
-        )}
-      </GradientButton>
+        Step {activeStep + 1}: {steps[activeStep]}
+        {(activeStep === 0 || activeStep === 1) && ' (Required)'}
+      </Typography>
+
+      {/* Current step field */}
+      {getStepContent(activeStep)}
+
+      {/* Navigation buttons */}
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3, gap: 2 }}>
+        <SolidButton
+          disabled={activeStep === 0}
+          onClick={handleBack}
+          sx={{ height: '50px', color: '#fff !important' }}
+          responsiveStyles={{
+            borderColor: activeStep === 0 ? 'transparent' : 'inherit',
+            minWidth: '100px',
+          }}
+        >
+          Back
+        </SolidButton>
+
+        <GradientButton
+          onClick={handleNext}
+          disabled={isSubmitting}
+          responsiveStyles={{
+            padding: '8px 30px',
+            minWidth: '100px',
+            marginTop: '0px !important',
+          }}
+        >
+          {isSubmitting ? (
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <CircularProgress
+                size={24}
+                color="inherit"
+                sx={{ position: 'absolute' }}
+              />
+              <span style={{ visibility: 'hidden' }}>
+                {activeStep === steps.length - 1 ? 'Submit' : 'Next'}
+              </span>
+            </Box>
+          ) : activeStep === steps.length - 1 ? (
+            'Submit'
+          ) : (
+            'Next'
+          )}
+        </GradientButton>
+      </Box>
 
       {/* Status notification */}
       <Snackbar
         open={submitStatus.open}
         autoHideDuration={6000}
         onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
         <Alert
           onClose={handleCloseSnackbar}
