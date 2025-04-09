@@ -6,6 +6,7 @@ import Footer from './footer';
 import { styled } from '@mui/system';
 import SupplierVetting from './SupplierVetting';
 import { Box } from '@mui/material';
+import HowItWorks from './HowItWorks';
 
 // const FEATURE_LIST = ['Supplier Vetting', 'Automated Dispute Resolution'];
 
@@ -40,6 +41,8 @@ const MicroFeatures = () => {
       >
         <SupplierVetting />
         {/* {currentFeatureIndex === 0 && <SupplierVetting />} */}
+
+        <HowItWorks />
 
         {/* <SubNavigation
           featureList={FEATURE_LIST}

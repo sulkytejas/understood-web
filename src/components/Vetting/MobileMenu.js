@@ -11,6 +11,7 @@ import {
 
 import SolidButton from './SolidButton';
 import StyledTextField from './StyledTextField';
+import { Link as LinkRouter } from 'react-router-dom';
 
 const Heading = styled(Typography)(({ theme }) => ({
   fontFamily: "'Exo 2', 'sans-serif'",
@@ -88,7 +89,7 @@ const MobileMenu = ({
         </IconButton> */}
         <Stack spacing={2} sx={{ mt: 2 }}>
           <Link
-            href="https://www.myunderstood.com/"
+            href="/"
             sx={{
               color: '#5A6D62',
               fontSize: '20px',
@@ -115,6 +116,29 @@ const MobileMenu = ({
           >
             Features
           </Link>
+
+          <LinkRouter
+            to={{
+              pathname: '/pricing',
+            }}
+            style={{ textAlign: 'center' }}
+          >
+            <Link
+              // href="https://www.myunderstood.com/#features"
+              sx={{
+                color: '#5A6D62',
+                fontSize: '20px',
+                fontWeight: '600',
+                fontFamily: "'Exo 2', 'sans-serif'",
+                textTransform: 'none',
+                alignSelf: 'center',
+                textDecoration: 'none',
+                textAlign: 'center',
+              }}
+            >
+              Pricing
+            </Link>
+          </LinkRouter>
 
           <Button
             sx={{

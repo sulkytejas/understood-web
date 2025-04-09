@@ -82,10 +82,11 @@ const Intro = ({ onSetStage, isMediumScreen, handleOpenModal }) => (
             ? '8px 24px 8px 24px'
             : '12px 40px 16px 40px',
           marginTop: 0,
+          fontSize: '16px',
         }}
         onClick={() => onSetStage(1)}
       >
-        REQUEST FREE REPORT
+        REQUEST COMPLIMENTARY REPORT
       </GradientButton>
       <SolidButton onClick={() => handleOpenModal()}>View Sample</SolidButton>
     </Box>

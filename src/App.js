@@ -49,6 +49,7 @@ import createCache from '@emotion/cache';
 import { prefixer } from 'stylis';
 import rtlPlugin from 'stylis-plugin-rtl';
 import MicroFeatures from './components/Vetting/MicroFeatures';
+import Pricing from './components/Vetting/Pricing';
 
 function App() {
   const location = useLocation();
@@ -352,6 +353,14 @@ function App() {
                   element={
                     // If you need it public, just show it directly:
                     <AnimatedRoute element={<ApiCheckLink />} />
+                  }
+                />
+
+                <Route
+                  path="/pricing"
+                  element={
+                    // If you need it public, just show it directly:
+                    <AnimatedRoute element={<Pricing />} />
                   }
                 />
               </Routes>
