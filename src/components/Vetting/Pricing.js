@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Typography,
@@ -14,8 +14,11 @@ import {
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import Header from './header';
 import Footer from './footer';
+import SolidButton from './SolidButton';
 
 const PricingComponent = () => {
+  const [displayPaymentMessage, setDisplayPaymentMessage] = useState(false);
+
   const plans = [
     {
       title: 'Basic',
@@ -27,7 +30,9 @@ const PricingComponent = () => {
         'Advanced Registration Information',
         'Legal Representative Information',
         'Company Annual Report',
+        'Delivery in 24 hours',
       ],
+      buttonMessage: 'First claim your free report',
     },
     {
       title: 'In-Depth',
@@ -39,7 +44,9 @@ const PricingComponent = () => {
         'Company Litigation Records & Legal Checks',
         'Company Risks',
         'Company Certificates',
+        'Instant Delivery',
       ],
+      buttonMessage: 'Scroll to "Get in touch" section in footer',
     },
   ];
 
@@ -57,7 +64,7 @@ const PricingComponent = () => {
           component="h2"
           align="center"
           gutterBottom
-          sx={{ mb: 6, fontWeight: 'bold' }}
+          sx={{ mb: 6, fontWeight: 'bold', padding: '5px' }}
           fontFamily="Exo 2"
         >
           Choose Your Plan
@@ -152,10 +159,11 @@ const PricingComponent = () => {
                   </List>
 
                   <Box sx={{ mt: 4, textAlign: 'center' }}>
-                    {/* <Button
+                    <SolidButton
                       variant="contained"
                       size="large"
                       color="success"
+                      onClick={() => setDisplayPaymentMessage(true)}
                       sx={{
                         px: 4,
                         borderRadius: 1,
@@ -163,8 +171,13 @@ const PricingComponent = () => {
                         textTransform: 'uppercase',
                       }}
                     >
-                      Get Start
-                    </Button> */}
+                      Request Invoice
+                    </SolidButton>
+                    {displayPaymentMessage && (
+                      <Typography sx={{ marginTop: '10px' }}>
+                        {plan.buttonMessage}
+                      </Typography>
+                    )}
                   </Box>
                 </Box>
               </Paper>
