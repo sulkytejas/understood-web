@@ -307,8 +307,9 @@ export const WebRTCBridge = ({ children, isTranslationOnly = false }) => {
 
   // Maintain existing public methods with new implementation
   const publicMethods = {
-    async joinRoom(enteredMeetingId) {
+    async joinRoom(enteredMeetingId, directUid = null) {
       if (!connectionManager.current) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
         ensureConnectionManager(enteredMeetingId);
       }
 
@@ -316,7 +317,7 @@ export const WebRTCBridge = ({ children, isTranslationOnly = false }) => {
         await connectionManager.current.initializeEventListeners();
         const result = await connectionManager.current.connect(
           enteredMeetingId,
-          uid,
+          directUid || uid,
         );
         // Use the result
         isHost.current = result.isHost;

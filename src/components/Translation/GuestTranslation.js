@@ -1,12 +1,16 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Typography, Container, Avatar, Box, Button, Fab } from '@mui/material';
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { nanoid } from 'nanoid';
 
 import CloseIcon from '@mui/icons-material/Close';
 import TranslationOverlay from './TranslationOverlay';
 import { useWebRTC } from '../context/WebrtcBridge';
+import { setUserPhoneNumber, setUserName, setUid } from '../../redux/userSlice';
+import { useSocket } from '../context/SocketContext';
 
-const ProfileHeader = () => (
+const ProfileHeader = ({ otherPariticpantInfo }) => (
   <Box display="flex" alignItems="center" sx={{ padding: '16px' }}>
     <Avatar
       alt="Lila Harrington"
@@ -15,32 +19,80 @@ const ProfileHeader = () => (
     />
     <Box>
       <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-        Lila Harrington
+        {otherPariticpantInfo?.user?.username || 'Host'}
       </Typography>
-      <Typography variant="body2" color="text.secondary">
+      {/* <Typography variant="body2" color="text.secondary">
         Nexora Dynamics
-      </Typography>
+      </Typography> */}
     </Box>
 
     {/* Language Toggle Button */}
     <Box sx={{ ml: 'auto' }}>
       <Button variant="outlined" size="small">
-        EN — RU
+        {otherPariticpantInfo?.user?.spokenLanguage}
       </Button>
     </Box>
   </Box>
 );
 
 const GuestTranslation = () => {
-  const { joinRoom } = useWebRTC({ isTranslationOnly: true });
   const { meetingId } = useParams();
+  const dispatch = useDispatch();
+  const location = useLocation();
+  const { socket, isSocketConnected } = useSocket();
+  const { joinRoom } = useWebRTC({ isTranslationOnly: true });
+  const [otherPariticpantInfo, setOtherParticipantInfo] = useState({});
 
   useEffect(() => {
-    // On mount, just call joinRoom to produce audio only
-    if (meetingId) {
-      joinRoom(meetingId);
+    if (socket && isSocketConnected) {
+      if (!meetingId) return;
+
+      const temporaryUid = nanoid(28);
+      const queryParams = new URLSearchParams(location.search);
+      const hostUid = queryParams.get('hostUid');
+
+      const signInUser = async () => {
+        await new Promise((resolve) => setTimeout(resolve, 300));
+
+        try {
+          dispatch(setUserPhoneNumber('+11111111111'));
+          dispatch(setUserName(`Guest-${meetingId}`));
+          dispatch(setUid(temporaryUid));
+        } catch (e) {
+          console.error('Error signing in user:', e);
+        }
+      };
+
+      const init = async () => {
+        await signInUser();
+        const response = await joinRoom(meetingId, temporaryUid);
+
+        if (response?.joined) {
+          socket.on('participant-info-response', (data) => {
+            console.log('Received participant info:', data);
+            // setHostInfo(data);
+            // setLoading(false);
+
+            setOtherParticipantInfo(data);
+
+            console.log('pariticipantInfoGuest', data);
+          });
+
+          socket.emit('get-participant-info', { hostUid });
+        }
+      };
+
+      init();
+
+      socket.on('participants-device-info', (info) => {
+        console.log('received, other pariticipant info', info);
+      });
     }
-  }, []);
+
+    return () => {
+      socket.off('host-info-response');
+    };
+  }, [socket, isSocketConnected]);
 
   return (
     <Box
@@ -66,7 +118,7 @@ const GuestTranslation = () => {
         }}
       >
         {/* Profile Header */}
-        <ProfileHeader />
+        <ProfileHeader otherPariticpantInfo={otherPariticpantInfo} />
 
         <TranslationOverlay />
 
