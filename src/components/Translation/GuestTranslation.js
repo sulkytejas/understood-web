@@ -50,6 +50,9 @@ const GuestTranslation = () => {
       const temporaryUid = nanoid(28);
       const queryParams = new URLSearchParams(location.search);
       const hostUid = queryParams.get('hostUid');
+      const languageCode = queryParams.get('userTranslationLanguage');
+
+      socket.emit('setLanguagePreference', { languageCode });
 
       const signInUser = async () => {
         await new Promise((resolve) => setTimeout(resolve, 300));
