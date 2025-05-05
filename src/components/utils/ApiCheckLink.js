@@ -25,6 +25,9 @@ import {
   ListItem,
   ListItemText,
   ListItemIcon,
+  Radio,
+  Switch,
+  FormControlLabel,
 } from '@mui/material';
 import { styled } from '@mui/system';
 import TextField from '@mui/material/TextField';
@@ -46,6 +49,8 @@ import {
   Description as DescriptionIcon,
   LocationOn as LocationOnIcon,
   CheckCircleOutline as CheckCircleOutlineIcon,
+  Code as CodeIcon,
+  ViewComfy as ViewComfyIcon,
 } from '@mui/icons-material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
@@ -112,6 +117,14 @@ const ResultContainer = styled(Box)(({ theme }) => ({
   overflowY: 'auto',
 }));
 
+// New styled component for the toggle view section
+const ViewToggle = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  justifyContent: 'flex-end',
+  alignItems: 'center',
+  marginBottom: theme.spacing(1),
+}));
+
 const DataSection = styled(Box)({
   marginBottom: '12px',
 });
@@ -128,16 +141,19 @@ const Value = styled(Typography)({
   color: '#333',
 });
 
-// New styled components for HS Code lookup
-// const ConversationBox = styled(Box)(({ theme }) => ({
-//   border: '1px solid #ddd',
-//   borderRadius: 4,
-//   padding: theme.spacing(2),
-//   marginBottom: theme.spacing(2),
-//   backgroundColor: '#f9f9f9',
-//   minHeight: '50px',
-// }));
+// New styled components for category selection
+const CategoryOption = styled(Paper)(({ theme, selected }) => ({
+  padding: theme.spacing(2),
+  marginBottom: theme.spacing(1),
+  cursor: 'pointer',
+  backgroundColor: selected ? '#e3f2fd' : 'white',
+  borderLeft: selected ? '4px solid #1976d2' : '1px solid #ddd',
+  '&:hover': {
+    backgroundColor: selected ? '#e3f2fd' : '#f5f5f5',
+  },
+}));
 
+// New styled components for HS Code lookup
 const HSCodeResultCard = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(3),
   backgroundColor: '#e8f5e9',
@@ -829,6 +845,71 @@ const HSCodeDisplay = ({ data }) => {
   return renderResponse();
 };
 
+// Component to display category selection options
+const CategorySelectionDisplay = ({ data, onSelectCategory }) => {
+  const [selectedOption, setSelectedOption] = useState(null);
+
+  const handleOptionSelect = (option) => {
+    setSelectedOption(option);
+  };
+
+  const handleConfirm = () => {
+    if (selectedOption) {
+      onSelectCategory(selectedOption.id);
+    }
+  };
+
+  return (
+    <Box>
+      <Typography variant="h6" gutterBottom>
+        Please select a category for: {data.product}
+      </Typography>
+
+      <Box sx={{ mb: 2 }}>
+        <Typography variant="subtitle1">
+          Suggested: <strong>{data.suggested_category}</strong>
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          Confidence: {data.confidence}
+        </Typography>
+      </Box>
+
+      <Box sx={{ mb: 3 }}>
+        {data.options.map((option) => (
+          <CategoryOption
+            key={option.id}
+            selected={selectedOption && selectedOption.id === option.id}
+            onClick={() => handleOptionSelect(option)}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Radio
+                checked={selectedOption && selectedOption.id === option.id}
+                onChange={() => handleOptionSelect(option)}
+              />
+              <Box>
+                <Typography variant="subtitle1">{option.name}</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Platform: {option.platform}
+                </Typography>
+              </Box>
+            </Box>
+          </CategoryOption>
+        ))}
+      </Box>
+
+      <Button
+        variant="contained"
+        color="primary"
+        onClick={handleConfirm}
+        disabled={!selectedOption}
+        fullWidth
+      >
+        Confirm Selection
+      </Button>
+    </Box>
+  );
+};
+
 // Component to display supplier search results
 const SupplierDisplay = ({ data }) => {
   if (!data) return <Typography>No data available</Typography>;
@@ -1216,6 +1297,13 @@ function ApiCheckLink() {
   const [parsedResult1, setParsedResult1] = useState(null);
   const [parsedResult2, setParsedResult2] = useState(null);
 
+  // Toggle state variables for showing raw response vs formatted
+  const [showRawApi1, setShowRawApi1] = useState(false);
+  const [showRawApi2, setShowRawApi2] = useState(false);
+  const [showRawSupplier, setShowRawSupplier] = useState(false);
+  const [showRawTradeDoc, setShowRawTradeDoc] = useState(false);
+  const [showRawHsCode, setShowRawHsCode] = useState(false);
+
   // HS code lookup state variables
   const [hsCodeInput, setHSCodeInput] = useState('');
   const [hsCodeLoading, setHSCodeLoading] = useState(false);
@@ -1231,6 +1319,9 @@ function ApiCheckLink() {
   const [supplierSearchError, setSupplierSearchError] = useState(null);
   const [supplierSearchResult, setSupplierSearchResult] = useState('');
   const [parsedSupplierResult, setParsedSupplierResult] = useState(null);
+  const [categoryOptions, setCategoryOptions] = useState(null);
+  const [categorySelectionLoading, setCategorySelectionLoading] =
+    useState(false);
 
   // Trade documentation lookup state variables
   const [tradeDocOriginPort, setTradeDocOriginPort] = useState('');
@@ -1334,6 +1425,7 @@ function ApiCheckLink() {
     setSupplierSearchError(null);
     setSupplierSearchResult('');
     setParsedSupplierResult(null);
+    setCategoryOptions(null);
 
     try {
       const response = await fetch(`${apiUrl}/api/supplier/search`, {
@@ -1351,12 +1443,24 @@ function ApiCheckLink() {
         setSupplierSearchError(`Error: ${response.status}`);
       } else {
         try {
-          const data = await response.json();
-          console.log('Supplier Search Response:', data); // Debug log
+          const responseData = await response.json();
+          console.log('Supplier Search Response:', responseData); // Debug log
 
-          // Store both raw and parsed data
-          setSupplierSearchResult(JSON.stringify(data, null, 2));
-          setParsedSupplierResult(data);
+          // Check if the response contains a nested data object
+          const data = responseData.data || responseData;
+
+          // Check if the response needs category confirmation
+          if (data.status === 'needs_confirmation') {
+            // Store the category options for user selection
+            setCategoryOptions(data);
+            setSupplierSearchResult(''); // Clear any previous results
+            setParsedSupplierResult(null);
+          } else {
+            // Store the supplier results
+            setSupplierSearchResult(JSON.stringify(data, null, 2));
+            setParsedSupplierResult(data);
+            setCategoryOptions(null); // Clear any previous category options
+          }
         } catch (parseError) {
           console.error('Error parsing supplier search response:', parseError);
           const rawText = await response.text();
@@ -1369,6 +1473,58 @@ function ApiCheckLink() {
       setSupplierSearchError('Something went wrong with supplier search');
     } finally {
       setSupplierSearchLoading(false);
+    }
+  };
+
+  // Handler for category selection
+  const handleCategorySelection = async (selectionId) => {
+    if (!categoryOptions) {
+      return;
+    }
+
+    setCategorySelectionLoading(true);
+    setSupplierSearchError(null);
+
+    try {
+      const response = await fetch(`${apiUrl}/api/supplier/select-category`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: userId,
+          productName: categoryOptions.product,
+          selectionId: selectionId,
+        }),
+      });
+
+      if (!response.ok) {
+        setSupplierSearchError(`Error: ${response.status}`);
+      } else {
+        try {
+          const responseData = await response.json();
+          console.log('Category Selection Response:', responseData);
+
+          // Extract data from the response
+          const data = responseData.data || responseData;
+
+          // Store the supplier results
+          setSupplierSearchResult(JSON.stringify(data, null, 2));
+          setParsedSupplierResult(data);
+          setCategoryOptions(null); // Clear category options
+        } catch (parseError) {
+          console.error(
+            'Error parsing category selection response:',
+            parseError,
+          );
+          setSupplierSearchError('Error parsing category selection response');
+        }
+      }
+    } catch (err) {
+      console.error('Category selection error:', err);
+      setSupplierSearchError('Something went wrong with category selection');
+    } finally {
+      setCategorySelectionLoading(false);
     }
   };
 
@@ -1535,41 +1691,41 @@ function ApiCheckLink() {
   // Render functions for API results
   const renderApi1Result = () => {
     if (!result1) {
-      return (
-        <Typography color="textSecondary">
-          Result will appear here...
-        </Typography>
-      );
+      // Even if there's no data, honor the toggle setting
+      if (showRawApi1) {
+        return (
+          <Typography color="textSecondary">
+            No data available yet. Raw JSON will be shown when data is loaded.
+          </Typography>
+        );
+      } else {
+        return (
+          <Typography color="textSecondary">
+            Result will appear here...
+          </Typography>
+        );
+      }
     }
 
     if (result1.startsWith('Error:')) {
       return <Typography color="error">{result1}</Typography>;
     }
 
-    // Use TrustScoreDisplay if we have parsed data
+    // Always respect the toggle setting
+    if (showRawApi1) {
+      return showRawJson(result1);
+    }
+
+    // Only show formatted view if toggle is off
     try {
       if (parsedResult1) {
         return <TrustScoreDisplay data={parsedResult1} />;
       } else if (result1) {
-        // Try to parse the result string
         return <TrustScoreDisplay data={result1} />;
       }
     } catch (error) {
       console.error('Error rendering trust score display:', error);
-      // Fallback to showing raw JSON
-      return (
-        <Box
-          component="pre"
-          sx={{
-            margin: 0,
-            fontSize: '14px',
-            fontFamily: 'monospace',
-            whiteSpace: 'pre-wrap',
-          }}
-        >
-          {result1}
-        </Box>
-      );
+      return showRawJson(result1);
     }
 
     return <Typography>{result1}</Typography>;
@@ -1577,60 +1733,85 @@ function ApiCheckLink() {
 
   const renderApi2Result = () => {
     if (!result2) {
-      return (
-        <Typography color="textSecondary">
-          Result will appear here...
-        </Typography>
-      );
+      // Even if there's no data, honor the toggle setting
+      if (showRawApi2) {
+        return (
+          <Typography color="textSecondary">
+            No data available yet. Raw JSON will be shown when data is loaded.
+          </Typography>
+        );
+      } else {
+        return (
+          <Typography color="textSecondary">
+            Result will appear here...
+          </Typography>
+        );
+      }
     }
 
     if (result2.startsWith('Error:')) {
       return <Typography color="error">{result2}</Typography>;
     }
 
-    // Use PriceDataDisplay for formatting
+    // Always respect the toggle setting
+    if (showRawApi2) {
+      return showRawJson(result2);
+    }
+
+    // Only show formatted view if toggle is off
     try {
       if (parsedResult2) {
         return <PriceDataDisplay data={parsedResult2} />;
       } else if (result2) {
-        // Try to parse the result string if parsedResult2 is not set
         return <PriceDataDisplay data={result2} />;
       }
     } catch (error) {
-      console.error('Error rendering formatted display:', error);
-      // Fallback to showing raw JSON
-      return (
-        <Box
-          component="pre"
-          sx={{
-            margin: 0,
-            fontSize: '14px',
-            fontFamily: 'monospace',
-            whiteSpace: 'pre-wrap',
-          }}
-        >
-          {result2}
-        </Box>
-      );
+      console.error('Error rendering price data display:', error);
+      return showRawJson(result2);
     }
 
     return <Typography>{result2}</Typography>;
   };
 
-  // Function to render supplier search results
+  // Function to render supplier search results or category options
   const renderSupplierSearchResult = () => {
-    if (!supplierSearchResult) {
+    // If we have category options, show the category selection UI
+    if (categoryOptions) {
       return (
-        <Typography color="textSecondary">
-          Supplier search results will appear here...
-        </Typography>
+        <CategorySelectionDisplay
+          data={categoryOptions}
+          onSelectCategory={handleCategorySelection}
+        />
       );
+    }
+
+    if (!supplierSearchResult) {
+      // Even if there's no data, honor the toggle setting
+      if (showRawSupplier) {
+        return (
+          <Typography color="textSecondary">
+            No data available yet. Raw JSON will be shown when data is loaded.
+          </Typography>
+        );
+      } else {
+        return (
+          <Typography color="textSecondary">
+            Supplier search results will appear here...
+          </Typography>
+        );
+      }
     }
 
     if (supplierSearchResult.startsWith('Error:')) {
       return <Typography color="error">{supplierSearchResult}</Typography>;
     }
 
+    // Always respect the toggle setting
+    if (showRawSupplier) {
+      return showRawJson(supplierSearchResult);
+    }
+
+    // Only show formatted view if toggle is off
     try {
       if (parsedSupplierResult) {
         return <SupplierDisplay data={parsedSupplierResult} />;
@@ -1639,20 +1820,7 @@ function ApiCheckLink() {
       }
     } catch (error) {
       console.error('Error rendering supplier display:', error);
-      // Fallback to showing raw JSON
-      return (
-        <Box
-          component="pre"
-          sx={{
-            margin: 0,
-            fontSize: '14px',
-            fontFamily: 'monospace',
-            whiteSpace: 'pre-wrap',
-          }}
-        >
-          {supplierSearchResult}
-        </Box>
-      );
+      return showRawJson(supplierSearchResult);
     }
 
     return <Typography>{supplierSearchResult}</Typography>;
@@ -1661,17 +1829,32 @@ function ApiCheckLink() {
   // Function to render trade documentation results
   const renderTradeDocResult = () => {
     if (!tradeDocResult) {
-      return (
-        <Typography color="textSecondary">
-          Trade documentation requirements will appear here...
-        </Typography>
-      );
+      // Even if there's no data, honor the toggle setting
+      if (showRawTradeDoc) {
+        return (
+          <Typography color="textSecondary">
+            No data available yet. Raw JSON will be shown when data is loaded.
+          </Typography>
+        );
+      } else {
+        return (
+          <Typography color="textSecondary">
+            Trade documentation requirements will appear here...
+          </Typography>
+        );
+      }
     }
 
     if (tradeDocResult.startsWith('Error:')) {
       return <Typography color="error">{tradeDocResult}</Typography>;
     }
 
+    // Always respect the toggle setting
+    if (showRawTradeDoc) {
+      return showRawJson(tradeDocResult);
+    }
+
+    // Only show formatted view if toggle is off
     try {
       if (parsedTradeDocResult) {
         return <TradeDocDisplay data={parsedTradeDocResult} />;
@@ -1680,23 +1863,38 @@ function ApiCheckLink() {
       }
     } catch (error) {
       console.error('Error rendering trade doc display:', error);
-      // Fallback to showing raw JSON
-      return (
-        <Box
-          component="pre"
-          sx={{
-            margin: 0,
-            fontSize: '14px',
-            fontFamily: 'monospace',
-            whiteSpace: 'pre-wrap',
-          }}
-        >
-          {tradeDocResult}
-        </Box>
-      );
+      return showRawJson(tradeDocResult);
     }
 
     return <Typography>{tradeDocResult}</Typography>;
+  };
+
+  // Function to render HS code lookup results
+  const renderHSCodeResult = () => {
+    if (!hsCodeResult) {
+      // Even if there's no data, honor the toggle setting
+      if (showRawHsCode) {
+        return (
+          <Typography color="textSecondary">
+            No data available yet. Raw JSON will be shown when data is loaded.
+          </Typography>
+        );
+      } else {
+        return (
+          <Typography color="textSecondary">
+            Enter a product to find its HS code...
+          </Typography>
+        );
+      }
+    }
+
+    // Always respect the toggle setting
+    if (showRawHsCode) {
+      return showRawJson(hsCodeResult);
+    }
+
+    // Only show formatted view if toggle is off
+    return <HSCodeDisplay data={hsCodeResult} />;
   };
 
   return (
@@ -1722,6 +1920,31 @@ function ApiCheckLink() {
         }}
       />
       {error1 && <FormHelperText error>{error1}</FormHelperText>}
+
+      {/* Toggle for API 1 view */}
+      <ViewToggle>
+        <FormControlLabel
+          control={
+            <Switch
+              checked={showRawApi1}
+              onChange={() => setShowRawApi1(!showRawApi1)}
+              color="primary"
+            />
+          }
+          label={
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              {showRawApi1 ? (
+                <CodeIcon sx={{ mr: 1 }} />
+              ) : (
+                <ViewComfyIcon sx={{ mr: 1 }} />
+              )}
+              <Typography variant="body2">
+                {showRawApi1 ? 'Raw JSON' : 'Formatted View'}
+              </Typography>
+            </Box>
+          }
+        />
+      </ViewToggle>
 
       <ResultContainer>{renderApi1Result()}</ResultContainer>
 
@@ -1762,6 +1985,31 @@ function ApiCheckLink() {
       />
       {error2 && <FormHelperText error>{error2}</FormHelperText>}
 
+      {/* Toggle for API 2 view */}
+      <ViewToggle>
+        <FormControlLabel
+          control={
+            <Switch
+              checked={showRawApi2}
+              onChange={() => setShowRawApi2(!showRawApi2)}
+              color="primary"
+            />
+          }
+          label={
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              {showRawApi2 ? (
+                <CodeIcon sx={{ mr: 1 }} />
+              ) : (
+                <ViewComfyIcon sx={{ mr: 1 }} />
+              )}
+              <Typography variant="body2">
+                {showRawApi2 ? 'Raw JSON' : 'Formatted View'}
+              </Typography>
+            </Box>
+          }
+        />
+      </ViewToggle>
+
       <ResultContainer>{renderApi2Result()}</ResultContainer>
 
       {/* Button to check API 2 */}
@@ -1792,7 +2040,11 @@ function ApiCheckLink() {
           value={supplierSearchInput}
           onChange={(e) => setSupplierSearchInput(e.target.value)}
           onKeyPress={(e) => {
-            if (e.key === 'Enter' && !supplierSearchLoading) {
+            if (
+              e.key === 'Enter' &&
+              !supplierSearchLoading &&
+              !categorySelectionLoading
+            ) {
               handleSupplierSearch();
             }
           }}
@@ -1812,6 +2064,31 @@ function ApiCheckLink() {
           <FormHelperText error>{supplierSearchError}</FormHelperText>
         )}
 
+        {/* Toggle for Supplier view */}
+        <ViewToggle>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={showRawSupplier}
+                onChange={() => setShowRawSupplier(!showRawSupplier)}
+                color="primary"
+              />
+            }
+            label={
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                {showRawSupplier ? (
+                  <CodeIcon sx={{ mr: 1 }} />
+                ) : (
+                  <ViewComfyIcon sx={{ mr: 1 }} />
+                )}
+                <Typography variant="body2">
+                  {showRawSupplier ? 'Raw JSON' : 'Formatted View'}
+                </Typography>
+              </Box>
+            }
+          />
+        </ViewToggle>
+
         {/* Button for supplier search */}
         <Button
           variant="contained"
@@ -1819,9 +2096,9 @@ function ApiCheckLink() {
           fullWidth
           sx={{ mt: 1, fontSize: '16px', color: '#fff' }}
           onClick={handleSupplierSearch}
-          disabled={supplierSearchLoading}
+          disabled={supplierSearchLoading || categorySelectionLoading}
         >
-          {supplierSearchLoading ? (
+          {supplierSearchLoading || categorySelectionLoading ? (
             <CircularProgress size={24} color="inherit" />
           ) : (
             'Find Suppliers'
@@ -1901,6 +2178,31 @@ function ApiCheckLink() {
           <FormHelperText error>{tradeDocError}</FormHelperText>
         )}
 
+        {/* Toggle for Trade Doc view */}
+        <ViewToggle>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={showRawTradeDoc}
+                onChange={() => setShowRawTradeDoc(!showRawTradeDoc)}
+                color="primary"
+              />
+            }
+            label={
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                {showRawTradeDoc ? (
+                  <CodeIcon sx={{ mr: 1 }} />
+                ) : (
+                  <ViewComfyIcon sx={{ mr: 1 }} />
+                )}
+                <Typography variant="body2">
+                  {showRawTradeDoc ? 'Raw JSON' : 'Formatted View'}
+                </Typography>
+              </Box>
+            }
+          />
+        </ViewToggle>
+
         {/* Button for trade doc lookup */}
         <Button
           variant="contained"
@@ -1953,6 +2255,31 @@ function ApiCheckLink() {
         />
         {hsCodeError && <FormHelperText error>{hsCodeError}</FormHelperText>}
 
+        {/* Toggle for HS Code view */}
+        <ViewToggle>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={showRawHsCode}
+                onChange={() => setShowRawHsCode(!showRawHsCode)}
+                color="primary"
+              />
+            }
+            label={
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                {showRawHsCode ? (
+                  <CodeIcon sx={{ mr: 1 }} />
+                ) : (
+                  <ViewComfyIcon sx={{ mr: 1 }} />
+                )}
+                <Typography variant="body2">
+                  {showRawHsCode ? 'Raw JSON' : 'Formatted View'}
+                </Typography>
+              </Box>
+            }
+          />
+        </ViewToggle>
+
         {/* Action buttons */}
         <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
           <Button
@@ -1990,18 +2317,7 @@ function ApiCheckLink() {
         </Box>
 
         {/* Result container */}
-        <ResultContainer>
-          {hsCodeResult ? (
-            <HSCodeDisplay
-              data={hsCodeResult}
-              conversationHistory={hsCodeHistory}
-            />
-          ) : (
-            <Typography color="textSecondary">
-              Enter a product to find its HS code...
-            </Typography>
-          )}
-        </ResultContainer>
+        <ResultContainer>{renderHSCodeResult()}</ResultContainer>
 
         {/* Conversation history dialog */}
         <Dialog
