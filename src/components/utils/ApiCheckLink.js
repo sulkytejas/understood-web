@@ -28,6 +28,9 @@ import {
   Radio,
   Switch,
   FormControlLabel,
+  FormControl,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import { styled } from '@mui/system';
 import TextField from '@mui/material/TextField';
@@ -113,7 +116,7 @@ const ResultContainer = styled(Box)(({ theme }) => ({
   borderRadius: 4,
   backgroundColor: '#f9f9f9',
   minHeight: '100px',
-  maxHeight: '300px',
+  maxHeight: '650px',
   overflowY: 'auto',
 }));
 
@@ -166,6 +169,23 @@ const HSCodeDetailItem = styled(Box)(({ theme }) => ({
   display: 'flex',
   alignItems: 'flex-start',
   gap: theme.spacing(1),
+}));
+
+// New styled components for trade documentation
+const ConsiderationSection = styled(Box)(({ theme }) => ({
+  marginBottom: theme.spacing(3),
+  padding: theme.spacing(2),
+  backgroundColor: '#f0f7fa',
+  borderRadius: theme.spacing(1),
+  borderLeft: '4px solid #42a5f5',
+}));
+
+const RequirementSection = styled(Box)(({ theme }) => ({
+  marginBottom: theme.spacing(3),
+  padding: theme.spacing(2),
+  backgroundColor: '#fff8e1',
+  borderRadius: theme.spacing(1),
+  borderLeft: '4px solid #ffb74d',
 }));
 
 // Format price with 2 decimal places and currency symbol
@@ -1121,6 +1141,138 @@ const SupplierDisplay = ({ data }) => {
   }
 };
 
+// Function to render consideration sections
+const renderConsiderations = (considerations, title) => {
+  if (!considerations) return null;
+
+  return (
+    <ConsiderationSection>
+      <Typography
+        variant="h6"
+        sx={{ mb: 2, fontWeight: 'bold', color: '#0277bd' }}
+      >
+        {title}
+      </Typography>
+
+      {typeof considerations === 'object' && !Array.isArray(considerations) ? (
+        Object.entries(considerations).map(([key, value], index) => (
+          <Box key={index} sx={{ mb: 2 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
+              {key.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
+            </Typography>
+
+            {typeof value === 'object' ? (
+              Object.entries(value).map(([subKey, subValue], subIndex) => (
+                <Box key={subIndex} sx={{ mb: 1, ml: 2 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+                    {subKey
+                      .replace(/_/g, ' ')
+                      .replace(/\b\w/g, (l) => l.toUpperCase())}
+                  </Typography>
+
+                  {typeof subValue === 'object' ? (
+                    Array.isArray(subValue) ? (
+                      <List dense>
+                        {subValue.map((item, itemIndex) => (
+                          <ListItem key={itemIndex}>
+                            <ListItemIcon>
+                              <CheckCircleOutlineIcon
+                                color="primary"
+                                fontSize="small"
+                              />
+                            </ListItemIcon>
+                            <ListItemText primary={item} />
+                          </ListItem>
+                        ))}
+                      </List>
+                    ) : (
+                      <Box sx={{ ml: 3 }}>
+                        {Object.entries(subValue).map(
+                          ([deepKey, deepValue], deepIndex) => (
+                            <Box key={deepIndex} sx={{ mb: 1 }}>
+                              <Typography
+                                variant="body2"
+                                sx={{ fontWeight: 'bold' }}
+                              >
+                                {deepKey
+                                  .replace(/_/g, ' ')
+                                  .replace(/\b\w/g, (l) => l.toUpperCase())}
+                                :
+                              </Typography>
+                              {typeof deepValue === 'string' ? (
+                                <Typography variant="body2" sx={{ ml: 2 }}>
+                                  {deepValue}
+                                </Typography>
+                              ) : Array.isArray(deepValue) ? (
+                                <List dense sx={{ pl: 2 }}>
+                                  {deepValue.map((item, itemIndex) => (
+                                    <ListItem key={itemIndex}>
+                                      <ListItemIcon>
+                                        <CheckCircleOutlineIcon
+                                          color="primary"
+                                          fontSize="small"
+                                        />
+                                      </ListItemIcon>
+                                      <ListItemText primary={item} />
+                                    </ListItem>
+                                  ))}
+                                </List>
+                              ) : (
+                                <Typography variant="body2" sx={{ ml: 2 }}>
+                                  {JSON.stringify(deepValue)}
+                                </Typography>
+                              )}
+                            </Box>
+                          ),
+                        )}
+                      </Box>
+                    )
+                  ) : (
+                    <Typography variant="body2" sx={{ ml: 2 }}>
+                      {subValue}
+                    </Typography>
+                  )}
+                </Box>
+              ))
+            ) : Array.isArray(value) ? (
+              <List dense>
+                {value.map((item, itemIndex) => (
+                  <ListItem key={itemIndex}>
+                    <ListItemIcon>
+                      <CheckCircleOutlineIcon
+                        color="primary"
+                        fontSize="small"
+                      />
+                    </ListItemIcon>
+                    <ListItemText primary={item} />
+                  </ListItem>
+                ))}
+              </List>
+            ) : (
+              <Typography variant="body2" sx={{ ml: 2 }}>
+                {value}
+              </Typography>
+            )}
+          </Box>
+        ))
+      ) : Array.isArray(considerations) ? (
+        <List dense>
+          {considerations.map((item, index) => (
+            <ListItem key={index}>
+              <ListItemIcon>
+                <CheckCircleOutlineIcon color="primary" fontSize="small" />
+              </ListItemIcon>
+              <ListItemText primary={item} />
+            </ListItem>
+          ))}
+        </List>
+      ) : (
+        <Typography variant="body1">{considerations}</Typography>
+      )}
+    </ConsiderationSection>
+  );
+};
+
 // Component to display trade documentation requirements
 const TradeDocDisplay = ({ data }) => {
   if (!data) return <Typography>No data available</Typography>;
@@ -1138,9 +1290,12 @@ const TradeDocDisplay = ({ data }) => {
     ];
 
     // Get origin and destination info
-    const origin = tradeDocData.origin || {};
+    const origin = tradeDocData.source || {};
     const destination = tradeDocData.destination || {};
     const product = tradeDocData.product || {};
+
+    // Get additional information
+    const additionalInfo = tradeDocData.additional_information || {};
 
     // If no documents found
     if (allDocs.length === 0) {
@@ -1159,59 +1314,323 @@ const TradeDocDisplay = ({ data }) => {
 
     return (
       <Box>
-        <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 2 }}>
-          Required Documentation
-        </Typography>
+        <Box sx={{ mb: 3, p: 2, bgcolor: '#e8f5e9', borderRadius: 1 }}>
+          <Typography
+            variant="h5"
+            sx={{ fontWeight: 'bold', mb: 2, color: '#2e7d32' }}
+          >
+            Trade Route Summary
+          </Typography>
 
-        <Box sx={{ mb: 2 }}>
-          <Typography variant="subtitle1" fontWeight="bold">
-            Trade Route:
-          </Typography>
-          <Typography>
-            {origin.port_name || origin.port || 'Unknown'} →{' '}
-            {destination.port_name || destination.port || 'Unknown'}
-          </Typography>
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={4}>
+              <Box
+                sx={{ p: 2, bgcolor: '#fff', borderRadius: 1, height: '100%' }}
+              >
+                <Typography
+                  variant="subtitle1"
+                  fontWeight="bold"
+                  color="primary"
+                >
+                  Source
+                </Typography>
+                <Typography variant="h6">
+                  {origin.port_name || 'Unknown'}
+                </Typography>
+                <Typography variant="body2">
+                  Port Code: {origin.port_code || 'N/A'}
+                </Typography>
+                <Typography variant="body2" sx={{ textTransform: 'uppercase' }}>
+                  {origin.country || 'Unknown'}
+                </Typography>
+              </Box>
+            </Grid>
+
+            <Grid item xs={12} md={4}>
+              <Box
+                sx={{ p: 2, bgcolor: '#fff', borderRadius: 1, height: '100%' }}
+              >
+                <Typography
+                  variant="subtitle1"
+                  fontWeight="bold"
+                  color="primary"
+                >
+                  Destination
+                </Typography>
+                <Typography variant="h6">
+                  {destination.port_name || 'Unknown'}
+                </Typography>
+                <Typography variant="body2">
+                  Port Code: {destination.port_code || 'N/A'}
+                </Typography>
+                <Typography variant="body2" sx={{ textTransform: 'uppercase' }}>
+                  {destination.country || 'Unknown'}
+                </Typography>
+              </Box>
+            </Grid>
+
+            <Grid item xs={12} md={4}>
+              <Box
+                sx={{ p: 2, bgcolor: '#fff', borderRadius: 1, height: '100%' }}
+              >
+                <Typography
+                  variant="subtitle1"
+                  fontWeight="bold"
+                  color="primary"
+                >
+                  Product
+                </Typography>
+                <Typography variant="h6">
+                  {product.category_name || 'Unknown'}
+                </Typography>
+                <Typography variant="body2">
+                  Category ID: {product.category_id || 'N/A'}
+                </Typography>
+                {tradeDocData.product_category_mapping && (
+                  <Chip
+                    label={`Confidence: ${tradeDocData.product_category_mapping.confidence}`}
+                    size="small"
+                    color="primary"
+                    sx={{ mt: 1 }}
+                  />
+                )}
+              </Box>
+            </Grid>
+          </Grid>
         </Box>
 
-        <Box sx={{ mb: 2 }}>
-          <Typography variant="subtitle1" fontWeight="bold">
-            Product Category:
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 2 }}>
+            Required Documentation ({allDocs.length} documents)
           </Typography>
-          <Typography>{product.category_name || 'Unknown'}</Typography>
+
+          <Accordion defaultExpanded>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                Document Summary
+              </Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Box sx={{ p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6}>
+                    <Box sx={{ p: 1 }}>
+                      <Typography variant="subtitle1" fontWeight="bold">
+                        Standard Route Documents
+                      </Typography>
+                      <Typography>
+                        {tradeDocData.required_documents?.standard?.length || 0}{' '}
+                        documents
+                      </Typography>
+                    </Box>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Box sx={{ p: 1 }}>
+                      <Typography variant="subtitle1" fontWeight="bold">
+                        Source Port Documents
+                      </Typography>
+                      <Typography>
+                        {tradeDocData.required_documents?.origin_port_specific
+                          ?.length || 0}{' '}
+                        documents
+                      </Typography>
+                    </Box>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Box sx={{ p: 1 }}>
+                      <Typography variant="subtitle1" fontWeight="bold">
+                        Destination Port Documents
+                      </Typography>
+                      <Typography>
+                        {tradeDocData.required_documents
+                          ?.destination_port_specific?.length || 0}{' '}
+                        documents
+                      </Typography>
+                    </Box>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Box sx={{ p: 1 }}>
+                      <Typography variant="subtitle1" fontWeight="bold">
+                        Product Specific Documents
+                      </Typography>
+                      <Typography>
+                        {tradeDocData.required_documents?.product_specific
+                          ?.length || 0}{' '}
+                        documents
+                      </Typography>
+                    </Box>
+                  </Grid>
+                </Grid>
+              </Box>
+            </AccordionDetails>
+          </Accordion>
+
+          {/* Document categories */}
+          {tradeDocData.required_documents?.standard?.length > 0 && (
+            <DocumentSection
+              title="Standard Documents"
+              docs={tradeDocData.required_documents.standard}
+              docDetails={tradeDocData.document_details}
+            />
+          )}
+
+          {tradeDocData.required_documents?.origin_port_specific?.length >
+            0 && (
+            <DocumentSection
+              title={`${origin.port_name || 'Origin'} Specific Documents`}
+              docs={tradeDocData.required_documents.origin_port_specific}
+              docDetails={tradeDocData.document_details}
+            />
+          )}
+
+          {tradeDocData.required_documents?.destination_port_specific?.length >
+            0 && (
+            <DocumentSection
+              title={`${destination.port_name || 'Destination'} Specific Documents`}
+              docs={tradeDocData.required_documents.destination_port_specific}
+              docDetails={tradeDocData.document_details}
+            />
+          )}
+
+          {tradeDocData.required_documents?.product_specific?.length > 0 && (
+            <DocumentSection
+              title="Product Specific Documents"
+              docs={tradeDocData.required_documents.product_specific}
+              docDetails={tradeDocData.document_details}
+            />
+          )}
         </Box>
 
-        {/* Document categories */}
-        {tradeDocData.required_documents?.standard?.length > 0 && (
-          <DocumentSection
-            title="Standard Documents"
-            docs={tradeDocData.required_documents.standard}
-            docDetails={tradeDocData.document_details}
-          />
-        )}
+        {/* Additional information sections */}
+        {additionalInfo.source_port_considerations &&
+          renderConsiderations(
+            additionalInfo.source_port_considerations,
+            `${origin.port_name || 'Source Port'} Considerations`,
+          )}
 
-        {tradeDocData.required_documents?.origin_port_specific?.length > 0 && (
-          <DocumentSection
-            title={`${origin.port_name || 'Origin'} Specific Documents`}
-            docs={tradeDocData.required_documents.origin_port_specific}
-            docDetails={tradeDocData.document_details}
-          />
-        )}
+        {additionalInfo.destination_port_considerations &&
+          renderConsiderations(
+            additionalInfo.destination_port_considerations,
+            `${destination.port_name || 'Destination Port'} Considerations`,
+          )}
 
-        {tradeDocData.required_documents?.destination_port_specific?.length >
-          0 && (
-          <DocumentSection
-            title={`${destination.port_name || 'Destination'} Specific Documents`}
-            docs={tradeDocData.required_documents.destination_port_specific}
-            docDetails={tradeDocData.document_details}
-          />
-        )}
+        {additionalInfo.route_requirements &&
+          renderConsiderations(
+            additionalInfo.route_requirements,
+            `${origin.country || 'Source'} to ${destination.country || 'Destination'} Route Requirements`,
+          )}
 
-        {tradeDocData.required_documents?.product_specific?.length > 0 && (
-          <DocumentSection
-            title="Product Specific Documents"
-            docs={tradeDocData.required_documents.product_specific}
-            docDetails={tradeDocData.document_details}
-          />
+        {additionalInfo.country_specific_requirements &&
+          renderConsiderations(
+            additionalInfo.country_specific_requirements,
+            `Country-Specific Requirements`,
+          )}
+
+        {additionalInfo.recent_regulatory_changes && (
+          <RequirementSection>
+            <Typography
+              variant="h6"
+              sx={{ mb: 2, fontWeight: 'bold', color: '#ed6c02' }}
+            >
+              Recent Regulatory Changes
+            </Typography>
+
+            {Object.entries(additionalInfo.recent_regulatory_changes).map(
+              ([category, changes], index) => (
+                <Box key={index} sx={{ mb: 2 }}>
+                  <Typography
+                    variant="subtitle1"
+                    sx={{ fontWeight: 'bold', mb: 1 }}
+                  >
+                    {category
+                      .replace(/_/g, ' ')
+                      .replace(/\b\w/g, (l) => l.toUpperCase())}
+                  </Typography>
+
+                  {typeof changes === 'object' && !Array.isArray(changes) ? (
+                    Object.entries(changes).map(
+                      ([changeName, changeDetails], changeIndex) => (
+                        <Box key={changeIndex} sx={{ mb: 1, ml: 2 }}>
+                          <Typography
+                            variant="subtitle2"
+                            sx={{ fontWeight: 'bold' }}
+                          >
+                            {changeName
+                              .replace(/_/g, ' ')
+                              .replace(/\b\w/g, (l) => l.toUpperCase())}
+                          </Typography>
+
+                          {typeof changeDetails === 'object' ? (
+                            Array.isArray(changeDetails) ? (
+                              <List dense>
+                                {changeDetails.map((item, itemIndex) => (
+                                  <ListItem key={itemIndex}>
+                                    <ListItemIcon>
+                                      <CheckCircleOutlineIcon
+                                        color="warning"
+                                        fontSize="small"
+                                      />
+                                    </ListItemIcon>
+                                    <ListItemText primary={item} />
+                                  </ListItem>
+                                ))}
+                              </List>
+                            ) : (
+                              <Box sx={{ ml: 2 }}>
+                                {Object.entries(changeDetails).map(
+                                  ([detailKey, detailValue], detailIndex) => (
+                                    <Typography
+                                      key={detailIndex}
+                                      variant="body2"
+                                      sx={{ mb: 1 }}
+                                    >
+                                      <strong>
+                                        {detailKey
+                                          .replace(/_/g, ' ')
+                                          .replace(/\b\w/g, (l) =>
+                                            l.toUpperCase(),
+                                          )}
+                                        :
+                                      </strong>{' '}
+                                      {typeof detailValue === 'string'
+                                        ? detailValue
+                                        : JSON.stringify(detailValue)}
+                                    </Typography>
+                                  ),
+                                )}
+                              </Box>
+                            )
+                          ) : (
+                            <Typography variant="body2" sx={{ ml: 2 }}>
+                              {changeDetails}
+                            </Typography>
+                          )}
+                        </Box>
+                      ),
+                    )
+                  ) : Array.isArray(changes) ? (
+                    <List dense>
+                      {changes.map((item, itemIndex) => (
+                        <ListItem key={itemIndex}>
+                          <ListItemIcon>
+                            <CheckCircleOutlineIcon
+                              color="warning"
+                              fontSize="small"
+                            />
+                          </ListItemIcon>
+                          <ListItemText primary={item} />
+                        </ListItem>
+                      ))}
+                    </List>
+                  ) : (
+                    <Typography variant="body2" sx={{ ml: 2 }}>
+                      {changes}
+                    </Typography>
+                  )}
+                </Box>
+              ),
+            )}
+          </RequirementSection>
         )}
       </Box>
     );
@@ -1244,6 +1663,24 @@ const DocumentSection = ({ title, docs, docDetails }) => (
               </Typography>
             )}
 
+            {docDetail.contents && docDetail.contents.length > 0 && (
+              <Box sx={{ mt: 1 }}>
+                <Typography variant="subtitle2" fontWeight="bold">
+                  Required Contents:
+                </Typography>
+                <List dense>
+                  {docDetail.contents.map((item, itemIndex) => (
+                    <ListItem key={itemIndex}>
+                      <ListItemIcon>
+                        <CheckCircleOutlineIcon color="primary" />
+                      </ListItemIcon>
+                      <ListItemText primary={item} />
+                    </ListItem>
+                  ))}
+                </List>
+              </Box>
+            )}
+
             {docDetail.requirements && (
               <Box sx={{ mt: 1 }}>
                 <Typography variant="subtitle2" fontWeight="bold">
@@ -1272,6 +1709,19 @@ const DocumentSection = ({ title, docs, docDetails }) => (
             {docDetail.notes && (
               <Typography variant="body2" sx={{ mt: 1, fontStyle: 'italic' }}>
                 <strong>Note:</strong> {docDetail.notes}
+              </Typography>
+            )}
+
+            {docDetail.time_validity && (
+              <Typography variant="body2" sx={{ mt: 1 }}>
+                <strong>Validity Period:</strong> {docDetail.time_validity}
+              </Typography>
+            )}
+
+            {docDetail.electronic_submission && (
+              <Typography variant="body2" sx={{ mt: 1 }}>
+                <strong>Electronic Submission:</strong>{' '}
+                {docDetail.electronic_submission}
               </Typography>
             )}
           </CardContent>
@@ -1531,12 +1981,12 @@ function ApiCheckLink() {
   // Handler for trade documentation lookup
   const handleTradeDocLookup = async () => {
     if (!tradeDocOriginPort.trim()) {
-      setTradeDocError('Please enter an origin port');
+      setTradeDocError('Please select an origin port');
       return;
     }
 
     if (!tradeDocDestPort.trim()) {
-      setTradeDocError('Please enter a destination port');
+      setTradeDocError('Please select a destination port');
       return;
     }
 
@@ -2106,7 +2556,7 @@ function ApiCheckLink() {
         </Button>
 
         {/* Supplier Search Results Container */}
-        <ResultContainer sx={{ maxHeight: '400px' }}>
+        <ResultContainer sx={{ maxHeight: '500px' }}>
           {renderSupplierSearchResult()}
         </ResultContainer>
       </Box>
@@ -2120,43 +2570,99 @@ function ApiCheckLink() {
         {/* Input fields */}
         <Grid container spacing={2}>
           <Grid item xs={6}>
-            <CustomTextField
-              placeholder="Origin Port (e.g., Shanghai)"
-              value={tradeDocOriginPort}
-              onChange={(e) => setTradeDocOriginPort(e.target.value)}
-              variant="outlined"
+            {/* Source Port (Chinese cities) */}
+            <FormControl
               fullWidth
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
+              variant="outlined"
+              sx={{ backgroundColor: '#F9F9F9' }}
+            >
+              <Select
+                value={tradeDocOriginPort}
+                onChange={(e) => setTradeDocOriginPort(e.target.value)}
+                displayEmpty
+                inputProps={{
+                  style: {
+                    height: '48px',
+                    lineHeight: '22px',
+                    fontSize: '16px',
+                    padding: '0 14px 0 0',
+                  },
+                }}
+                startAdornment={
+                  <InputAdornment position="start" sx={{ ml: 1, mr: 0 }}>
                     <CustomIcon>
-                      <LocationOnIcon />
+                      <FlagIcon />
                     </CustomIcon>
                   </InputAdornment>
-                ),
-              }}
-            />
+                }
+                sx={{
+                  borderBottom: '1px solid #A0A0A0',
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    border: 'none',
+                  },
+                }}
+              >
+                <MenuItem value="" disabled>
+                  <em>Select Source Port (China)</em>
+                </MenuItem>
+                <MenuItem value="shanghai">Shanghai</MenuItem>
+                <MenuItem value="shenzhen">Shenzhen</MenuItem>
+                <MenuItem value="ningbo">Ningbo-Zhoushan</MenuItem>
+                <MenuItem value="guangzhou">Guangzhou</MenuItem>
+                <MenuItem value="qingdao">Qingdao</MenuItem>
+                <MenuItem value="tianjin">Tianjin</MenuItem>
+                <MenuItem value="dalian">Dalian</MenuItem>
+              </Select>
+            </FormControl>
           </Grid>
           <Grid item xs={6}>
-            <CustomTextField
-              placeholder="Destination Port (e.g., Mumbai)"
-              value={tradeDocDestPort}
-              onChange={(e) => setTradeDocDestPort(e.target.value)}
-              variant="outlined"
+            {/* Destination Port (Indian cities) */}
+            <FormControl
               fullWidth
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
+              variant="outlined"
+              sx={{ backgroundColor: '#F9F9F9' }}
+            >
+              <Select
+                value={tradeDocDestPort}
+                onChange={(e) => setTradeDocDestPort(e.target.value)}
+                displayEmpty
+                inputProps={{
+                  style: {
+                    height: '48px',
+                    lineHeight: '22px',
+                    fontSize: '16px',
+                    padding: '0 14px 0 0',
+                  },
+                }}
+                startAdornment={
+                  <InputAdornment position="start" sx={{ ml: 1, mr: 0 }}>
                     <CustomIcon>
                       <LocationOnIcon />
                     </CustomIcon>
                   </InputAdornment>
-                ),
-              }}
-            />
+                }
+                sx={{
+                  borderBottom: '1px solid #A0A0A0',
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    border: 'none',
+                  },
+                }}
+              >
+                <MenuItem value="" disabled>
+                  <em>Select Destination Port (India)</em>
+                </MenuItem>
+                <MenuItem value="mumbai">Mumbai (JNPT/Nhava Sheva)</MenuItem>
+                <MenuItem value="chennai">Chennai</MenuItem>
+                <MenuItem value="kolkata">Kolkata</MenuItem>
+                <MenuItem value="cochin">Cochin/Kochi</MenuItem>
+                <MenuItem value="kandla">Kandla/Deendayal</MenuItem>
+                <MenuItem value="visakhapatnam">Visakhapatnam</MenuItem>
+              </Select>
+            </FormControl>
           </Grid>
         </Grid>
 
+        {/* Product Category Field */}
         <CustomTextField
           placeholder="Product Category (e.g., Electronics, Pharmaceuticals)"
           value={tradeDocProductCategory}
@@ -2220,7 +2726,7 @@ function ApiCheckLink() {
         </Button>
 
         {/* Trade Doc Lookup Results Container */}
-        <ResultContainer sx={{ maxHeight: '400px' }}>
+        <ResultContainer sx={{ maxHeight: '650px' }}>
           {renderTradeDocResult()}
         </ResultContainer>
       </Box>
