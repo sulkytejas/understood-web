@@ -366,7 +366,7 @@ function App() {
               </Routes>
             </AudioTranscriptionProvider>
           </WebRTCBridge>
-          <ReportBugButton />
+          {/* <ReportBugButton /> */}
           {/* </ErrorBoundary> */}
         </Box>
       </ThemeProvider>

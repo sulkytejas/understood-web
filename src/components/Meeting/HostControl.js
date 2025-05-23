@@ -117,8 +117,40 @@ const HostControl = ({
     return () => clearTimeout(timer); // Clean up the timer on unmount
   }, []);
 
+  function formatDate(date) {
+    // Get day and add leading zero if needed
+    const day = String(date.getDate()).padStart(2, '0');
+
+    // Get month name (3-letter abbreviation)
+    const monthNames = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    const month = monthNames[date.getMonth()];
+
+    // Get full year
+    const year = date.getFullYear();
+
+    // Combine in the desired format
+    return `${day}${month}${year}`;
+  }
+
   const createMeetingHandler = async () => {
     setLoading(true);
+
+    const today = new Date();
+    const formattedDate = formatDate(today);
+    const title = `Meet-${formattedDate}`;
 
     if (socket) {
       socket.emit(
@@ -128,6 +160,7 @@ const HostControl = ({
           email,
           userSpokenLanguage,
           uid,
+          title,
         },
         ({ meetingId, hostSocketId, error, meetingPhrase }) => {
           if (error) {

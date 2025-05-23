@@ -1,12 +1,13 @@
 // import { useState } from 'react';
 
 import Header from './header';
-import Footer from './footer';
+// import Footer from './footer';
 // import SubNavigation from './SubNavigation';
 import { styled } from '@mui/system';
-import SupplierVetting from './SupplierVetting';
+// import SupplierVetting from './SupplierVetting';
 import { Box } from '@mui/material';
-import HowItWorks from './HowItWorks';
+// import HowItWorks from './HowItWorks';
+import BetaSignUp from './BetaSignup';
 
 // const FEATURE_LIST = ['Supplier Vetting', 'Automated Dispute Resolution'];
 
@@ -18,14 +19,14 @@ const MicroFeatures = () => {
   });
 
   return (
-    <Container>
+    <Container sx={{ background: '#f5f5f5' }}>
       <Header />
 
       <Box
         sx={{
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'center', // horizontally center if items aren't full width
+          justifyContent: 'start', // horizontally center if items aren't full width
           alignItems: 'center', // vertically center within container
           textAlign: 'center', // ensure text is centered
           minHeight: {
@@ -36,13 +37,14 @@ const MicroFeatures = () => {
           maxWidth: '1400px',
           mx: 'auto', // center horizontally on the page if desired
           p: 2,
-          padding: '80px 0',
+          padding: '0px  0 80px 0',
         }}
       >
-        <SupplierVetting />
+        <BetaSignUp />
+        {/* <SupplierVetting /> */}
         {/* {currentFeatureIndex === 0 && <SupplierVetting />} */}
 
-        <HowItWorks />
+        {/* <HowItWorks /> */}
 
         {/* <SubNavigation
           featureList={FEATURE_LIST}
@@ -51,7 +53,7 @@ const MicroFeatures = () => {
         /> */}
       </Box>
 
-      <Footer />
+      {/* <Footer /> */}
     </Container>
   );
 };
