@@ -11,7 +11,7 @@ import {
 } from '@mui/material';
 import { styled, useTheme } from '@mui/system';
 
-import { Link as LinkRouter } from 'react-router-dom';
+// import { Link as LinkRouter } from 'react-router-dom';
 
 import { ReactComponent as Logo } from '../assets/understood_logo.svg';
 import { ReactComponent as MenuIcon } from '../assets/jam_menu_icon.svg';
@@ -32,7 +32,7 @@ const StyledDesktopMenuButton = styled(Link)({
 });
 
 const Header = ({
-  siteTitle = 'Understood',
+  siteTitle = 'Understood Connect',
 
   isLinksVisible = true,
   isBlog = false,
@@ -100,13 +100,13 @@ const Header = ({
               <StyledDesktopMenuButton href="https://www.myunderstood.com/#features">
                 Features
               </StyledDesktopMenuButton>
-              <LinkRouter
+              {/* <LinkRouter
                 to={{
                   pathname: '/pricing',
                 }}
               >
                 <StyledDesktopMenuButton>Pricing</StyledDesktopMenuButton>
-              </LinkRouter>
+              </LinkRouter> */}
             </Stack>
           ) : (
             // Mobile Navigation Icon

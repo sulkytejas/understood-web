@@ -269,7 +269,7 @@ function BetaForm({ onSetIsFormSubmitted }) {
               }
             />
           }
-          label="I'd like to join the beta / waitlist for Underwood Connect"
+          label="I'd like to join the beta list for Understood Connect"
           sx={{
             '& .MuiFormControlLabel-label': {
               fontWeight: '400',

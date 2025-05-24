@@ -40,11 +40,10 @@ const Intro = () => (
             margin: '0 auto',
           }}
         >
-          Were in beta and giving early access to buyers who want to simplify
-          sourcing and stop bleeding margin. Were in beta and giving early
-          access to buyers who want to simplify sourcing and stop bleeding
-          margin. Were in beta and giving early access to buyers who want to
-          simplify sourcing and stop bleeding margin.
+          {`We're launching the future of B2B sourcing. Join our exclusive beta
+          program and get 1 year free access to a platform that will transform
+          how you find suppliers, negotiate prices, and manage your procurement.
+          Limited to 50 forward-thinking buyers.`}
         </Typography>
       </Box>
     </Box>
