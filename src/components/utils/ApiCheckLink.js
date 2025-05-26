@@ -31,6 +31,7 @@ import {
   FormControl,
   Select,
   MenuItem,
+  Fade,
 } from '@mui/material';
 import { styled } from '@mui/system';
 import TextField from '@mui/material/TextField';
@@ -54,6 +55,9 @@ import {
   CheckCircleOutline as CheckCircleOutlineIcon,
   Code as CodeIcon,
   ViewComfy as ViewComfyIcon,
+  ManageSearch as ManageSearchIcon,
+  Factory as FactoryIcon,
+  CheckCircle as CheckCircleIcon,
 } from '@mui/icons-material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
@@ -186,6 +190,28 @@ const RequirementSection = styled(Box)(({ theme }) => ({
   backgroundColor: '#fff8e1',
   borderRadius: theme.spacing(1),
   borderLeft: '4px solid #ffb74d',
+}));
+
+// New styled components for fuzzy search results
+const FuzzySearchResult = styled(ListItem)(({ theme, selected }) => ({
+  backgroundColor: selected ? '#e3f2fd' : 'white',
+  borderRadius: theme.spacing(1),
+  marginBottom: theme.spacing(0.5),
+  transition: 'all 0.3s ease',
+  '&:hover': {
+    backgroundColor: '#f5f5f5',
+    transform: 'translateX(4px)',
+  },
+}));
+
+const FuzzySearchStats = styled(Box)(({ theme }) => ({
+  padding: theme.spacing(2),
+  backgroundColor: '#e8f5e9',
+  borderRadius: theme.spacing(1),
+  marginBottom: theme.spacing(2),
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
 }));
 
 // Format price with 2 decimal places and currency symbol
@@ -1731,6 +1757,95 @@ const DocumentSection = ({ title, docs, docDetails }) => (
   </Box>
 );
 
+// Component to display fuzzy search results
+const FuzzySearchDisplay = ({ data }) => {
+  if (!data) return <Typography>No data available</Typography>;
+
+  try {
+    // Parse data if it's a string
+    const searchData = typeof data === 'string' ? JSON.parse(data) : data;
+
+    // Extract the necessary information
+    const { success, count, totalCount, suppliers, page, totalPages } =
+      searchData;
+
+    // If there's an error or no suppliers found
+    if (!success || !suppliers || count === 0) {
+      return (
+        <Box sx={{ p: 2, bgcolor: '#fff4e5', borderRadius: 1 }}>
+          <Typography variant="h6" color="warning.dark">
+            No Suppliers Found
+          </Typography>
+          <Typography>
+            {searchData.message || 'No suppliers match your search criteria'}
+          </Typography>
+        </Box>
+      );
+    }
+
+    // Render supplier list
+    return (
+      <Box>
+        <FuzzySearchStats>
+          <Box>
+            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+              Search Results
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Showing {count} of {totalCount || count} suppliers
+            </Typography>
+          </Box>
+          {totalPages && totalPages > 1 && (
+            <Chip
+              label={`Page ${page} of ${totalPages}`}
+              color="primary"
+              size="small"
+            />
+          )}
+        </FuzzySearchStats>
+
+        <List>
+          {suppliers.map((companyName, index) => (
+            <Fade in={true} timeout={300 + index * 50} key={index}>
+              <FuzzySearchResult>
+                <ListItemIcon>
+                  <Avatar sx={{ bgcolor: '#1976d2', width: 36, height: 36 }}>
+                    <FactoryIcon fontSize="small" />
+                  </Avatar>
+                </ListItemIcon>
+                <ListItemText
+                  primary={companyName}
+                  primaryTypographyProps={{
+                    fontWeight: 'medium',
+                    fontSize: '1rem',
+                  }}
+                />
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <IconButton size="small" color="primary">
+                    <InfoIcon fontSize="small" />
+                  </IconButton>
+                  <CheckCircleIcon color="success" fontSize="small" />
+                </Box>
+              </FuzzySearchResult>
+            </Fade>
+          ))}
+        </List>
+
+        {totalPages && totalPages > 1 && (
+          <Box sx={{ mt: 2, textAlign: 'center' }}>
+            <Typography variant="caption" color="text.secondary">
+              Use pagination parameters to see more results
+            </Typography>
+          </Box>
+        )}
+      </Box>
+    );
+  } catch (error) {
+    console.error('Error rendering fuzzy search display:', error);
+    return showRawJson(data);
+  }
+};
+
 function ApiCheckLink() {
   const [api1, setApi1] = useState('');
   const [api2, setApi2] = useState('');
@@ -1753,6 +1868,7 @@ function ApiCheckLink() {
   const [showRawSupplier, setShowRawSupplier] = useState(false);
   const [showRawTradeDoc, setShowRawTradeDoc] = useState(false);
   const [showRawHsCode, setShowRawHsCode] = useState(false);
+  const [showRawFuzzySearch, setShowRawFuzzySearch] = useState(false);
 
   // HS code lookup state variables
   const [hsCodeInput, setHSCodeInput] = useState('');
@@ -1782,8 +1898,18 @@ function ApiCheckLink() {
   const [tradeDocResult, setTradeDocResult] = useState('');
   const [parsedTradeDocResult, setParsedTradeDocResult] = useState(null);
 
+  // Fuzzy search state variables
+  const [fuzzySearchInput, setFuzzySearchInput] = useState('');
+  const [fuzzySearchLoading, setFuzzySearchLoading] = useState(false);
+  const [fuzzySearchError, setFuzzySearchError] = useState(null);
+  const [fuzzySearchResult, setFuzzySearchResult] = useState('');
+  const [parsedFuzzySearchResult, setParsedFuzzySearchResult] = useState(null);
+  const [fuzzySearchPage, setFuzzySearchPage] = useState(1);
+  const [fuzzySearchLimit, setFuzzySearchLimit] = useState(50);
+
   const apiUrl = process.env.REACT_APP_API_URL;
 
+  console.log(setFuzzySearchPage);
   // Separate checker for API 1
   const handleCheckAPI1 = async () => {
     setLoading1(true);
@@ -2138,6 +2264,49 @@ function ApiCheckLink() {
     }
   };
 
+  // Handler for fuzzy search
+  const handleFuzzySearch = async () => {
+    if (!fuzzySearchInput.trim()) {
+      setFuzzySearchError('Please enter a search query');
+      return;
+    }
+
+    setFuzzySearchLoading(true);
+    setFuzzySearchError(null);
+    setFuzzySearchResult('');
+    setParsedFuzzySearchResult(null);
+
+    try {
+      const query = encodeURIComponent(fuzzySearchInput.trim());
+      const response = await fetch(
+        `${apiUrl}/api/suppliers/search?query=${query}&page=${fuzzySearchPage}&limit=${fuzzySearchLimit}`,
+      );
+
+      if (!response.ok) {
+        setFuzzySearchError(`Error: ${response.status}`);
+      } else {
+        try {
+          const data = await response.json();
+          console.log('Fuzzy Search Response:', data); // Debug log
+
+          // Store both raw and parsed data
+          setFuzzySearchResult(JSON.stringify(data, null, 2));
+          setParsedFuzzySearchResult(data);
+        } catch (parseError) {
+          console.error('Error parsing fuzzy search response:', parseError);
+          const rawText = await response.text();
+          setFuzzySearchResult(rawText);
+          setFuzzySearchError('Error parsing fuzzy search response');
+        }
+      }
+    } catch (err) {
+      console.error('Fuzzy search error:', err);
+      setFuzzySearchError('Something went wrong with fuzzy search');
+    } finally {
+      setFuzzySearchLoading(false);
+    }
+  };
+
   // Render functions for API results
   const renderApi1Result = () => {
     if (!result1) {
@@ -2345,6 +2514,49 @@ function ApiCheckLink() {
 
     // Only show formatted view if toggle is off
     return <HSCodeDisplay data={hsCodeResult} />;
+  };
+
+  // Function to render fuzzy search results
+  const renderFuzzySearchResult = () => {
+    if (!fuzzySearchResult) {
+      // Even if there's no data, honor the toggle setting
+      if (showRawFuzzySearch) {
+        return (
+          <Typography color="textSecondary">
+            No data available yet. Raw JSON will be shown when data is loaded.
+          </Typography>
+        );
+      } else {
+        return (
+          <Typography color="textSecondary">
+            Fuzzy search results will appear here...
+          </Typography>
+        );
+      }
+    }
+
+    if (fuzzySearchResult.startsWith('Error:')) {
+      return <Typography color="error">{fuzzySearchResult}</Typography>;
+    }
+
+    // Always respect the toggle setting
+    if (showRawFuzzySearch) {
+      return showRawJson(fuzzySearchResult);
+    }
+
+    // Only show formatted view if toggle is off
+    try {
+      if (parsedFuzzySearchResult) {
+        return <FuzzySearchDisplay data={parsedFuzzySearchResult} />;
+      } else if (fuzzySearchResult) {
+        return <FuzzySearchDisplay data={fuzzySearchResult} />;
+      }
+    } catch (error) {
+      console.error('Error rendering fuzzy search display:', error);
+      return showRawJson(fuzzySearchResult);
+    }
+
+    return <Typography>{fuzzySearchResult}</Typography>;
   };
 
   return (
@@ -2863,6 +3075,105 @@ function ApiCheckLink() {
             <Button onClick={() => setShowHistory(false)}>Close</Button>
           </DialogActions>
         </Dialog>
+      </Box>
+
+      {/* Fuzzy Search Section */}
+      <Box sx={{ mt: 4 }}>
+        <Typography variant="h6" sx={{ mb: 2 }}>
+          Fuzzy Supplier Search
+        </Typography>
+
+        {/* Fuzzy Search input field */}
+        <CustomTextField
+          placeholder="Search suppliers by company name (fuzzy matching)"
+          value={fuzzySearchInput}
+          onChange={(e) => setFuzzySearchInput(e.target.value)}
+          onKeyPress={(e) => {
+            if (e.key === 'Enter' && !fuzzySearchLoading) {
+              handleFuzzySearch();
+            }
+          }}
+          variant="outlined"
+          fullWidth
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <CustomIcon>
+                  <ManageSearchIcon />
+                </CustomIcon>
+              </InputAdornment>
+            ),
+          }}
+        />
+        {fuzzySearchError && (
+          <FormHelperText error>{fuzzySearchError}</FormHelperText>
+        )}
+
+        {/* Pagination controls */}
+        <Box sx={{ display: 'flex', gap: 2, mt: 1, alignItems: 'center' }}>
+          <FormControl size="small" sx={{ minWidth: 120 }}>
+            <Select
+              value={fuzzySearchLimit}
+              onChange={(e) => setFuzzySearchLimit(e.target.value)}
+              displayEmpty
+            >
+              <MenuItem value={10}>10 results</MenuItem>
+              <MenuItem value={25}>25 results</MenuItem>
+              <MenuItem value={50}>50 results</MenuItem>
+              <MenuItem value={100}>100 results</MenuItem>
+            </Select>
+          </FormControl>
+
+          <Typography variant="body2" sx={{ flex: 1 }}>
+            Page: {fuzzySearchPage}
+          </Typography>
+        </Box>
+
+        {/* Toggle for Fuzzy Search view */}
+        <ViewToggle>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={showRawFuzzySearch}
+                onChange={() => setShowRawFuzzySearch(!showRawFuzzySearch)}
+                color="primary"
+              />
+            }
+            label={
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                {showRawFuzzySearch ? (
+                  <CodeIcon sx={{ mr: 1 }} />
+                ) : (
+                  <ViewComfyIcon sx={{ mr: 1 }} />
+                )}
+                <Typography variant="body2">
+                  {showRawFuzzySearch ? 'Raw JSON' : 'Formatted View'}
+                </Typography>
+              </Box>
+            }
+          />
+        </ViewToggle>
+
+        {/* Button for fuzzy search */}
+        <Button
+          variant="contained"
+          color="primary"
+          fullWidth
+          sx={{ mt: 1, fontSize: '16px', color: '#fff' }}
+          onClick={handleFuzzySearch}
+          disabled={fuzzySearchLoading}
+        >
+          {fuzzySearchLoading ? (
+            <CircularProgress size={24} color="inherit" />
+          ) : (
+            'Search Suppliers'
+          )}
+        </Button>
+
+        {/* Fuzzy Search Results Container */}
+        <ResultContainer sx={{ maxHeight: '500px' }}>
+          {renderFuzzySearchResult()}
+        </ResultContainer>
       </Box>
     </Box>
   );
