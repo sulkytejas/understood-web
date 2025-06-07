@@ -25,8 +25,7 @@ import UserLogin from './components/Login/UserLogin';
 import MeetingEnded from './components/Meeting/MeetingEnded';
 import GoogleCallback from './components/Login/GoogleCallback';
 import ProtectedRoute from './components/onBoarding/ProtectedRoute';
-import ReportBugButton from './components/utils/ReportBugButton';
-import ErrorBoundary from './components/utils/ErrorBoundary';
+import VerifyUser from './components/verificationCenter/VerifyUser';
 import GuestTranslation from './components/Translation/GuestTranslation';
 import ApiCheckLink from './components/utils/ApiCheckLink';
 // import { initializeTensorFlow } from './components/utils/tensorFlowUtils';
@@ -50,6 +49,7 @@ import { prefixer } from 'stylis';
 import rtlPlugin from 'stylis-plugin-rtl';
 import MicroFeatures from './components/Vetting/MicroFeatures';
 import Pricing from './components/Vetting/Pricing';
+import GenerateInvoice from './components/utils/GenerateInvoice';
 
 function App() {
   const location = useLocation();
@@ -361,6 +361,20 @@ function App() {
                   element={
                     // If you need it public, just show it directly:
                     <AnimatedRoute element={<Pricing />} />
+                  }
+                />
+                <Route
+                  path="/generateInvoice"
+                  element={
+                    // If you need it public, just show it directly:
+                    <AnimatedRoute element={<GenerateInvoice />} />
+                  }
+                />
+                <Route
+                  path="/verification"
+                  element={
+                    // If you need it public, just show it directly:
+                    <AnimatedRoute element={<VerifyUser />} />
                   }
                 />
               </Routes>
