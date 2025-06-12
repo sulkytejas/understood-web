@@ -16,7 +16,7 @@ import GradientButton from '../Vetting/GradientButton';
 
 const VerifyUser = () => {
   const [formData, setFormData] = useState({
-    uid: '',
+    userIdentification: '',
     gstNumber: '',
     iecCode: '',
     udyamNumber: '',
@@ -105,12 +105,12 @@ const VerifyUser = () => {
       >
         {/* Text Fields */}
         <StyledTextField
-          label="User UID"
-          placeholder="Enter User UID"
+          label="User Username or Company Name"
+          placeholder="Enter Username or Company Name"
           fullWidth
           required
-          value={formData.uid}
-          onChange={handleTextChange('uid')}
+          value={formData.userIdentification}
+          onChange={handleTextChange('userIdentification')}
         />
 
         <StyledTextField
