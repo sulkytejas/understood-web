@@ -1,3 +1,4 @@
+/* eslint-disable */
 import React, { useState } from 'react';
 import {
   Button,
@@ -1758,6 +1759,7 @@ const DocumentSection = ({ title, docs, docDetails }) => (
 );
 
 // Component to display fuzzy search results
+// Component to display fuzzy search results
 const FuzzySearchDisplay = ({ data }) => {
   if (!data) return <Typography>No data available</Typography>;
 
@@ -1783,6 +1785,39 @@ const FuzzySearchDisplay = ({ data }) => {
       );
     }
 
+    // Helper function to extract company name from supplier
+    const getSupplierName = (supplier) => {
+      // If supplier is a string, return it directly
+      if (typeof supplier === 'string') {
+        return supplier;
+      }
+
+      // If supplier is an object, try to extract the company name
+      if (typeof supplier === 'object' && supplier !== null) {
+        // Try different possible fields for company name
+        return (
+          supplier.username ||
+          supplier.companyName ||
+          supplier.name ||
+          'Unknown Company'
+        );
+      }
+
+      return 'Unknown Company';
+    };
+
+    // Helper function to extract additional supplier info
+    const getSupplierInfo = (supplier) => {
+      if (typeof supplier === 'object' && supplier !== null) {
+        const info = [];
+        if (supplier.email) info.push(supplier.email);
+        if (supplier.phoneNumber) info.push(supplier.phoneNumber);
+        if (supplier.locale) info.push(supplier.locale);
+        return info.join(' • ');
+      }
+      return '';
+    };
+
     // Render supplier list
     return (
       <Box>
@@ -1805,30 +1840,53 @@ const FuzzySearchDisplay = ({ data }) => {
         </FuzzySearchStats>
 
         <List>
-          {suppliers.map((companyName, index) => (
-            <Fade in={true} timeout={300 + index * 50} key={index}>
-              <FuzzySearchResult>
-                <ListItemIcon>
-                  <Avatar sx={{ bgcolor: '#1976d2', width: 36, height: 36 }}>
-                    <FactoryIcon fontSize="small" />
-                  </Avatar>
-                </ListItemIcon>
-                <ListItemText
-                  primary={companyName}
-                  primaryTypographyProps={{
-                    fontWeight: 'medium',
-                    fontSize: '1rem',
-                  }}
-                />
-                <Box sx={{ display: 'flex', gap: 1 }}>
-                  <IconButton size="small" color="primary">
-                    <InfoIcon fontSize="small" />
-                  </IconButton>
-                  <CheckCircleIcon color="success" fontSize="small" />
-                </Box>
-              </FuzzySearchResult>
-            </Fade>
-          ))}
+          {suppliers.map((supplier, index) => {
+            const supplierName = getSupplierName(supplier);
+            const supplierInfo = getSupplierInfo(supplier);
+            const isVerified =
+              typeof supplier === 'object' && supplier.is_verified;
+
+            return (
+              <Fade in={true} timeout={300 + index * 50} key={index}>
+                <FuzzySearchResult>
+                  <ListItemIcon>
+                    <Avatar sx={{ bgcolor: '#1976d2', width: 36, height: 36 }}>
+                      <FactoryIcon fontSize="small" />
+                    </Avatar>
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={supplierName}
+                    secondary={supplierInfo}
+                    primaryTypographyProps={{
+                      fontWeight: 'medium',
+                      fontSize: '1rem',
+                    }}
+                    secondaryTypographyProps={{
+                      fontSize: '0.875rem',
+                      color: 'text.secondary',
+                    }}
+                  />
+                  <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                    {typeof supplier === 'object' && supplier.active && (
+                      <Chip
+                        label="Active"
+                        size="small"
+                        color="success"
+                        variant="outlined"
+                        sx={{ height: 20 }}
+                      />
+                    )}
+                    {isVerified && (
+                      <CheckCircleIcon color="success" fontSize="small" />
+                    )}
+                    <IconButton size="small" color="primary">
+                      <InfoIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
+                </FuzzySearchResult>
+              </Fade>
+            );
+          })}
         </List>
 
         {totalPages && totalPages > 1 && (
@@ -2564,7 +2622,7 @@ function ApiCheckLink() {
       <h2>API Check Link</h2>
 
       {/* API 1 field */}
-      <CustomTextField
+      {/* <CustomTextField
         placeholder="Supplier Name"
         value={api1}
         onChange={(e) => setApi1(e.target.value)}
@@ -2580,11 +2638,11 @@ function ApiCheckLink() {
             </InputAdornment>
           ),
         }}
-      />
-      {error1 && <FormHelperText error>{error1}</FormHelperText>}
+      /> */}
+      {/* {error1 && <FormHelperText error>{error1}</FormHelperText>} */}
 
       {/* Toggle for API 1 view */}
-      <ViewToggle>
+      {/* <ViewToggle>
         <FormControlLabel
           control={
             <Switch
@@ -2606,12 +2664,12 @@ function ApiCheckLink() {
             </Box>
           }
         />
-      </ViewToggle>
+      </ViewToggle> */}
 
-      <ResultContainer>{renderApi1Result()}</ResultContainer>
+      {/* <ResultContainer>{renderApi1Result()}</ResultContainer> */}
 
       {/* Button to check API 1 */}
-      <Button
+      {/* <Button
         variant="contained"
         color="primary"
         fullWidth
@@ -2624,10 +2682,10 @@ function ApiCheckLink() {
         ) : (
           'Check Trust Score'
         )}
-      </Button>
+      </Button> */}
 
       {/* API 2 field */}
-      <CustomTextField
+      {/* <CustomTextField
         placeholder="Product Price Comparison"
         value={api2}
         onChange={(e) => setApi2(e.target.value)}
@@ -2645,10 +2703,10 @@ function ApiCheckLink() {
           ),
         }}
       />
-      {error2 && <FormHelperText error>{error2}</FormHelperText>}
+      {error2 && <FormHelperText error>{error2}</FormHelperText>} */}
 
       {/* Toggle for API 2 view */}
-      <ViewToggle>
+      {/* <ViewToggle>
         <FormControlLabel
           control={
             <Switch
@@ -2672,10 +2730,10 @@ function ApiCheckLink() {
         />
       </ViewToggle>
 
-      <ResultContainer>{renderApi2Result()}</ResultContainer>
+      <ResultContainer>{renderApi2Result()}</ResultContainer> */}
 
       {/* Button to check API 2 */}
-      <Button
+      {/* <Button
         variant="contained"
         color="primary"
         fullWidth
@@ -2688,16 +2746,16 @@ function ApiCheckLink() {
         ) : (
           'Compare Market Price'
         )}
-      </Button>
+      </Button> */}
 
       {/* Supplier Search Section */}
       <Box sx={{ mt: 4 }}>
-        <Typography variant="h6" sx={{ mb: 2 }}>
+        {/* <Typography variant="h6" sx={{ mb: 2 }}>
           Supplier Search
-        </Typography>
+        </Typography> */}
 
         {/* Supplier Search input field */}
-        <CustomTextField
+        {/* <CustomTextField
           placeholder="Enter product name to find suppliers"
           value={supplierSearchInput}
           onChange={(e) => setSupplierSearchInput(e.target.value)}
@@ -2721,13 +2779,13 @@ function ApiCheckLink() {
               </InputAdornment>
             ),
           }}
-        />
-        {supplierSearchError && (
+        /> */}
+        {/* {supplierSearchError && (
           <FormHelperText error>{supplierSearchError}</FormHelperText>
-        )}
+        )} */}
 
         {/* Toggle for Supplier view */}
-        <ViewToggle>
+        {/* <ViewToggle>
           <FormControlLabel
             control={
               <Switch
@@ -2749,10 +2807,10 @@ function ApiCheckLink() {
               </Box>
             }
           />
-        </ViewToggle>
+        </ViewToggle> */}
 
         {/* Button for supplier search */}
-        <Button
+        {/* <Button
           variant="contained"
           color="primary"
           fullWidth
@@ -2765,12 +2823,12 @@ function ApiCheckLink() {
           ) : (
             'Find Suppliers'
           )}
-        </Button>
+        </Button> */}
 
         {/* Supplier Search Results Container */}
-        <ResultContainer sx={{ maxHeight: '500px' }}>
+        {/* <ResultContainer sx={{ maxHeight: '500px' }}>
           {renderSupplierSearchResult()}
-        </ResultContainer>
+        </ResultContainer> */}
       </Box>
 
       {/* Trade Documentation Lookup Section */}
