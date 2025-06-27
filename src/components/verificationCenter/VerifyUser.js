@@ -1,79 +1,29 @@
 import {
   Typography,
   Box,
-  Checkbox,
-  FormControlLabel,
-  Radio,
-  RadioGroup,
-  Stack,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from '@mui/material';
-import CheckIcon from '@mui/icons-material/Check';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useState } from 'react';
 
 import WavyUnderlineText from './waveUnderlineText';
-import StyledTextField from '../Vetting/StyledTextField';
-import GradientButton from '../Vetting/GradientButton';
+import VerificationLevelOne from './VerificationLevelOne';
+import VerificationLevelTwo from './VerificationLevelTwo';
 
 const VerifyUser = () => {
-  const [formData, setFormData] = useState({
-    userIdentification: '',
-    gstNumber: '',
-    iecCode: '',
-    udyamNumber: '',
-    panNumber: '',
-    uploadAddressProof: false,
-    representativeAadhar: false,
-    linkedinInstagramProfile: false,
-    verifiedUser: '',
-  });
+  const [expanded, setExpanded] = useState('level1');
 
-  const handleTextChange = (field) => (event) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: event.target.value,
-    }));
-  };
-
-  const handleCheckboxChange = (field) => (event) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: event.target.checked,
-    }));
-  };
-
-  const handleRadioChange = (event) => {
-    setFormData((prev) => ({
-      ...prev,
-      verifiedUser: event.target.value,
-    }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const apiUrl = process.env.REACT_APP_API_URL;
-
-    try {
-      const response = await fetch(`${apiUrl}/api/verify/one`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...formData,
-        }),
-      });
-
-      console.log(response);
-    } catch (e) {
-      console.error(e);
-    }
+  const handleChange = (panel) => (event, isExpanded) => {
+    setExpanded(isExpanded ? panel : false);
   };
 
   return (
     <Box
       sx={{
         padding: '50px 0',
-        maxWidth: '600px',
+        maxWidth: '800px',
         margin: '0 auto',
       }}
     >
@@ -93,319 +43,104 @@ const VerifyUser = () => {
         <WavyUnderlineText>User </WavyUnderlineText>
       </Typography>
 
-      <Box
-        component="form"
-        onSubmit={handleSubmit}
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 3,
-          px: 3,
-        }}
-      >
-        {/* Text Fields */}
-        <StyledTextField
-          label="User Username or Company Name"
-          placeholder="Enter Username or Company Name"
-          fullWidth
-          required
-          value={formData.userIdentification}
-          onChange={handleTextChange('userIdentification')}
-        />
-
-        <StyledTextField
-          label="GST Number"
-          placeholder="Enter GST Number"
-          fullWidth
-          required
-          value={formData.gstNumber}
-          onChange={handleTextChange('gstNumber')}
-        />
-
-        <StyledTextField
-          label="IEC Code Requirement"
-          placeholder="Enter IEC Code"
-          fullWidth
-          required
-          value={formData.iecCode}
-          onChange={handleTextChange('iecCode')}
-        />
-
-        <StyledTextField
-          label="Udyam Number"
-          placeholder="Enter Udyam Number"
-          fullWidth
-          required
-          value={formData.udyamNumber}
-          onChange={handleTextChange('udyamNumber')}
-        />
-
-        <StyledTextField
-          label="PAN Number"
-          placeholder="Enter PAN Number"
-          fullWidth
-          required
-          value={formData.panNumber}
-          onChange={handleTextChange('panNumber')}
-        />
-
-        {/* Checkboxes */}
-        <Stack spacing={2} sx={{ mt: 2 }}>
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={formData.uploadAddressProof}
-                onChange={handleCheckboxChange('uploadAddressProof')}
-                icon={
-                  <Box
-                    sx={{
-                      width: 20,
-                      height: 20,
-                      border: '2px solid #e0e0e0',
-                      borderRadius: '4px',
-                      backgroundColor: 'white',
-                    }}
-                  />
-                }
-                checkedIcon={
-                  <Box
-                    sx={{
-                      width: 20,
-                      height: 20,
-                      background:
-                        'linear-gradient(90deg, #4ABBC9 0%, #ACEE5C 50%, #3DB141 100%)',
-                      borderRadius: '4px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <CheckIcon sx={{ color: 'white', fontSize: 16 }} />
-                  </Box>
-                }
-              />
-            }
-            label="Upload Address Proof Verfied"
+      <Box sx={{ px: 3 }}>
+        <Accordion
+          expanded={expanded === 'level1'}
+          onChange={handleChange('level1')}
+          sx={{
+            boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
+            borderRadius: '8px !important',
+            '&:before': {
+              display: 'none',
+            },
+            mb: 2,
+          }}
+        >
+          <AccordionSummary
+            expandIcon={<ExpandMoreIcon />}
+            aria-controls="level1-content"
+            id="level1-header"
             sx={{
-              '& .MuiFormControlLabel-label': {
-                fontFamily: 'Exo 2',
-                color: '#0C2617',
-                ml: 1,
+              backgroundColor: '#f5f5f5',
+              borderRadius: '8px',
+              '&.Mui-expanded': {
+                borderBottomLeftRadius: 0,
+                borderBottomRightRadius: 0,
+              },
+              '& .MuiAccordionSummary-content': {
+                margin: '20px 0',
               },
             }}
-          />
-
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={formData.representativeAadhar}
-                onChange={handleCheckboxChange('representativeAadhar')}
-                icon={
-                  <Box
-                    sx={{
-                      width: 20,
-                      height: 20,
-                      border: '2px solid #e0e0e0',
-                      borderRadius: '4px',
-                      backgroundColor: 'white',
-                    }}
-                  />
-                }
-                checkedIcon={
-                  <Box
-                    sx={{
-                      width: 20,
-                      height: 20,
-                      background:
-                        'linear-gradient(90deg, #4ABBC9 0%, #ACEE5C 50%, #3DB141 100%)',
-                      borderRadius: '4px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <CheckIcon sx={{ color: 'white', fontSize: 16 }} />
-                  </Box>
-                }
-              />
-            }
-            label="Representative Aadhar Verified"
-            sx={{
-              '& .MuiFormControlLabel-label': {
-                fontFamily: 'Exo 2',
-                color: '#0C2617',
-                ml: 1,
-              },
-            }}
-          />
-
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={formData.linkedinInstagramProfile}
-                onChange={handleCheckboxChange('linkedinInstagramProfile')}
-                icon={
-                  <Box
-                    sx={{
-                      width: 20,
-                      height: 20,
-                      border: '2px solid #e0e0e0',
-                      borderRadius: '4px',
-                      backgroundColor: 'white',
-                    }}
-                  />
-                }
-                checkedIcon={
-                  <Box
-                    sx={{
-                      width: 20,
-                      height: 20,
-                      background:
-                        'linear-gradient(90deg, #4ABBC9 0%, #ACEE5C 50%, #3DB141 100%)',
-                      borderRadius: '4px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <CheckIcon sx={{ color: 'white', fontSize: 16 }} />
-                  </Box>
-                }
-              />
-            }
-            label="LinkedIn and/or Instagram Profile Verfied"
-            sx={{
-              '& .MuiFormControlLabel-label': {
-                fontFamily: 'Exo 2',
-                color: '#0C2617',
-                ml: 1,
-              },
-            }}
-          />
-
-          {/* Verified User - Yes/No Radio Buttons */}
-          <Box sx={{ mt: 1 }}>
+          >
             <Typography
               sx={{
                 fontFamily: 'Exo 2',
+                fontSize: '24px',
+                fontWeight: 600,
                 color: '#0C2617',
-                mb: 1,
-                fontWeight: 500,
               }}
             >
-              Verified User
+              Level 1 Verification
             </Typography>
-            <RadioGroup
-              row
-              value={formData.verifiedUser}
-              onChange={handleRadioChange}
-            >
-              <FormControlLabel
-                value="yes"
-                control={
-                  <Radio
-                    icon={
-                      <Box
-                        sx={{
-                          width: 20,
-                          height: 20,
-                          border: '2px solid #e0e0e0',
-                          borderRadius: '4px',
-                          backgroundColor: 'white',
-                        }}
-                      />
-                    }
-                    checkedIcon={
-                      <Box
-                        sx={{
-                          width: 20,
-                          height: 20,
-                          background:
-                            'linear-gradient(90deg, #4ABBC9 0%, #ACEE5C 50%, #3DB141 100%)',
-                          borderRadius: '4px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
-                        <CheckIcon sx={{ color: 'white', fontSize: 16 }} />
-                      </Box>
-                    }
-                  />
-                }
-                label="Yes"
-                sx={{
-                  '& .MuiFormControlLabel-label': {
-                    fontFamily: 'Exo 2',
-                    color: '#0C2617',
-                    ml: 1,
-                  },
-                  mr: 4,
-                }}
-              />
-              <FormControlLabel
-                value="no"
-                control={
-                  <Radio
-                    icon={
-                      <Box
-                        sx={{
-                          width: 20,
-                          height: 20,
-                          border: '2px solid #e0e0e0',
-                          borderRadius: '4px',
-                          backgroundColor: 'white',
-                        }}
-                      />
-                    }
-                    checkedIcon={
-                      <Box
-                        sx={{
-                          width: 20,
-                          height: 20,
-                          background:
-                            'linear-gradient(90deg, #4ABBC9 0%, #ACEE5C 50%, #3DB141 100%)',
-                          borderRadius: '4px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
-                        <CheckIcon sx={{ color: 'white', fontSize: 16 }} />
-                      </Box>
-                    }
-                  />
-                }
-                label="No"
-                sx={{
-                  '& .MuiFormControlLabel-label': {
-                    fontFamily: 'Exo 2',
-                    color: '#0C2617',
-                    ml: 1,
-                  },
-                }}
-              />
-            </RadioGroup>
-          </Box>
-        </Stack>
-
-        {/* Submit Button */}
-        <Box sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
-          <GradientButton
-            type="submit"
-            variant="contained"
-            size="large"
+          </AccordionSummary>
+          <AccordionDetails
             sx={{
-              px: 6,
-              py: 1.5,
-              fontFamily: 'Exo 2',
-              fontSize: '16px',
-              fontWeight: 600,
+              padding: 0,
+              backgroundColor: '#ffffff',
             }}
           >
-            Submit Verification
-          </GradientButton>
-        </Box>
+            <VerificationLevelOne />
+          </AccordionDetails>
+        </Accordion>
+
+        <Accordion
+          expanded={expanded === 'level2'}
+          onChange={handleChange('level2')}
+          sx={{
+            boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
+            borderRadius: '8px !important',
+            '&:before': {
+              display: 'none',
+            },
+            mb: 2,
+          }}
+        >
+          <AccordionSummary
+            expandIcon={<ExpandMoreIcon />}
+            aria-controls="level2-content"
+            id="level2-header"
+            sx={{
+              backgroundColor: '#f5f5f5',
+              borderRadius: '8px',
+              '&.Mui-expanded': {
+                borderBottomLeftRadius: 0,
+                borderBottomRightRadius: 0,
+              },
+              '& .MuiAccordionSummary-content': {
+                margin: '20px 0',
+              },
+            }}
+          >
+            <Typography
+              sx={{
+                fontFamily: 'Exo 2',
+                fontSize: '24px',
+                fontWeight: 600,
+                color: '#0C2617',
+              }}
+            >
+              Level 2 Verification
+            </Typography>
+          </AccordionSummary>
+          <AccordionDetails
+            sx={{
+              padding: 0,
+              backgroundColor: '#ffffff',
+            }}
+          >
+            <VerificationLevelTwo />
+          </AccordionDetails>
+        </Accordion>
       </Box>
     </Box>
   );
