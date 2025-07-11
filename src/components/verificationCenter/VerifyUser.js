@@ -40,7 +40,7 @@ const VerifyUser = () => {
         }}
       >
         <WavyUnderlineText>Verify </WavyUnderlineText>{' '}
-        <WavyUnderlineText>User </WavyUnderlineText>
+        <WavyUnderlineText>Users </WavyUnderlineText>
       </Typography>
 
       <Box sx={{ px: 3 }}>
