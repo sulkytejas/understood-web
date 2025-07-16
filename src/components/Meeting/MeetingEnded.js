@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Box, Typography, Button, Rating } from '@mui/material';
 import { styled } from '@mui/system';
-import { ReactComponent as LogoIcon } from '../assets/understood_logo_text.svg';
+import { ReactComponent as LogoIcon } from '../../assets/understood_logo_text.svg';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import SummaryModal from './SummaryModal';

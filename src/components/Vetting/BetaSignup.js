@@ -2,11 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { Box, Grid, Container } from '@mui/material';
 import { Typography, LinearProgress } from '@mui/material';
 import BetaForm from './BetaForm';
-import SupplierScreen from '../assets/screen_supplier_signup.png';
-import SummaryScreen from '../assets/screen_summary_signup.png';
-import CombinedScreen from '../assets/combined_screen_mobile.png'; // Add your combined mobile image
-import AppStoreIcon from '../assets/app_strore_icon.png';
-import AppStoreIconMobile from '../assets/app_store_icon_mobile.png';
+import SupplierScreen from '../../assets/screen_supplier_signup.png';
+import SummaryScreen from '../../assets/screen_summary_signup.png';
+import CombinedScreen from '../../assets/combined_screen_mobile.png'; // Add your combined mobile image
+import AppStoreIcon from '../../assets/app_strore_icon.png';
+import AppStoreIconMobile from '../../assets/app_store_icon_mobile.png';
 import { styled } from '@mui/material/styles';
 
 const Intro = () => (

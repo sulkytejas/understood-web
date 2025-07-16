@@ -1,7 +1,7 @@
 import React from 'react';
 import Box from '@mui/material/Box';
 
-import { ReactComponent as LogoIcon } from '../assets/understood_logo.svg';
+import { ReactComponent as LogoIcon } from '../../assets/understood_logo.svg';
 
 const LoadingSpinner = () => {
   return (

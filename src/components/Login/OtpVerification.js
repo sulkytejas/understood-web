@@ -1,7 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { TextField, Box, Typography, FormHelperText } from '@mui/material';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { Box, FormHelperText } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
+import { OtpTitle, OtpSubtitle } from './Login.styles';
+import { OtpTextInput } from '../ui';
 
 const pageVariants = {
   initial: { opacity: 0 },
@@ -27,36 +29,42 @@ const OtpVerification = ({
     inputRefs.current[0].focus();
   }, [isOtpInvalid]);
 
-  const handleChange = (element, index) => {
-    const value = element.value.replace(/[^0-9]/g, ''); // Only allow numbers
-    if (value) {
-      const newOtp = [...otp];
-      newOtp[index] = value;
-      setOtp(newOtp);
-
-      onSetOtp(newOtp.join(''));
-
-      if (index < length - 1) {
-        inputRefs.current[index + 1].focus(); // Move to the next box
-      }
-    }
-  };
-
-  const handleKeyDown = (e, index) => {
-    if (e.key === 'Backspace') {
-      const newOtp = [...otp];
-
-      if (otp[index] === '') {
-        if (index > 0) {
-          inputRefs.current[index - 1].focus(); // Move to the previous box
-        }
-      } else {
-        newOtp[index] = ''; // Clear the current box
+  const handleChange = useCallback(
+    (element, index) => {
+      const value = element.value.replace(/[^0-9]/g, '');
+      if (value) {
+        const newOtp = [...otp];
+        newOtp[index] = value;
         setOtp(newOtp);
+
         onSetOtp(newOtp.join(''));
+
+        if (index < length - 1) {
+          inputRefs.current[index + 1].focus();
+        }
       }
-    }
-  };
+    },
+    [otp, length, onSetOtp],
+  );
+
+  const handleKeyDown = useCallback(
+    (e, index) => {
+      if (e.key === 'Backspace') {
+        const newOtp = [...otp];
+
+        if (otp[index] === '') {
+          if (index > 0) {
+            inputRefs.current[index - 1].focus();
+          }
+        } else {
+          newOtp[index] = '';
+          setOtp(newOtp);
+          onSetOtp(newOtp.join(''));
+        }
+      }
+    },
+    [otp, onSetOtp],
+  );
 
   return (
     <motion.div
@@ -66,51 +74,28 @@ const OtpVerification = ({
       variants={pageVariants}
       transition={pageTransition}
     >
-      <Typography
-        sx={{
-          fontWeight: 400,
-          fontSize: '23px',
-          lineHeight: '37px',
-          marginTop: '30px',
-          color: '#DF4303',
-        }}
-      >
-        {t('Verify your number')}
-      </Typography>
-      <Typography
-        sx={{
-          fontWeight: 500,
-          fontSize: '15px',
-          lineHeight: '22px',
-          color: '#595959',
-          marginBottom: '70px',
-        }}
-      >
+      <OtpTitle>{t('Verify your number')}</OtpTitle>
+      <OtpSubtitle>
         {t('Enter OTP sent to ')}
         <span style={{ color: '#DF4303' }}>{phoneNumber}</span>
-      </Typography>
+      </OtpSubtitle>
 
       <Box display="flex" flexDirection="column" justifyContent="space-between">
         <Box display="flex" justifyContent="space-between" width="100%">
           {otp.map((data, index) => (
-            <TextField
+            <OtpTextInput
               key={index}
               value={data}
               inputProps={{
                 inputMode: 'numeric',
                 pattern: '[0-9]*',
                 maxLength: 1,
-                style: { textAlign: 'center' },
               }}
               onChange={(e) => handleChange(e.target, index)}
               onKeyDown={(e) => handleKeyDown(e, index)}
               inputRef={(ref) => (inputRefs.current[index] = ref)}
               variant="outlined"
-              style={{
-                flex: 1,
-                margin: '5px',
-                backgroundColor: '#f5f5f5',
-              }}
+              sx={{ flex: 1, margin: '5px' }}
             />
           ))}
         </Box>
@@ -122,4 +107,4 @@ const OtpVerification = ({
   );
 };
 
-export default OtpVerification;
+export default React.memo(OtpVerification);

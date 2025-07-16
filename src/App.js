@@ -20,17 +20,16 @@ import { useDispatch, useSelector } from 'react-redux';
 import i18n from './i18n';
 import VideoCall from './components/VideoCall/VideoCall';
 import CreateMeetingPage from './components/Meeting/CreateMeeting';
-import PracticeMain from './components/PraticeMode/PracticeMain';
 import UserLogin from './components/Login/UserLogin';
 import MeetingEnded from './components/Meeting/MeetingEnded';
 import GoogleCallback from './components/Login/GoogleCallback';
-import ProtectedRoute from './components/onBoarding/ProtectedRoute';
-import VerifyUser from './components/verificationCenter/VerifyUser';
+import ProtectedRoute from './components/OnBoarding/ProtectedRoute';
+import VerifyUser from './components/BackendVerificationCenter/VerifyUser';
 import GuestTranslation from './components/Translation/GuestTranslation';
-import ApiCheckLink from './components/utils/ApiCheckLink';
+import ApiCheckLink from './utils/ApiCheckLink';
 // import { initializeTensorFlow } from './components/utils/tensorFlowUtils';
-import WelcomeScreen from './components/onBoarding/WelcomeScreen';
-import LoadingSpinner from './components/onBoarding/LoadingSpinner';
+import WelcomeScreen from './components/OnBoarding/WelcomeScreen';
+import LoadingSpinner from './components/OnBoarding/LoadingSpinner';
 import {
   setEmail,
   setUserName,
@@ -49,8 +48,8 @@ import { prefixer } from 'stylis';
 import rtlPlugin from 'stylis-plugin-rtl';
 import MicroFeatures from './components/Vetting/MicroFeatures';
 import Pricing from './components/Vetting/Pricing';
-import GenerateInvoice from './components/utils/GenerateInvoice';
-import ChatTest from './components/utils/ChatTest';
+import GenerateInvoice from './utils/GenerateInvoice';
+import ChatTest from './utils/ChatTest';
 
 function App() {
   const location = useLocation();
@@ -336,14 +335,7 @@ function App() {
                   path="/guestTranslation/:meetingId"
                   element={<GuestTranslation />}
                 />
-                <Route
-                  path="/vibe/:practiceSessionId"
-                  element={
-                    <ProtectedRoute>
-                      <AnimatedRoute element={<PracticeMain />} />
-                    </ProtectedRoute>
-                  }
-                />
+
                 <Route
                   path="/meetingEnded"
                   element={<AnimatedRoute element={<MeetingEnded />} />}

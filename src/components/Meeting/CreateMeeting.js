@@ -10,7 +10,7 @@ import HostControl from './HostControl';
 import ParticipantTab from './ParticipantTab';
 import VibeModeTab from './VibeModeTab';
 import AccountSeetingDialog from './AccountSettingDialog';
-import { ReactComponent as LogoIcon } from '../assets/understood_logo.svg';
+import { ReactComponent as LogoIcon } from '../../assets/understood_logo.svg';
 
 import { setLocalSpokenLanguage } from '../../redux/translationSlice';
 import {
@@ -19,7 +19,7 @@ import {
   setIsHost,
   setMeetingPhrase,
 } from '../../redux/meetingSlice';
-import LoadingSpinner from '../onBoarding/LoadingSpinner';
+import LoadingSpinner from '../OnBoarding/LoadingSpinner';
 import { useTranslation } from 'react-i18next';
 
 const CustomTabs = styled(Tabs)({

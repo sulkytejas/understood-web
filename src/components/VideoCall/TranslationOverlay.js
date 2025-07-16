@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 // import Translation from '../Translation/Translation';
 import useTranslatedTextDisplay from '../hooks/useTranslatedTextDisplay';
 import { useSelector } from 'react-redux';
-import { isRTL } from '../utils/countriesConfig';
+import { isRTL } from '../../utils/countriesConfig';
 
 const TranslationOverlay = ({
   // detectedLanguage,

@@ -13,11 +13,11 @@ import { styled, useTheme } from '@mui/system';
 
 // import { Link as LinkRouter } from 'react-router-dom';
 
-import { ReactComponent as Logo } from '../assets/understood_logo.svg';
-import { ReactComponent as MenuIcon } from '../assets/jam_menu_icon.svg';
+import { ReactComponent as Logo } from '../../assets/understood_logo.svg';
+import { ReactComponent as MenuIcon } from '../../assets/jam_menu_icon.svg';
 import SolidButton from './SolidButton';
 import MobileMenu from './MobileMenu';
-import { ReactComponent as MenuCloseIcon } from '../assets/jam_menu_close.svg';
+import { ReactComponent as MenuCloseIcon } from '../../assets/jam_menu_close.svg';
 import SignUpModal from './SignUpModal';
 
 const StyledDesktopMenuButton = styled(Link)({

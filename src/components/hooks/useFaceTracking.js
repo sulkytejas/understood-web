@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { trackFace } from '../utils/tensorFlowUtils';
+import { trackFace } from '../../utils/tensorFlowUtils';
 
 const useFaceTracking = ({
   stream,

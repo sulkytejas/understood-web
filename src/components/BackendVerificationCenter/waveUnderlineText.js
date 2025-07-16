@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Box, Typography } from '@mui/material';
-import { ReactComponent as WaveUnderline } from '../assets/wave_underline.svg';
+import { ReactComponent as WaveUnderline } from '../../assets/wave_underline.svg';
 
 function WavyUnderlineText({ children, sxSVG, sxContainer }) {
   const textRef = useRef(null);

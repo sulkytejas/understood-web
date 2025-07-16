@@ -1,22 +1,10 @@
 import React from 'react';
 import { useGoogleLogin } from '@react-oauth/google';
-import { Button, Typography, SvgIcon, Box } from '@mui/material';
+import { Typography, SvgIcon } from '@mui/material';
 import { styled } from '@mui/system';
 import { useTranslation } from 'react-i18next';
 import { ReactComponent as CustomSvgIcon } from '../assets/googleLogin.svg';
-
-const GoogleButton = styled(Button)({
-  alignItems: 'center',
-  justifyContent: 'center',
-  height: 42,
-  backgroundColor: '#fff',
-  boxShadow:
-    ' 0px 7px 7px 0px rgba(0, 0, 0, 0.2),0px 15px 9px 0px rgba(0, 0, 0, 0.05),0px 26px 10px 0px rgba(0, 0, 0, 0.01), 0px 41px 11px 0px rgba(0, 0, 0, 0)',
-  textTransform: 'none', // Prevents uppercase text
-  '&:hover': {
-    backgroundColor: '#f8f8f8',
-  },
-});
+import { GoogleButton, GoogleContainer } from './Login.styles';
 
 const GoogleIcon = styled(SvgIcon)({
   marginRight: 12,
@@ -33,12 +21,7 @@ const GoogleAuthentication = () => {
   });
 
   return (
-    <Box
-      sx={{
-        margin: '40px 0',
-        zIndex: 2,
-      }}
-    >
+    <GoogleContainer>
       <GoogleButton fullWidth variant="contained" onClick={() => googleLogin()}>
         <GoogleIcon
           alt="Google"
@@ -48,7 +31,7 @@ const GoogleAuthentication = () => {
         />
         <Typography color="textPrimary">{t('Google your way in!')}</Typography>
       </GoogleButton>
-    </Box>
+    </GoogleContainer>
   );
 };
 

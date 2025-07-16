@@ -11,7 +11,7 @@ import useStudioLight from '../hooks/useStudioLight';
 import useStreamAttachment from '../hooks/useStreamAttachment';
 import useFaceTracking from '../hooks/useFaceTracking';
 import PiPVideo from './PipVideo';
-import { enhanceVideoContainer } from '../utils/videoPlayerUtils';
+import { enhanceVideoContainer } from '../../utils/videoPlayerUtils';
 
 const circularRemoteVideo = {
   display: 'flex',

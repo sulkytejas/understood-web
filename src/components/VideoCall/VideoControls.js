@@ -26,7 +26,7 @@ import { ReactComponent as CaptionIcon } from './assets/caption_icon.svg';
 import SummarizeOutlinedIcon from '@mui/icons-material/SummarizeOutlined';
 import { ReactComponent as TranslationIcon } from './assets/translation_icon.svg';
 import { useSocket } from '../context/SocketContext';
-import { getCountriesList } from '../utils/countriesConfig';
+import { getCountriesList } from '../../utils/countriesConfig';
 import TranslationDisplay from './TranslationDisplay';
 
 const CustomBottomNavigationAction = styled(BottomNavigationAction)({

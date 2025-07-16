@@ -1,8 +1,15 @@
-import React, { useState } from 'react';
-import { Box, Button, Modal, TextField, Typography } from '@mui/material';
+import React, { useState, useCallback, useEffect } from 'react';
+import { Button, Modal } from '@mui/material';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useSocket } from '../context/SocketContext';
+import {
+  ModalContainer,
+  ModalTitle,
+  ModalSubtitle,
+  OrText,
+} from './Login.styles';
+import { TextInput } from '../ui';
 
 const SignUpModal = ({ open, handleClose }) => {
   const [phone, setPhone] = useState('');
@@ -12,9 +19,7 @@ const SignUpModal = ({ open, handleClose }) => {
   const { t } = useTranslation();
   const { socket } = useSocket();
 
-  const handleNotifyCTAClick = async () => {
-    // Emit the contact information to the server
-
+  const handleNotifyCTAClick = useCallback(async () => {
     socket.emit('submitContact', { phone, email });
 
     try {
@@ -28,22 +33,28 @@ const SignUpModal = ({ open, handleClose }) => {
       setEmail('');
       setPhone('');
       setSubmitted(true);
-      setStatusMessage('Thanks for signing up! We’ll keep you posted.');
+      setStatusMessage("Thanks for signing up! We'll keep you posted.");
     } catch (error) {
-      console.error('Error submitting form:', error);
       setStatusMessage('An error occurred. Please try again later.');
     }
+  }, [phone, email, socket]);
 
-    // Listen for the response from the server
-    socket.on('contactSubmissionStatus', (response) => {
+  useEffect(() => {
+    const handleSubmissionStatus = (response) => {
       if (response.success) {
         setSubmitted(true);
         setStatusMessage(response.message);
       } else {
         setStatusMessage(response.message);
       }
-    });
-  };
+    };
+
+    socket.on('contactSubmissionStatus', handleSubmissionStatus);
+
+    return () => {
+      socket.off('contactSubmissionStatus', handleSubmissionStatus);
+    };
+  }, [socket]);
 
   const pageVariants = {
     initial: { opacity: 0 },
@@ -63,21 +74,9 @@ const SignUpModal = ({ open, handleClose }) => {
       transition={pageTransition}
     >
       <Modal open={open} onClose={handleClose} aria-labelledby="sign-up-modal">
-        <Box
-          sx={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: 300,
-            bgcolor: 'background.paper',
-            boxShadow: 24,
-            p: 4,
-            borderRadius: 2,
-          }}
-        >
+        <ModalContainer>
           {submitted ? (
-            <Typography variant="h6" color="textSecondary" align="center">
+            <ModalTitle variant="h6" color="textSecondary">
               {!statusMessage ? (
                 <>
                   {t('Thanks for signing up!')}
@@ -87,51 +86,39 @@ const SignUpModal = ({ open, handleClose }) => {
               ) : (
                 statusMessage
               )}
-            </Typography>
+            </ModalTitle>
           ) : (
             <>
-              <Typography
+              <ModalTitle
                 id="sign-up-modal"
                 variant="h6"
                 component="h2"
                 gutterBottom
-                sx={{ textAlign: 'center' }}
               >
                 {t('Sign Up for Early Access')}
-              </Typography>
-              <Typography
-                variant="body2"
-                color="textSecondary"
-                mb={2}
-                sx={{ textAlign: 'center' }}
-              >
+              </ModalTitle>
+              <ModalSubtitle variant="body2" color="textSecondary" mb={2}>
                 {t(
                   "Enter your phone number or email, and we'll reach out when we're ready!",
                 )}
-              </Typography>
-              <TextField
-                fullWidth
-                variant="outlined"
+              </ModalSubtitle>
+              <TextInput
+                styleVariant="outlined"
                 label="Phone (+ Country Code)"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 margin="normal"
               />
-              <Typography
-                variant="body2"
-                color="textSecondary"
-                mb={2}
-                sx={{ textAlign: 'center', margin: '8px 0' }}
-              >
+              <OrText variant="body2" color="textSecondary">
                 {t('Or')}
-              </Typography>
-              <TextField
-                fullWidth
-                variant="outlined"
+              </OrText>
+              <TextInput
+                styleVariant="outlined"
                 label="Email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 margin="normal"
+                type="email"
               />
               <Button
                 variant="contained"
@@ -143,7 +130,7 @@ const SignUpModal = ({ open, handleClose }) => {
               </Button>
             </>
           )}
-        </Box>
+        </ModalContainer>
       </Modal>
     </motion.div>
   );

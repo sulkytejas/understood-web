@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import io from 'socket.io-client';
-import { generateDeviceId } from '../utils/peerConnectionUtils';
+import { generateDeviceId } from '../../utils/peerConnectionUtils';
 
 const SocketContext = createContext();
 

@@ -1,6 +1,6 @@
 import { Box, Typography } from '@mui/material';
 
-import { isRTL } from '../utils/countriesConfig';
+import { isRTL } from '../../utils/countriesConfig';
 
 const TranslatedTextView = ({
   translatedTexts = { text: '', isFinal: false },

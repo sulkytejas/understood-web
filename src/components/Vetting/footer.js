@@ -15,7 +15,7 @@ import Grid from '@mui/material/Grid';
 
 import StyledTextField from './StyledTextField';
 import SolidButton from './SolidButton';
-import { ReactComponent as Logo } from '../assets/understood_logo.svg';
+import { ReactComponent as Logo } from '../../assets/understood_logo.svg';
 
 const Heading = styled(Typography)(({ theme }) => ({
   fontFamily: "'Exo 2', 'sans-serif'",

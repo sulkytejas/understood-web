@@ -19,7 +19,7 @@ import { useTranslation } from 'react-i18next';
 import { useSelector, useDispatch } from 'react-redux';
 import { Check } from '@mui/icons-material';
 import { useSocket } from '../context/SocketContext';
-import { getCountriesList } from '../utils/countriesConfig';
+import { getCountriesList } from '../../utils/countriesConfig';
 import { setLocalSpokenLanguage } from '../../redux/translationSlice';
 import i18n from '../../i18n';
 import { cleanupState } from '../../redux/actions';

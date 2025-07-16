@@ -50,7 +50,7 @@ import {
   Email as EmailIcon,
   Description as DescriptionIcon,
 } from '@mui/icons-material';
-import { useSocket } from '../context/SocketContext';
+import { useSocket } from '../components/context/SocketContext';
 
 const MegaInvoiceForm = () => {
   const [loading, setLoading] = useState(false);

@@ -16,10 +16,10 @@ import { useNavigate } from 'react-router-dom';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { styled } from '@mui/material/styles';
 import { useDispatch } from 'react-redux';
-import { ReactComponent as LogoIcon } from '../assets/understood_logo_text.svg';
+import { ReactComponent as LogoIcon } from '../../assets/understood_logo_text.svg';
 import { setLocalSpokenLanguage } from '../../redux/translationSlice';
 import { useTranslation } from 'react-i18next';
-import { getCountriesList } from '../utils/countriesConfig';
+import { getCountriesList } from '../../utils/countriesConfig';
 import i18n from '../../i18n';
 
 // Custom styled components

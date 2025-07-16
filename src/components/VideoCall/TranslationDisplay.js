@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import TranslatedTextView from './TranslatedText';
-import { isRTL } from '../utils/countriesConfig';
+import { isRTL } from '../../utils/countriesConfig';
 import { useSocket } from '../context/SocketContext';
 import useTranslatedTextDisplay from '../hooks/useTranslatedTextDisplay';
 
